@@ -1,0 +1,65 @@
+---
+title: Getting Started
+description: Quick start guide to x402 Studio - prerequisites and initial setup
+---
+
+# Getting Started with x402 Studio
+
+This guide will help you set up x402 Studio and create your first paid endpoint in under 10 minutes.
+
+## What You'll Need
+
+Before you begin, make sure you have:
+
+- **A crypto wallet** – Either a Base-compatible wallet (like Coinbase Wallet) or a Solana wallet (like Phantom)
+- **Some USDC** – For testing payments on Base or Solana mainnet
+- **An API endpoint** – A public URL that returns data you want to monetize
+
+## Step 1: Connect Your Wallet
+
+1. Visit **studio.x402layer.cc**
+2. Click **Connect Wallet** in the top right
+3. Choose your wallet type:
+    - **Base**: Connect via Coinbase Wallet or RainbowKit
+    - **Solana**: Connect via Phantom or another Solana wallet
+4. Sign the authentication message
+
+Your wallet is now linked to your x402 Studio account.
+
+## Step 2: Create Your First Endpoint
+
+1. Go to **Dashboard → Endpoints → New**
+2. Fill in the endpoint details:
+    - **Name**: A description for your endpoint
+    - **Origin URL**: Your actual API endpoint
+    - **Price**: How much to charge per call (in USDC)
+    - **Chain**: Where to receive payments (Base or Solana)
+3. Click **Create Endpoint**
+
+You'll receive a public slug like `/api/public/endpoints/my-endpoint`
+
+## Step 3: Test Your Endpoint
+
+Try calling your new endpoint:
+
+```bash
+curl https://studio.x402layer.cc/api/public/endpoints/my-endpoint
+```
+
+You'll receive a `402 Payment Required` response with payment details:
+
+```json
+{
+  "x402Version": 1,
+  "accepts": [
+    {
+      "network": "base",
+      "asset": "usdc",
+      "payTo": "0xYourWallet...",
+      "maxAmountRequired": "1000000"
+    }
+  ]
+}
+```
+
+This tells clients exactly how to pay for access.

@@ -1,0 +1,62 @@
+---
+title: Creating Endpoints
+description: How to create and configure paid API endpoints
+---
+
+# Creating Endpoints
+
+Endpoints are the core of x402 Studio. They turn your APIs into paid services that accept crypto payments automatically.
+
+## Endpoint Types
+
+### Pay-Per-Request
+Charge a fixed price for each API call. Best for:
+- High-value API responses
+- Compute-intensive operations
+- Premium data access
+
+### Credit-Based
+Sell credit packs upfront. Best for:
+- High-volume APIs
+- Subscription-like access
+- Lighter per-call pricing
+
+## Creating a New Endpoint
+
+### Step 1: Navigate to Endpoints
+Go to **Dashboard → Endpoints** and click **New Endpoint**.
+
+### Step 2: Basic Information
+
+| Field | Description |
+|---|---|
+| Name | A descriptive name for your endpoint |
+| Description | What this endpoint does (shown to users) |
+| Origin URL | Your actual API endpoint URL |
+
+### Step 3: Set Your Payout Address
+Enter the wallet address where you want to receive payments:
+
+```text
+0x742d35Cc6634C0532925a3b844Bc9e7595f2bD87
+```
+
+> ⚠️ Double-check this address. Payments are irreversible once sent.
+
+## Testing Your Endpoint
+
+After creation, test that everything works:
+
+```bash
+# Get the 402 challenge
+curl https://api.x402layer.cc/api/public/endpoints/your-slug
+
+# Expected: 402 Payment Required with payment details
+```
+
+## Managing Endpoints
+From the Dashboard, you can:
+- **Edit** – Update pricing, origin URL, or settings
+- **Pause** – Temporarily disable the endpoint
+- **Delete** – Permanently remove the endpoint
+- **View Analytics** – See payment history and usage stats
