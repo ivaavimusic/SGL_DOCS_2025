@@ -1,9 +1,9 @@
 ---
-title: Introduction to Agentic Access
+title: Agentic Access: Introduction - x402 Studio Docs
 description: How AI agents can discover and pay for x402-enabled APIs
 ---
 
-# Introduction to Agentic Access
+# Agentic Access: Introduction
 
 x402 Studio enables AI agents to discover, evaluate, and pay for API access automatically, without human intervention.
 
@@ -11,10 +11,10 @@ x402 Studio enables AI agents to discover, evaluate, and pay for API access auto
 
 Agentic access means your API can be called by autonomous systems (AI agents, automated scripts, bots) that:
 
-1. **Discover** – Find your API and understand its pricing
-2. **Evaluate** – Decide if the price is worth paying
-3. **Pay** – Submit payment cryptographically
-4. **Access** – Receive the response after payment verification
+1.  **Discover** – Find your API and understand its pricing
+2.  **Evaluate** – Decide if the price is worth paying
+3.  **Pay** – Submit payment cryptographically
+4.  **Access** – Receive the response after payment verification
 
 All of this happens in a single request-response cycle.
 
@@ -29,9 +29,19 @@ Client → Server: GET /api/data + X-Payment header
 Server → Client: 200 OK + actual response
 ```
 
-## Why Use x402 for Agents?
+## Documentation Sections
 
-- **Automatic Discovery**: Agents don't need documentation. They call your endpoint and receive machine-readable payment instructions.
-- **Instant Payment**: No invoices, no approval workflows. The agent signs a transaction and includes it with the request.
-- **Multi-Chain**: Agents can pay on whichever chain has their funds: Base or Solana.
-- **Credit Efficiency**: For high-volume agents, credit-based pricing reduces per-call overhead.
+<CardGroup cols={2}>
+  <Card title="Pay-Per-Request" href="/docs/agentic-access/pay-per-request" icon="money-bill">
+    Implementation details for the Request-402-Pay flow.
+  </Card>
+  <Card title="Credit-Based Access" href="/docs/agentic-access/credit-based" icon="credit-card">
+    High-performance credit consumption protocol.
+  </Card>
+  <Card title="Marketplace API" href="/docs/agentic-access/marketplace" icon="shop">
+    Discovery and metadata resolution for agents.
+  </Card>
+  <Card title="Agent Management" href="/docs/agentic-access/agent-management" icon="robot">
+    Programmatic endpoint creation and control.
+  </Card>
+</CardGroup>

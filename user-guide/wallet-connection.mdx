@@ -1,5 +1,5 @@
 ---
-title: Wallet Connection
+title: Wallet Connection - x402 Studio Docs
 description: How to connect Base and Solana wallets
 ---
 
@@ -9,16 +9,19 @@ x402 Studio uses crypto wallets for authentication and receiving payments. Conne
 
 ## Supported Wallets
 
-### Base (EVM)
-- **Coinbase Wallet** - Direct integration
-- **MetaMask** - RainbowKit modal
-- **WalletConnect** - RainbowKit modal
-- **Rainbow** - RainbowKit modal
-
-### Solana
-- **Phantom** - Native adapter
-- **Solflare** - Native adapter
-- **Backpack** - Native adapter
+<CardGroup cols={2}>
+  <Card title="Base (EVM)">
+    *   Coinbase Wallet - Direct integration
+    *   MetaMask - RainbowKit modal
+    *   WalletConnect - RainbowKit modal
+    *   Rainbow - RainbowKit modal
+  </Card>
+  <Card title="Solana">
+    *   Phantom - Native adapter
+    *   Solflare - Native adapter
+    *   Backpack - Native adapter
+  </Card>
+</CardGroup>
 
 ## Connecting Your Wallet
 
@@ -35,12 +38,17 @@ Your wallet will ask you to connect and sign a message to prove ownership. No tr
 
 You can connect wallets from different chains to the same account:
 
-1. Go to **Dashboard → Settings**
-2. Add additional wallets
-3. Choose which wallet receives payments for each endpoint
+1.  Go to **Dashboard → Settings**
+2.  Add additional wallets
+3.  Choose which wallet receives payments for each endpoint
 
 ## Troubleshooting
 
-- **Wallet not showing up?** Make sure your wallet extension is installed and unlocked. Try refreshing the page.
-- **Connection rejected?** Look for a popup in your wallet that may be hidden. Some wallets require manual approval.
-- **Wrong network?** Open your wallet, switch to Base Mainnet or Solana Mainnet, then reconnect.
+### Wallet not showing up?
+Make sure your wallet extension is installed and unlocked. Try refreshing the page.
+
+### Connection rejected?
+Look for a popup in your wallet that may be hidden. Some wallets require manual approval.
+
+### Wrong network?
+Open your wallet, switch to Base Mainnet or Solana Mainnet, then reconnect.

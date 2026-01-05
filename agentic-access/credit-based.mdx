@@ -1,0 +1,133 @@
+---
+title: Credit-Based Access - x402 Studio
+description: High-performance access protocol using prepaid credits
+---
+
+# Credit-Based Access
+
+<div className="flex items-center gap-3 mb-6">
+  <span className="bg-green-50 dark:bg-green-900/10 text-green-600 border-green-500 border px-2 py-1 rounded text-sm font-medium">Mode: Credits</span>
+</div>
+
+For high-frequency or latency-sensitive interactions, agents should utilize **Credit-Based** endpoints.
+
+Instead of signing and broadcasting a blockchain transaction for every single request, agents can pre-purchase "Credit Packs" and consume them instantly with a simple header.
+
+---
+
+## The Protocol
+
+### Why use Credits?
+
+*   ⚡ **Zero Latency:** No waiting for block confirmations. Responses are sub-millisecond.
+*   📉 **Zero Gas Fees:** Pay gas only once when topping up credits.
+*   🤖 **Simpler Logic:** No complex transaction signing loop for every call.
+
+### The Header
+
+The only requirement is to identify the agent's wallet address.
+
+```text
+x-wallet-address: 0xYourWalletAddress...
+```
+
+## Checking Balance
+
+Agents should periodically check their credit balance to ensure uninterrupted service.
+
+**GET** `https://api.x402layer.cc/api/credits/balance`
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.x402layer.cc/api/credits/balance?endpoint=target-endpoint-slug" \
+  -H "x-wallet-address: 0xAgentAddress..."
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.x402layer.cc/api/credits/balance",
+    params={"endpoint": "target-endpoint-slug"},
+    headers={"x-wallet-address": "0xAgentAddress..."}
+)
+print(response.json())
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.x402layer.cc/api/credits/balance?endpoint=target-endpoint-slug", 
+  {
+    headers: { "x-wallet-address": "0xAgentAddress..." }
+  }
+);
+const balance = await response.json();
+```
+</CodeGroup>
+
+#### Example Response
+
+```json
+{
+  "credits": 4500,
+  "endpoint": "target-endpoint-slug"
+}
+```
+
+## Consuming Credits
+
+To consume the endpoint, simply make the request with the wallet header. No 402 negotiation is required unless credits are insufficient.
+
+<CodeGroup>
+```javascript JavaScript/Node
+async function callCreditEndpoint(url, agentWallet) {
+    const response = await fetch(url, {
+        method: 'POST', // or GET
+        headers: {
+            'Content-Type': 'application/json',
+            'x-wallet-address': agentWallet 
+        },
+        body: JSON.stringify({ prompt: "Hello AI" })
+    });
+
+    if (response.status === 402) {
+        // Handle Insufficient Credits
+        // The body will contain the standard 402 payment challenge
+        const challenge = await response.json();
+        console.log("Need to top up!", challenge);
+        return;
+    }
+
+    const data = await response.json();
+    return data;
+}
+```
+
+```python Python
+import requests
+
+def call_credit_endpoint(url, agent_wallet):
+    response = requests.post(
+        url,
+        json={"prompt": "Hello AI"},
+        headers={"x-wallet-address": agent_wallet}
+    )
+    
+    if response.status_code == 402:
+        print("Need to top up!", response.json())
+        return None
+        
+    return response.json()
+```
+</CodeGroup>
+
+## Topping Up
+
+When credits run low (or if a request returns 402), agents can purchase "Credit Packs".
+Currently, this is done via the **Purchase URL** returned in the 402 response or via the Dashboard UI.
+
+> **🚧 Programmatic Top-Up**
+>
+> Direct programmatic top-up via the 402 protocol (sending a payment to "buy credits") matches the standard [Pay-Per-Request](/docs/agentic-access/pay-per-request) flow.
+>
+> Simply target the `purchaseUrl` endpoint with a Pay-Per-Request transaction to fund the balance.

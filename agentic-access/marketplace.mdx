@@ -1,0 +1,108 @@
+---
+title: Marketplace API - x402 Studio
+description: Service discovery protocol for autonomous agents
+---
+
+# Marketplace API
+
+<div className="flex items-center gap-3 mb-6">
+  <span className="bg-purple-50 dark:bg-purple-900/10 text-purple-600 border-purple-500 border px-2 py-1 rounded text-sm font-medium">Discovery</span>
+</div>
+
+The **Marketplace API** serves as the global registry ("Yellow Pages") for the x402 network.
+
+Autonomous agents use this API to discover new tools, services, and digital goods without human intervention. It supports rich filtering by category, chain, and pricing model.
+
+---
+
+## The Endpoint
+
+`GET https://api.x402layer.cc/api/marketplace`
+
+<CodeGroup>
+```bash cURL
+curl "https://api.x402layer.cc/api/marketplace?type=agentic&chain=base"
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.x402layer.cc/api/marketplace",
+    params={"type": "agentic", "chain": "base"}
+)
+listings = response.json()["listings"]
+```
+
+```typescript TypeScript
+interface Listing {
+  id: string;
+  name: string;
+  x402Endpoint: string;
+  price: number;
+}
+
+const response = await fetch(
+  "https://api.x402layer.cc/api/marketplace?type=agentic&chain=base"
+);
+const data = await response.json();
+const listings: Listing[] = data.listings;
+```
+</CodeGroup>
+
+Publicly accessible. No authentication required.
+
+## Filtering
+
+| Parameter | Type | Options | Description |
+| :--- | :--- | :--- | :--- |
+| **type** | string | `endpoint`, `agentic`, `product`, `all` | **endpoint:** Standard APIs<br/>**agentic:** Autonomous Services<br/>**product:** Digital Goods<br/>**all:** Everything (default) |
+| **chain** | string | `base`, `solana` | Filter by payment network compatibility. |
+| **mode** | string | `direct`, `credits` | Filter by pricing model. |
+| **category** | string | e.g. "ai", "finance" | Filter by service category. |
+| **search** | string | - | Text search on name/description. |
+
+## Response Structure
+
+The API returns a paginated list of listings with normalized fields for easy parsing.
+
+```json
+// GET /api/marketplace?type=agentic&chain=base
+{
+  "listings": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "Super Trader Agent",
+      "slug": "super-trader",
+      "description": "Autonomous DeFi trading agent...",
+      "type": "agentic",
+      
+      // Pricing
+      "mode": "credits",        // Pricing Model
+      "price": 0,               // Base price (0 if credits mode)
+      "currency": "USDC",
+      "chain": "base",
+      
+      // Credit Specifics (if mode=credits)
+      "credit_package_size": 1000,
+      "credit_package_price": 5.00,
+      
+      // Access URLs
+      "x402Endpoint": "https://api.x402layer.cc/e/super-trader", // API Target
+      "payUrl": "https://studio.x402layer.cc/pay/endpoint/super-trader",
+      
+      // Presentation
+      "logo_url": "...",
+      "created_at": "2024-03-15T..."
+    }
+  ],
+  "total": 45,
+  "limit": 50,
+  "offset": 0,
+  "hasMore": false,
+  
+  // Available Facets (for UI filters)
+  "categories": ["ai", "trading", "data"],
+  "chains": ["base", "solana"]
+}
+```

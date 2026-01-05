@@ -1,0 +1,132 @@
+---
+title: Components Library - x402 Studio Docs
+description: Embeddable payment widgets for your website
+---
+
+# Components Library
+
+x402 Studio offers ready-to-use payment components you can embed directly into your website. Each component creates x402 endpoints automatically and handles crypto payments seamlessly.
+
+> **Requirement:** Components are available on Pro and Business plans only.
+>
+> Business plan users can hide the x402 branding from their components.
+
+## Available Components
+
+<CardGroup cols={2}>
+  <Card title="Subscription Modal" icon="credit-card">
+    Multi-tier recurring subscription with monthly/yearly toggle. Creates separate endpoints for each billing cycle.
+    
+    **Best for:** SaaS products, premium memberships, API access tiers
+  </Card>
+  <Card title="Payment Cards" icon="tag">
+    Beautiful pricing cards for one-time purchases. Each tier creates one x402 endpoint.
+    
+    **Best for:** Digital products, software licenses, courses
+  </Card>
+  <Card title="Credit Packs" icon="coins">
+    Sell credit bundles for API usage. Users buy credits and consume them across your endpoints.
+    
+    **Best for:** API products, metered services, token-based access
+  </Card>
+  <Card title="Buy Me a Coffee" icon="mug-hot">
+    Accept tips and donations with preset or custom amounts. Single flexible endpoint.
+    
+    **Best for:** Content creators, open source projects, community support
+  </Card>
+</CardGroup>
+
+## Creating a Component
+
+All components follow a simple 3-step wizard:
+
+### 1. Design Your Component
+Customize the appearance: titles, subtitles, pricing tiers, features, and button text. See your changes in the live preview as you edit.
+*   Set tier names and pricing (monthly/yearly for subscriptions)
+*   Add feature lists for each tier
+*   Mark tiers as "Popular" to highlight them
+*   Toggle the x402 branding (Business plan only)
+
+### 2. Create x402 Endpoints
+Each tier automatically creates x402 payment endpoints. You just need to:
+*   Choose a unique slug for each endpoint (e.g., `my-saas-pro-monthly`)
+*   Select your payment network (Base or Solana)
+*   Your default wallet is used automatically
+
+> **Note:** Subscription components create 2 endpoints per tier (monthly + yearly). Make sure you have enough endpoint quota.
+
+### 3. Get Your Embed Code
+Once created, you'll receive embed codes to add to your website:
+
+**iframe Embed (Recommended)**
+```html
+<iframe
+  src="https://studio.x402layer.cc/embed/abc123xy"
+  width="100%"
+  height="600"
+  frameborder="0"
+  style="border: none; border-radius: 16px;"
+></iframe>
+```
+
+**Script Embed**
+```html
+<script src="https://studio.x402layer.cc/embed/abc123xy.js"></script>
+<div id="x402-subscription"></div>
+```
+
+## Managing Components
+
+After creating components, manage them from **Dashboard → Components**:
+*   **View Transactions:** See all payments received through your component endpoints, with wallet addresses and amounts.
+*   **Export Data:** Download transaction history as CSV for accounting and analytics.
+*   **Toggle Active Status:** Quickly enable or disable a component without deleting it.
+*   **Copy Embed Code:** Quick access to copy your embed code from the component list.
+
+## Component Types Deep Dive
+
+### Subscription Modal
+Perfect for SaaS and recurring revenue. Users see a modal with your pricing tiers and can toggle between monthly and yearly billing.
+
+**Endpoints created:**
+*   2 per tier (monthly + yearly)
+*   Example: 3 tiers = 6 endpoints
+
+### Payment Cards
+One-time purchase cards, great for digital products or lifetime access. Clean, minimal design.
+
+**Endpoints created:**
+*   1 per tier (fixed price)
+*   Example: 3 tiers = 3 endpoints
+
+### Credit Packs
+Sell credit bundles that users can consume across your API. Great for usage-based pricing models.
+
+**Endpoints created:**
+*   1 per pack size
+*   Supports bonus credits (e.g., +20% bonus on larger packs)
+
+### Buy Me a Coffee
+Accept tips and donations. Supporters can choose preset amounts or enter custom values.
+
+**Endpoints created:**
+*   1 flexible-amount endpoint
+*   Accepts any amount (with optional minimum)
+
+## Plan Limits
+
+| Feature | Free | Pro | Business |
+| :--- | :--- | :--- | :--- |
+| **Component Access** | - | All components | All components |
+| **Max Endpoints** | 3 | 10 | Unlimited |
+| **Hide x402 Branding** | - | - | Yes |
+
+## Quick Start Checklist
+
+1.  Connect your wallet in Profile settings
+2.  Navigate to Components → Choose your component type
+3.  Design your pricing tiers and customize the appearance
+4.  Create unique slugs for your endpoints
+5.  Copy the embed code and add to your website
+6.  Test the payment flow with a small amount
+7.  Monitor transactions in Dashboard → Components

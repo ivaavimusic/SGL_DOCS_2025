@@ -1,0 +1,280 @@
+---
+title: Pay-Per-Request - x402 Studio
+description: Protocol guide for Pay-Per-Request agent interactions
+---
+
+# Pay-Per-Request
+
+<div className="flex items-center gap-3 mb-6">
+  <span className="bg-blue-50 dark:bg-blue-900/10 text-blue-600 border-blue-500 border px-2 py-1 rounded text-sm font-medium">Mode: Direct</span>
+</div>
+
+In the **Pay-Per-Request** (or "Direct") model, agents pay for each individual API call or digital good download at the moment of request.
+
+This flow uses the standard `HTTP 402 Payment Required` status code to negotiate payment.
+
+---
+
+## Interaction Cycle
+
+### 1. The "Naïve" Request
+
+The agent attempts to access the resource or API endpoint without any payment headers.
+
+```bash
+curl -X GET https://api.x402layer.cc/e/super-ai-trader
+```
+
+### 2. The 402 Challenge
+
+The server negotiates by returning `402 Payment Required` and a JSON body detailing the price, asset, and destination.
+
+```json
+// HTTP 402 Payment Required
+{
+  "x402Version": 1,
+  "accepts": [
+    {
+      "network": "base",                 // or "solana"
+      "asset": "base:8453/erc20:0x...", // Token Identifier
+      "chainId": 8453,
+      "payTo": "0x742d35Cc6...",        // Destination Wallet
+      "maxAmountRequired": "1000000",   // Amount in lowest unit (e.g. Wei/Lamports)
+      "purchaseUrl": "..."              // Human page fallback
+    }
+  ]
+}
+```
+
+### 3. The Authorized Request
+
+The agent constructs and signs a transaction matching the requirements, then resends the request with the `X-Payment` header.
+
+```bash
+curl -X GET https://api.x402layer.cc/e/super-ai-trader \
+  -H "X-Payment: eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoiZXhhY3QiLi4ufQ=="
+```
+
+## Transaction Construction
+
+The critical step is building the correct transaction. The format differs strictly between EVM (Base) and Solana.
+
+<Tabs>
+  <Tab title="Base (EVM)">
+    **Rule:** You MUST construct an `ERC-20 transfer` of the specified asset (USDC). Native ETH transfers are ignored.
+
+    <CodeGroup>
+    ```python Python
+    # Python (Web3.py)
+
+    # 1. Parse 'asset' from 402 response
+    # Format: "base:8453/erc20:0x..."
+    token_address = accept['asset'].split(':')[-1]
+
+    # 2. Build ERC-20 Transfer
+    contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
+    tx = contract.functions.transfer(
+        accept['payTo'],               # Destination from 402
+        int(accept['maxAmountRequired']) # Amount from 402
+    ).build_transaction({
+        'chainId': 8453,
+        'gas': 100000,
+        'nonce': w3.eth.get_transaction_count(agent_address),
+        'gasPrice': w3.eth.gas_price
+    })
+
+    # 3. Sign locally
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+
+    # 4. Serialize for Header
+    raw_hex = signed_tx.rawTransaction.hex() # "0x..."
+    ```
+
+    ```typescript TypeScript
+    // TypeScript (Viem)
+
+    // 1. Parse Asset
+    const tokenAddress = accept.asset.split(':').pop() as `0x${string}`;
+
+    // 2. Prepare Transaction Request
+    const request = await walletClient.prepareTransactionRequest({
+      account,
+      to: tokenAddress,
+      data: encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'transfer',
+        args: [
+          accept.payTo as `0x${string}`,
+          BigInt(accept.maxAmountRequired)
+        ]
+      }),
+      chain: base
+    });
+
+    // 3. Sign
+    const signedTx = await walletClient.signTransaction(request);
+
+    // 4. Use in header
+    // signedTx is already the hex string
+    ```
+
+    ```javascript Node.js
+    // Node.js (Ethers.js v6)
+
+    // 1. Parse Asset
+    const tokenAddress = accept.asset.split(':').pop();
+
+    // 2. Build Transaction
+    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
+    // Populate the transaction object without sending
+    const tx = await contract.transfer.populateTransaction(
+        accept.payTo,
+        accept.maxAmountRequired
+    );
+
+    // 3. Sign
+    // Need to explicitly sign the populated tx
+    const signedTx = await wallet.signTransaction({
+        ...tx,
+        chainId: 8453,
+        nonce: await wallet.getNonce(),
+        gasLimit: 100000n,
+        gasPrice: (await provider.getFeeData()).gasPrice
+    });
+
+    // 4. Use in header
+    // signedTx is the hex string
+    ```
+    </CodeGroup>
+  </Tab>
+  <Tab title="Solana">
+    **Critical:** The transaction MUST contain exact instructions in this order:
+    1.  ComputeBudget: setComputeUnitLimit
+    2.  ComputeBudget: setComputeUnitPrice
+    3.  SPL Token: transferChecked
+
+    <CodeGroup>
+    ```typescript TypeScript
+    import { 
+      Transaction, 
+      ComputeBudgetProgram, 
+      PublicKey 
+    } from '@solana/web3.js';
+    import { createTransferCheckedInstruction } from '@solana/spl-token';
+
+    // 1. Get Mint Address
+    // Format: "solana:mainnet/spl-token:EPj..."
+    const mint = new PublicKey(accept.asset.split(':').pop());
+
+    // 2. Build Transaction
+    const tx = new Transaction();
+
+    // IX 1: Compute Limit (Required)
+    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }));
+
+    // IX 2: Priority Fee (Required)
+    tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1000 }));
+
+    // IX 3: SPL Transfer (Required)
+    tx.add(createTransferCheckedInstruction(
+        sourceAta,      // Agent's ATA
+        mint,           // USDC Mint
+        destAta,        // Destination ATA (derive from accept.payTo)
+        agentPubkey,    // Owner
+        BigInt(accept.maxAmountRequired),
+        6               // Decimals (USDC = 6)
+    ));
+
+    // 3. Serialize
+    // Must require all signatures to be falsy since we haven't signed yet if using partial sign, 
+    // or sign first then serialize. Use { requireAllSignatures: false } if simulating.
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    tx.sign(agentKeypair);
+
+    const serialized = tx.serialize().toString('base64');
+    ```
+
+    ```python Python
+    from solana.transaction import Transaction
+    from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
+    from spl.token.instructions import transfer_checked, TransferCheckedParams
+
+    # 1. Prepare Instructions
+    ix1 = set_compute_unit_limit(200_000)
+    ix2 = set_compute_unit_price(1_000)
+    ix3 = transfer_checked(
+        TransferCheckedParams(
+            program_id=TOKEN_PROGRAM_ID,
+            source=source_ata,
+            mint=mint_pubkey,
+            dest=dest_ata,
+            owner=agent_keypair.pubkey(),
+            amount=int(accept['maxAmountRequired']),
+            decimals=6
+        )
+    )
+
+    # 2. Build Transaction
+    tx = Transaction()
+    tx.add(ix1, ix2, ix3)
+
+    # 3. Sign & Serialize
+    tx.recent_blockhash = client.get_latest_blockhash().value.blockhash
+    tx.sign(agent_keypair)
+
+    # x402 expects base64 string
+    import base64
+    serialized = base64.b64encode(tx.serialize()).decode('utf-8')
+    ```
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+## x-Payment Header
+
+Once you have the serialized, signed transaction (hex for EVM, base64 for Solana), wrap it in the payment object and Base64 encode the whole thing.
+
+```json
+// The JSON Object
+{
+  "x402Version": 1,
+  "scheme": "exact",
+  "network": "base", // or "solana"
+  "payload": {
+    "serializedTransaction": "0x..." // or base64 string for solana
+  }
+}
+
+// Final Header Value
+// Base64(JSON_String)
+// Note: This string below is a truncated example for illustration
+X-Payment: eyJ4NDAyVmVyc2lvbiI6MSwic2NoZW1lIjoiZXhhY3QiLCJuZXR3b3JrIjoi...
+```
+
+## Consuming the Response
+
+### 🔌 API Endpoints
+If you paid for an API call, the response will be the actual API data served by the origin.
+
+```json
+// 200 OK
+{
+  "result": "Analysis complete",
+  "confidence": 0.98,
+  "data": { ... }
+}
+```
+
+### 📦 Digital Products
+If you paid for a Product (Digital Good), the response will contain specific access fields.
+
+```json
+// 200 OK
+{
+  "product": {
+     "id": "...",
+     "name": "Ebook.pdf"
+  },
+  "content": "https://download-link..."
+}
+```

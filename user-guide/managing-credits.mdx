@@ -1,0 +1,61 @@
+---
+title: Managing Credits - x402 Studio Docs
+description: Set up credit-based pricing for your endpoints
+---
+
+# Managing Credits
+
+Credits provide a flexible pricing model where users purchase credit packs upfront and consume credits per API call.
+
+## How Credits Work
+
+1.  **You set** how many credits each API call costs
+2.  **Users buy** credit packs at prices you define
+3.  **Credits are consumed** automatically with each request
+4.  **Users see** their remaining balance and can top up anytime
+
+## Setting Up Credit Packages
+
+Define packages users can purchase:
+
+| Package | Credits | Price |
+| :--- | :--- | :--- |
+| Starter Pack | 100 credits | $1 |
+| Standard Pack | 1,000 credits | $8 |
+| Pro Pack | 10,000 credits | $50 |
+
+> Tip: Offer discounts for larger packs to encourage upfront purchases.
+
+## Checking Credit Balance
+
+Users can check their balance via the API:
+
+```bash
+curl -X GET "https://api.x402layer.cc/api/credits/balance" \
+  -H "x-wallet-address: 0xYourWallet..."
+```
+
+```json Response
+{
+  "credits": 850,
+  "endpoint": "your-slug"
+}
+```
+
+## Using Credits (For API Callers)
+
+When making API calls with credits, include your wallet address:
+
+```bash
+curl "https://api.x402layer.cc/api/public/endpoints/your-slug" \
+  -H "x-wallet-address: 0x742d35Cc6634C0532925a3b844Bc9e7595f2bD87"
+```
+
+If you have sufficient credits, the request goes through. Otherwise, you receive a `402` response prompting credit purchase.
+
+## Best Practices
+
+*   **Start with simple pricing** – 1 credit = 1 cent makes math easy
+*   **Offer volume discounts** – Encourage larger purchases with 10-20% off
+*   **Monitor usage patterns** – Adjust pricing based on actual consumption
+*   **Communicate clearly** – Show exact credit cost before users call your API

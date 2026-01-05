@@ -1,5 +1,5 @@
 ---
-title: Creating Endpoints
+title: Creating Endpoints - x402 Studio Docs
 description: How to create and configure paid API endpoints
 ---
 
@@ -9,17 +9,20 @@ Endpoints are the core of x402 Studio. They turn your APIs into paid services th
 
 ## Endpoint Types
 
-### Pay-Per-Request
-Charge a fixed price for each API call. Best for:
-- High-value API responses
-- Compute-intensive operations
-- Premium data access
-
-### Credit-Based
-Sell credit packs upfront. Best for:
-- High-volume APIs
-- Subscription-like access
-- Lighter per-call pricing
+<CardGroup cols={2}>
+  <Card title="Pay-Per-Request">
+    Charge a fixed price for each API call. Best for:
+    *   High-value API responses
+    *   Compute-intensive operations
+    *   Premium data access
+  </Card>
+  <Card title="Credit-Based">
+    Sell credit packs upfront. Best for:
+    *   High-volume APIs
+    *   Subscription-like access
+    *   Lighter per-call pricing
+  </Card>
+</CardGroup>
 
 ## Creating a New Endpoint
 
@@ -29,10 +32,10 @@ Go to **Dashboard → Endpoints** and click **New Endpoint**.
 ### Step 2: Basic Information
 
 | Field | Description |
-|---|---|
-| Name | A descriptive name for your endpoint |
-| Description | What this endpoint does (shown to users) |
-| Origin URL | Your actual API endpoint URL |
+| :--- | :--- |
+| **Name** | A descriptive name for your endpoint |
+| **Description** | What this endpoint does (shown to users) |
+| **Origin URL** | Your actual API endpoint URL |
 
 ### Step 3: Set Your Payout Address
 Enter the wallet address where you want to receive payments:
@@ -42,6 +45,46 @@ Enter the wallet address where you want to receive payments:
 ```
 
 > ⚠️ Double-check this address. Payments are irreversible once sent.
+
+## Origin Protection (API Key Security)
+
+> **Important:** When you create an endpoint, x402 Studio generates an **Origin Protection Key** (API Key). This key is used by the x402 Gateway to authenticate requests to your origin server.
+>
+> **Without proper API key validation, your endpoint will not accept payments.** The gateway performs a health check before allowing payments, and if your origin returns a 401/403 error, the payment button will be disabled.
+
+### How It Works
+1.  When you create an endpoint, an API key is generated and shown once
+2.  Add this key to your server's environment variables (e.g., `X402_API_KEY`)
+3.  Your server must validate incoming requests using this key
+4.  The x402 Gateway sends the key in the `X-API-Key` header
+
+### Server-Side Validation Examples
+
+<CodeGroup>
+```javascript Express Middleware
+// Node.js / Express
+app.use((req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.X402_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
+```
+
+```python Flask Middleware
+# Python / Flask
+from flask import request, jsonify
+
+@app.before_request
+def check_api_key():
+    api_key = request.headers.get('X-API-Key')
+    if api_key != os.environ.get('X402_API_KEY'):
+        return jsonify({'error': 'Unauthorized'}), 401
+```
+</CodeGroup>
+
+> **Public Endpoints:** If you don't want to require API key validation (e.g., your API is already public), you can disable the "Require API Key" toggle when creating the endpoint. However, this means anyone who discovers your origin URL can access it without payment.
 
 ## Testing Your Endpoint
 
@@ -56,7 +99,18 @@ curl https://api.x402layer.cc/api/public/endpoints/your-slug
 
 ## Managing Endpoints
 From the Dashboard, you can:
-- **Edit** – Update pricing, origin URL, or settings
-- **Pause** – Temporarily disable the endpoint
-- **Delete** – Permanently remove the endpoint
-- **View Analytics** – See payment history and usage stats
+*   **Edit** – Update pricing, origin URL, or settings
+*   **Pause** – Temporarily disable the endpoint
+*   **Delete** – Permanently remove the endpoint
+*   **View Analytics** – See payment history and usage stats
+
+## 🤖 AI Integration Helper
+
+> **Don't know how to use your API key?** After creating an endpoint, you'll see a purple card with a "Copy AI Integration Prompt" button.
+>
+> Click it to copy a pre-written prompt, then paste it into any AI assistant:
+> *   **Cursor** – Paste in chat to generate integration code
+> *   **ChatGPT / Claude** – Get step-by-step integration help
+> *   **GitHub Copilot** – Use as context for code suggestions
+>
+> 💡 This is the easiest way to integrate x402 payments into your project with zero coding knowledge!
