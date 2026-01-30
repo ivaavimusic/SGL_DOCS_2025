@@ -24,6 +24,7 @@ The full Python source code for all scripts is available in this repository: [Vi
     | `pay_base.py` | Pay for endpoints on Base (100% reliable) | [View Code](./scripts/pay_base.py) |
     | `pay_solana.py` | Pay for endpoints on Solana (with retry) | [View Code](./scripts/pay_solana.py) |
     | `consume_credits.py` | Use pre-purchased credits (fastest) | [View Code](./scripts/consume_credits.py) |
+    | `consume_product.py` | Purchase digital products (files) | [View Code](./scripts/consume_product.py) |
     | `check_credits.py` | Check your credit balance | [View Code](./scripts/check_credits.py) |
     | `recharge_credits.py` | Buy credit packs for an endpoint | [View Code](./scripts/recharge_credits.py) |
     | `discover_marketplace.py` | Browse available services | [View Code](./scripts/discover_marketplace.py) |
@@ -148,7 +149,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.0.0 |
+| **Version** | 1.0.1 |
 | **Networks** | Base (EVM), Solana |
 | **Currency** | USDC |
 
@@ -159,7 +160,12 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [Marketplace](https://studio.x402layer.cc/marketplace)
 - [GitHub Repository](https://github.com/ivaavimusic/x402-layer-skill)
 
-## Changelog (v1.0.0)
+## Changelog
+
+### v1.0.1
+- **New Script:** `consume_product.py` - Purchase and download digital products
+
+### v1.0.0
 
 Initial release with full x402 Agentic Access API integration:
 
