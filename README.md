@@ -5,6 +5,16 @@
 </p>
 
 <p align="center">
+  <a href="https://www.clawhub.ai/ivaavimusic/x402-layer">
+    <img src="https://img.shields.io/badge/ClawdHub_Skill-Install_Now-orange?style=for-the-badge&logo=box&logoColor=white" alt="ClawdHub Skill" />
+  </a>
+  <br/>
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/Network-Base-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Network: Base" />
+  <img src="https://img.shields.io/badge/Network-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Network: Solana" />
+</p>
+
+<p align="center">
   <strong>Internet's unified commerce layer for Homo-Agentic economy.</strong><br/>
   Powered by <a href="https://ehlabs.xyz">EventHorizon Labs</a>
 </p>
