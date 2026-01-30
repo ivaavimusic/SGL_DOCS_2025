@@ -8,8 +8,37 @@ description: Production-ready skill for OpenClaw agents to interact with x402 Si
 The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to interact with x402 Singularity Layer for autonomous API monetization and consumption.
 
 <Note>
-  This skill is production-ready and has been tested with real USDC payments on Base network.
+  This skill is production-ready and has been tested with real payments on **Base (EVM)** and **Solana** networks.
 </Note>
+
+## Script Source Code
+
+The full Python source code for all scripts is available in this repository: [View Scripts Folder](./scripts/)
+
+<Tabs>
+  <Tab title="Consumer Mode">
+    Scripts for **buying** services from the marketplace:
+
+    | Script | Purpose | Source |
+    |--------|---------|--------|
+    | `pay_base.py` | Pay for endpoints on Base (100% reliable) | [View Code](./scripts/pay_base.py) |
+    | `pay_solana.py` | Pay for endpoints on Solana (with retry) | [View Code](./scripts/pay_solana.py) |
+    | `consume_credits.py` | Use pre-purchased credits (fastest) | [View Code](./scripts/consume_credits.py) |
+    | `check_credits.py` | Check your credit balance | [View Code](./scripts/check_credits.py) |
+    | `recharge_credits.py` | Buy credit packs for an endpoint | [View Code](./scripts/recharge_credits.py) |
+    | `discover_marketplace.py` | Browse available services | [View Code](./scripts/discover_marketplace.py) |
+  </Tab>
+  <Tab title="Provider Mode">
+    Scripts for **selling** services and managing endpoints:
+
+    | Script | Purpose | Source |
+    |--------|---------|--------|
+    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) | [View Code](./scripts/create_endpoint.py) |
+    | `manage_endpoint.py` | View/update your endpoints | [View Code](./scripts/manage_endpoint.py) |
+    | `topup_endpoint.py` | Add credits to YOUR endpoint | [View Code](./scripts/topup_endpoint.py) |
+    | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](./scripts/list_on_marketplace.py) |
+  </Tab>
+</Tabs>
 
 ## Quick Start
 
@@ -32,33 +61,6 @@ export WALLET_ADDRESS="0x..."
 # For Solana (Optional)
 export SOLANA_SECRET_KEY="[1,2,3,...]"  # JSON array
 ```
-
-## Available Scripts
-
-<Tabs>
-  <Tab title="Consumer Mode">
-    Scripts for **buying** services from the marketplace:
-
-    | Script | Purpose |
-    |--------|---------|
-    | `pay_base.py` | Pay for endpoints on Base network (100% reliable) |
-    | `pay_solana.py` | Pay for endpoints on Solana network (with retry) |
-    | `consume_credits.py` | Use pre-purchased credits (fastest) |
-    | `check_credits.py` | Check your credit balance |
-    | `recharge_credits.py` | Buy credit packs for an endpoint |
-    | `discover_marketplace.py` | Browse available services |
-  </Tab>
-  <Tab title="Provider Mode">
-    Scripts for **selling** services and managing endpoints:
-
-    | Script | Purpose |
-    |--------|---------|
-    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) |
-    | `manage_endpoint.py` | View/update your endpoints |
-    | `topup_endpoint.py` | Add credits to YOUR endpoint |
-    | `list_on_marketplace.py` | Publish endpoint publicly |
-  </Tab>
-</Tabs>
 
 ## Usage Examples
 
