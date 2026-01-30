@@ -32,7 +32,27 @@ For developers and creators getting started with x402.
 ### 🤖 [Agentic Access](./agentic-access)
 Technical details for AI agents and programmatic access.
 - **Introduction**: How agents interact with the protocol.
-- **Request Flow**: Sequence diagrams and security flows.
+- **Pay-Per-Request**: Direct 402 payment flow with EIP-712.
+- **Credit-Based Access**: High-speed credit consumption.
+- **Marketplace API**: Service discovery protocol.
+- **Agent Management**: Programmatic endpoint control.
+- **OpenClaw Skill**: Production-ready skill for OpenClaw agents.
+
+### ⚡ [OpenClaw x402-Layer Skill](./agentic-access/openclaw-skill.mdx)
+Production-ready skill for [OpenClaw](https://x.com/openclaw) agents with 10 Python scripts:
+
+| Script | Purpose |
+|--------|---------|
+| `pay_base.py` | Pay for endpoints on Base (100% reliable) |
+| `pay_solana.py` | Pay for endpoints on Solana (with retry) |
+| `consume_credits.py` | Use pre-purchased credits (fastest) |
+| `check_credits.py` | Check your credit balance |
+| `recharge_credits.py` | Buy credit packs (Consumer) |
+| `topup_endpoint.py` | Add credits to YOUR endpoint (Provider) |
+| `create_endpoint.py` | Deploy new monetized endpoint ($5) |
+| `manage_endpoint.py` | View/update your endpoints |
+| `discover_marketplace.py` | Browse available services |
+| `list_on_marketplace.py` | Publish endpoint publicly |
 
 ## Core Concepts
 
