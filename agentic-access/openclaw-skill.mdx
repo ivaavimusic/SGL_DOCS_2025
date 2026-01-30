@@ -1,0 +1,167 @@
+---
+title: OpenClaw x402-Layer Skill - x402 Studio Docs
+description: Production-ready skill for OpenClaw agents to interact with x402 Singularity Layer
+---
+
+# OpenClaw x402-Layer Skill
+
+The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to interact with x402 Singularity Layer for autonomous API monetization and consumption.
+
+<Note>
+  This skill is production-ready and has been tested with real USDC payments on Base network.
+</Note>
+
+## Quick Start
+
+### Installation
+
+```bash
+# In your OpenClaw agent's skills directory
+git clone https://github.com/ivaavimusic/x402-layer-skill.git x402-layer
+cd x402-layer
+pip install -r requirements.txt
+```
+
+### Environment Setup
+
+```bash
+# For Base (EVM) - Recommended
+export PRIVATE_KEY="0x..."
+export WALLET_ADDRESS="0x..."
+
+# For Solana (Optional)
+export SOLANA_SECRET_KEY="[1,2,3,...]"  # JSON array
+```
+
+## Available Scripts
+
+<Tabs>
+  <Tab title="Consumer Mode">
+    Scripts for **buying** services from the marketplace:
+
+    | Script | Purpose |
+    |--------|---------|
+    | `pay_base.py` | Pay for endpoints on Base network (100% reliable) |
+    | `pay_solana.py` | Pay for endpoints on Solana network (with retry) |
+    | `consume_credits.py` | Use pre-purchased credits (fastest) |
+    | `check_credits.py` | Check your credit balance |
+    | `recharge_credits.py` | Buy credit packs for an endpoint |
+    | `discover_marketplace.py` | Browse available services |
+  </Tab>
+  <Tab title="Provider Mode">
+    Scripts for **selling** services and managing endpoints:
+
+    | Script | Purpose |
+    |--------|---------|
+    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) |
+    | `manage_endpoint.py` | View/update your endpoints |
+    | `topup_endpoint.py` | Add credits to YOUR endpoint |
+    | `list_on_marketplace.py` | Publish endpoint publicly |
+  </Tab>
+</Tabs>
+
+## Usage Examples
+
+### Pay for an Endpoint (Consumer)
+
+```bash
+# Pay with Base (recommended - 100% success rate)
+python scripts/pay_base.py https://api.x402layer.cc/e/weather-data
+
+# Pay with Solana (includes retry logic)
+python scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
+```
+
+### Use Credits (Fastest)
+
+```bash
+# Check balance
+python scripts/check_credits.py weather-data
+
+# Buy credits
+python scripts/recharge_credits.py weather-data pack_100
+
+# Consume with credits (zero blockchain latency)
+python scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
+```
+
+### Create Your Own Endpoint (Provider)
+
+```bash
+# Deploy a monetized endpoint ($5 one-time fee, includes 20K test credits)
+python scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01
+
+# Top up YOUR endpoint with credits
+python scripts/topup_endpoint.py my-api 10  # Add $10 worth
+
+# List on marketplace
+python scripts/list_on_marketplace.py my-api --category ai --description "AI-powered analysis"
+```
+
+### Browse Marketplace
+
+```bash
+# List all services
+python scripts/discover_marketplace.py
+
+# Search by keyword
+python scripts/discover_marketplace.py search weather
+
+# Get featured endpoints
+python scripts/discover_marketplace.py featured
+```
+
+## Technical Details
+
+### Base (EVM) Payments
+
+Uses EIP-712 `TransferWithAuthorization` signatures:
+- Gasless for the payer
+- Facilitator settles on-chain
+- 100% reliable
+
+### Solana Payments
+
+Uses `VersionedTransaction` with `MessageV0`:
+- Facilitator pays gas fees
+- SPL Token `TransferChecked` instruction
+- ~75% success rate (facilitator fee payer infrastructure issue)
+- Retry logic built into the script
+
+<Warning>
+  Solana payments have ~75% success rate due to facilitator-side fee payer infrastructure issues. 
+  Base (EVM) payments are 100% reliable and recommended for production use.
+</Warning>
+
+## Skill Metadata
+
+| Field | Value |
+|-------|-------|
+| **Slug** | `x402-layer` |
+| **Version** | 1.0.0 |
+| **Networks** | Base (EVM), Solana |
+| **Currency** | USDC |
+
+## Resources
+
+- [OpenClaw on X](https://x.com/openclaw)
+- [x402 Studio Dashboard](https://studio.x402layer.cc)
+- [Marketplace](https://studio.x402layer.cc/marketplace)
+- [GitHub Repository](https://github.com/ivaavimusic/x402-layer-skill)
+
+## Changelog (v1.0.0)
+
+Initial release with full x402 Agentic Access API integration:
+
+**Provider Mode:**
+- Deploy monetized endpoints with automatic wallet-to-wallet profit routing
+- Top up credits programmatically
+- List endpoints on public marketplace
+
+**Consumer Mode:**
+- Marketplace discovery with filtering
+- Pay-per-request with EIP-712 permits (Base) and VersionedTransaction (Solana)
+- Credit-based access for zero-latency consumption
+
+**Known Issues:**
+- Solana payments ~75% success rate due to facilitator fee payer infrastructure issue
