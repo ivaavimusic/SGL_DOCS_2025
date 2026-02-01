@@ -5,19 +5,42 @@
 </p>
 
 <p align="center">
-  <a href="https://www.clawhub.ai/ivaavimusic/x402-layer">
-    <img src="https://img.shields.io/badge/ClawdHub_Skill-Install_Now-orange?style=for-the-badge&logo=box&logoColor=white" alt="ClawdHub Skill" />
-  </a>
-  <br/>
-  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/version-1.0.1-blue?style=for-the-badge" alt="Version 1.0.1" />
   <img src="https://img.shields.io/badge/Network-Base-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Network: Base" />
   <img src="https://img.shields.io/badge/Network-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Network: Solana" />
+  <img src="https://img.shields.io/badge/Currency-USDC-2775CA?style=for-the-badge" alt="Currency: USDC" />
 </p>
 
 <p align="center">
   <strong>Internet's unified commerce layer for Homo-Agentic economy.</strong><br/>
   Powered by <a href="https://ehlabs.xyz">EventHorizon Labs</a>
 </p>
+
+---
+
+## 🚀 Quick Install (For AI Agents)
+
+Install the x402-layer skill with a single command:
+
+```bash
+curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash
+```
+
+Or specify a custom directory:
+
+```bash
+curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash -s ./my-skills/x402-layer
+```
+
+### Skill API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| [`/skill/x402-layer`](https://api.x402layer.cc/skill/x402-layer) | JSON manifest with file list |
+| [`/skill/x402-layer/install`](https://api.x402layer.cc/skill/x402-layer/install) | Shell install script |
+| [`/skill/x402-layer/SKILL.md`](https://api.x402layer.cc/skill/x402-layer/SKILL.md) | Main skill instructions |
+| [`/skill/x402-layer/requirements.txt`](https://api.x402layer.cc/skill/x402-layer/requirements.txt) | Python dependencies |
+| `/skill/x402-layer/scripts/{name}.py` | Individual Python scripts |
 
 ---
 
@@ -49,13 +72,14 @@ Technical details for AI agents and programmatic access.
 - **OpenClaw Skill**: Production-ready skill for OpenClaw agents.
 
 ### ⚡ [OpenClaw x402-Layer Skill](./agentic-access/openclaw-skill.mdx)
-Production-ready skill for [OpenClaw](https://x.com/openclaw) agents with 10 Python scripts:
+Production-ready skill for [OpenClaw](https://x.com/openclaw) agents with 11 Python scripts:
 
 | Script | Purpose |
 |--------|---------|
 | `pay_base.py` | Pay for endpoints on Base (100% reliable) |
 | `pay_solana.py` | Pay for endpoints on Solana (with retry) |
 | `consume_credits.py` | Use pre-purchased credits (fastest) |
+| `consume_product.py` | Purchase digital products (files) |
 | `check_credits.py` | Check your credit balance |
 | `recharge_credits.py` | Buy credit packs (Consumer) |
 | `topup_endpoint.py` | Add credits to YOUR endpoint (Provider) |
