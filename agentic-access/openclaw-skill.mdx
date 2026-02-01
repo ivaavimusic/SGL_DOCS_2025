@@ -45,19 +45,22 @@ The full Python source code for all scripts is available in this repository: [Vi
 
 ### Installation
 
-You can install this skill directly via ClawdHub:
+Install directly via our self-hosted endpoint:
 
 ```bash
-# In your OpenClaw agent's skills directory
-claw install https://www.clawhub.ai/ivaavimusic/x402-layer
+# One-line installer (recommended)
+curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash
+
+# Or specify a custom directory
+curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash -s ./my-skills/x402-layer
 ```
 
-Alternatively, clone manually:
+Alternatively, clone from GitHub:
 
 ```bash
-git clone https://github.com/ivaavimusic/x402-layer-skill.git x402-layer
-cd x402-layer
-pip install -r requirements.txt
+git clone https://github.com/ivaavimusic/SGL_DOCS_2025.git
+cd SGL_DOCS_2025/scripts
+pip install -r ../requirements.txt
 ```
 
 ### Environment Setup
