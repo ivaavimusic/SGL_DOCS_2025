@@ -21,23 +21,23 @@ The full Python source code for all scripts is available in this repository: [Vi
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `pay_base.py` | Pay for endpoints on Base (100% reliable) | [View Code](./scripts/pay_base.py) |
-    | `pay_solana.py` | Pay for endpoints on Solana (with retry) | [View Code](./scripts/pay_solana.py) |
-    | `consume_credits.py` | Use pre-purchased credits (fastest) | [View Code](./scripts/consume_credits.py) |
-    | `consume_product.py` | Purchase digital products (files) | [View Code](./scripts/consume_product.py) |
-    | `check_credits.py` | Check your credit balance | [View Code](./scripts/check_credits.py) |
-    | `recharge_credits.py` | Buy credit packs for an endpoint | [View Code](./scripts/recharge_credits.py) |
-    | `discover_marketplace.py` | Browse available services | [View Code](./scripts/discover_marketplace.py) |
+    | `pay_base.py` | Pay for endpoints on Base (100% reliable) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_base.py) |
+    | `pay_solana.py` | Pay for endpoints on Solana (with retry) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_solana.py) |
+    | `consume_credits.py` | Use pre-purchased credits (fastest) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/consume_credits.py) |
+    | `consume_product.py` | Purchase digital products (files) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/consume_product.py) |
+    | `check_credits.py` | Check your credit balance | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/check_credits.py) |
+    | `recharge_credits.py` | Buy credit packs for an endpoint | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/recharge_credits.py) |
+    | `discover_marketplace.py` | Browse available services | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/discover_marketplace.py) |
   </Tab>
   <Tab title="Provider Mode">
     Scripts for **selling** services and managing endpoints:
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) | [View Code](./scripts/create_endpoint.py) |
-    | `manage_endpoint.py` | View/update your endpoints | [View Code](./scripts/manage_endpoint.py) |
-    | `topup_endpoint.py` | Add credits to YOUR endpoint | [View Code](./scripts/topup_endpoint.py) |
-    | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](./scripts/list_on_marketplace.py) |
+    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/create_endpoint.py) |
+    | `manage_endpoint.py` | View/update your endpoints | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/manage_endpoint.py) |
+    | `topup_endpoint.py` | Add credits to YOUR endpoint | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/topup_endpoint.py) |
+    | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_on_marketplace.py) |
   </Tab>
 </Tabs>
 
@@ -58,8 +58,8 @@ curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash -s ./my-skil
 Alternatively, clone from GitHub:
 
 ```bash
-git clone https://github.com/ivaavimusic/SGL_DOCS_2025.git
-cd SGL_DOCS_2025/scripts
+git clone https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill.git
+cd x402-Layer-Clawhub-Skill/scripts
 pip install -r ../requirements.txt
 ```
 
@@ -104,7 +104,27 @@ python scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
 ```bash
 # Deploy a monetized endpoint ($5 one-time fee, includes 20K test credits)
 python scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01
+```
 
+> **Note**: Save the `API Key` from the output and use it to secure your origin server.
+
+---
+
+### Security: API Key Verification
+
+> [!IMPORTANT]
+> When you create an endpoint, x402 acts as a proxy to your origin server. You MUST verify requests are coming from x402.
+
+1. **Get your API Key**: Returned when you run `create_endpoint.py`.
+2. **Verify Headers**: Your origin server MUST check for this header in every request:
+   ```http
+   x-api-key: <YOUR_API_KEY>
+   ```
+   If the header is missing or incorrect, reject the request (401 Unauthorized).
+
+---
+
+```bash
 # Top up YOUR endpoint with credits
 python scripts/topup_endpoint.py my-api 10  # Add $10 worth
 
@@ -152,7 +172,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.0.1 |
+| **Version** | 1.0.0 |
 | **Networks** | Base (EVM), Solana |
 | **Currency** | USDC |
 

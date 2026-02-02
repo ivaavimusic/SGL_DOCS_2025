@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.1-blue?style=for-the-badge" alt="Version 1.0.1" />
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0" />
   <img src="https://img.shields.io/badge/Network-Base-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Network: Base" />
   <img src="https://img.shields.io/badge/Network-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Network: Solana" />
   <img src="https://img.shields.io/badge/Currency-USDC-2775CA?style=for-the-badge" alt="Currency: USDC" />
