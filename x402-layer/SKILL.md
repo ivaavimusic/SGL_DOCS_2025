@@ -7,12 +7,20 @@ description: |
   "consume API credits", "list endpoint on marketplace", "buy API credits",
   "topup endpoint", "browse x402 marketplace", or manage x402 Singularity
   Layer operations on Base or Solana networks.
+homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
 metadata:
-  clawbot:
+  clawdbot:
     emoji: "⚡"
+    homepage: https://studio.x402layer.cc
     os:
       - linux
       - darwin
+    requires:
+      bins:
+        - python3
+      env:
+        - WALLET_ADDRESS
+        - PRIVATE_KEY
 allowed-tools:
   - Read
   - Write
@@ -20,6 +28,7 @@ allowed-tools:
   - Bash
   - WebFetch
 ---
+
 
 # x402 Singularity Layer
 
