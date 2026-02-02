@@ -6,6 +6,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge" alt="Version 1.0.0" />
+  <a href="https://clawhub.ai/ivaavimusic/x402-layer"><img src="https://img.shields.io/badge/ClawHub-x402--layer-blue?style=for-the-badge" alt="ClawHub Skill" /></a>
   <img src="https://img.shields.io/badge/Network-Base-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Network: Base" />
   <img src="https://img.shields.io/badge/Network-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Network: Solana" />
   <img src="https://img.shields.io/badge/Currency-USDC-2775CA?style=for-the-badge" alt="Currency: USDC" />
@@ -21,6 +22,16 @@
 ## 🚀 Quick Install (For AI Agents)
 
 Install the x402-layer skill with a single command:
+
+### Option 1: ClawHub (Recommended)
+
+[![ClawHub](https://img.shields.io/badge/ClawHub-x402--layer-blue?style=for-the-badge)](https://clawhub.ai/ivaavimusic/x402-layer)
+
+```bash
+clawhub install ivaavimusic/x402-layer
+```
+
+### Option 2: Self-hosted
 
 ```bash
 curl -fsSL https://api.x402layer.cc/skill/x402-layer/install | bash
