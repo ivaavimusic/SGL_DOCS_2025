@@ -1,0 +1,126 @@
+---
+title: ERC-8004: Agent Identity
+description: Register trustless on-chain AI agent identities via Singularity Layer
+---
+
+# ERC-8004: Agent Identity
+
+Register your AI agent on-chain with a unique identity, endpoint, and reputation score. ERC-8004 enables trustless agent discovery and verification.
+
+## What is ERC-8004?
+
+ERC-8004 is an emerging standard for on-chain AI agent registration. Each agent becomes an NFT with:
+
+- **Unique Agent ID** – On-chain identity as an ERC-721 token
+- **Endpoint URL** – The agent's API endpoint
+- **Metadata URI** – IPFS-hosted agent profile (stored via Pinata)
+- **Reputation Score** – Aggregated on-chain ratings
+
+## Registration Methods
+
+<CardGroup cols={2}>
+  <Card title="Dashboard UI" icon="display">
+    Human users register via **Dashboard → 8004 Agents**. Connect wallet, fill form, sign transaction.
+  </Card>
+  <Card title="Agentic API" icon="robot">
+    AI agents self-register via API with x402 payment. Pay USDC → backend mints NFT.
+  </Card>
+</CardGroup>
+
+## API Endpoints
+
+All ERC-8004 endpoints are hosted at `api.x402layer.cc`
+
+### Get Registry Info
+
+```bash
+GET /agent/erc8004/registry
+```
+
+Returns contract addresses and registration information.
+
+### Register Agent
+
+```bash
+POST /agent/erc8004/register
+Content-Type: application/json
+
+{
+  "name": "My AI Agent",
+  "endpoint": "https://myagent.api.com/v1",
+  "description": "An autonomous AI assistant",
+  "image_url": "https://example.com/agent-avatar.png",
+  "network": "baseSepolia"
+}
+```
+
+<Note>
+First request returns 402 with payment instructions. Sign payment with your agent wallet, then retry with `X-PAYMENT` header.
+</Note>
+
+### Lookup Agent
+
+```bash
+GET /agent/erc8004/:agentId
+```
+
+Retrieve agent details by ID or wallet address.
+
+## Supported Networks
+
+| Network | Chain ID | Usage |
+|---------|----------|-------|
+| Base Sepolia | 84532 | Testing and development |
+| Base Mainnet | 8453 | Production agents |
+
+## Registration Flow (Agentic)
+
+```javascript
+// 1. First request returns 402 with payment instructions
+const response = await fetch('https://api.x402layer.cc/agent/erc8004/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'My AI Agent',
+    endpoint: 'https://myagent.api.com/v1',
+    description: 'An autonomous AI assistant',
+    network: 'baseSepolia'
+  })
+});
+
+// 2. Get 402 response with payment details
+// 3. Sign payment with agent wallet
+// 4. Retry with X-PAYMENT header
+// 5. Agent NFT is minted, ID returned
+```
+
+## Registration Fee
+
+<Info>
+**$1.00 USDC** – One-time registration fee via x402. Covers gas + IPFS storage via Pinata.
+</Info>
+
+## .well-known Verification
+
+Your domain can host a verification file for agent discovery:
+
+```bash
+GET /.well-known/erc-8004.json
+```
+
+This allows other agents and systems to verify your agent's identity by checking your domain.
+
+## Response Format
+
+```json
+{
+  "success": true,
+  "agentId": 42,
+  "tokenId": "42",
+  "network": "baseSepolia",
+  "chainId": 84532,
+  "contractAddress": "0x...",
+  "tokenUri": "ipfs://...",
+  "txHash": "0x..."
+}
+```
