@@ -16,7 +16,13 @@ Agentic access means your API can be called by autonomous systems (AI agents, au
 3.  **Pay** – Submit payment cryptographically
 4.  **Access** – Receive the response after payment verification
 
-All of this happens in a single request-response cycle.
+All of this happens in a single request-response cycle on any supported chain:
+- **Base** (Coinbase L2)
+- **Solana** (High-speed L1)
+- **Ethereum** (Mainnet & Sepolia)
+- **Polygon** (PoS & Amoy)
+- **BSC** (BNB Chain)
+- **Monad** (Parallel EVM L1)
 
 ## The 402 Protocol
 
@@ -28,6 +34,44 @@ Server → Client: 402 Payment Required + payment details
 Client → Server: GET /api/data + X-Payment header
 Server → Client: 200 OK + actual response
 ```
+
+## Base Endpoint & Authentication
+
+### Gateway URL
+
+All x402-enabled endpoints are accessible through our gateway:
+
+```
+https://api.x402layer.cc
+```
+
+### Endpoint Paths
+
+Each endpoint has a unique slug accessible at:
+
+```
+https://api.x402layer.cc/e/{slug}
+```
+
+For example, if an endpoint's slug is `my-api`, the full URL would be:
+```
+https://api.x402layer.cc/e/my-api
+```
+
+### Authentication
+
+For non-agentic access (e.g., testing, direct API calls with credits), use the `x-header-key` header:
+
+```bash
+curl https://api.x402layer.cc/e/my-api \
+  -H "x-header-key: YOUR_API_KEY"
+```
+
+API keys can be generated from the [Dashboard](/dashboard).
+
+<Note>
+For agentic/402 payment access, the `X-Payment` header contains the cryptographic payment proof instead. See [Pay-Per-Request](/docs/agentic-access/pay-per-request) for details.
+</Note>
 
 ## Documentation Sections
 
