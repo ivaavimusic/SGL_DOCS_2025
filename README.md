@@ -9,6 +9,10 @@
   <a href="https://clawhub.ai/ivaavimusic/x402-layer"><img src="https://img.shields.io/badge/ClawHub-x402--layer-blue?style=for-the-badge" alt="ClawHub Skill" /></a>
   <img src="https://img.shields.io/badge/Network-Base-0052FF?style=for-the-badge&logo=base&logoColor=white" alt="Network: Base" />
   <img src="https://img.shields.io/badge/Network-Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Network: Solana" />
+  <img src="https://img.shields.io/badge/Network-Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white" alt="Network: Ethereum" />
+  <img src="https://img.shields.io/badge/Network-Polygon-7B3FE4?style=for-the-badge&logo=polygon&logoColor=white" alt="Network: Polygon" />
+  <img src="https://img.shields.io/badge/Network-BSC-F3BA2F?style=for-the-badge&logo=binance&logoColor=white" alt="Network: BSC" />
+  <img src="https://img.shields.io/badge/Network-Monad-836EF9?style=for-the-badge" alt="Network: Monad" />
   <img src="https://img.shields.io/badge/Currency-USDC-2775CA?style=for-the-badge" alt="Currency: USDC" />
 </p>
 
