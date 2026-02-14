@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 x402 Agentic Endpoint Creation
@@ -5,11 +6,10 @@ x402 Agentic Endpoint Creation
 Create a new monetized API endpoint on the x402 network.
 Cost: $5 USDC (includes 20,000 credits)
 
-IMPORTANT: Credits are NOT test credits!
+IMPORTANT: Credits are production credits.
 - Each API request to your endpoint consumes 1 credit
-- When credits reach 0, your endpoint stops working
-- You must recharge (topup) to keep your endpoint active
-- Users pay YOU per request, 1 credit is deducted for infrastructure
+- When credits reach 0, your endpoint stops serving traffic
+- You must top up credits to keep endpoint active
 
 Usage:
     python create_endpoint.py <slug> <name> <origin_url> <price> [options]
@@ -18,90 +18,89 @@ Example:
     python create_endpoint.py my-api "My API Service" https://api.example.com 0.01
 
 With Marketplace Listing:
-    python create_endpoint.py my-api "My API" https://api.example.com 0.01 \\
-        --category ai --description "AI-powered analysis" \\
+    python create_endpoint.py my-api "My API" https://api.example.com 0.01 \
+        --category ai --description "AI-powered analysis" \
         --logo https://example.com/logo.png --banner https://example.com/banner.jpg
 
-Environment Variables:
-    PRIVATE_KEY - Your EVM private key (0x...)
-    WALLET_ADDRESS - Your wallet address (0x...)
-
-Options:
-    --category        Marketplace category (ai, data, finance, utility, social, gaming)
-    --description     Public description for marketplace
-    --logo            Logo image URL for marketplace listing
-    --banner          Banner image URL for marketplace listing
-    --no-list         Create endpoint WITHOUT listing on marketplace
+Auth Modes:
+- Base: private-key (PRIVATE_KEY) or awal (X402_USE_AWAL=1)
+- Solana: SOLANA_SECRET_KEY (private-key mode only)
 """
 
+import argparse
+import json
 import os
 import sys
-import json
-import time
-import base64
+from typing import Any, Dict, Optional
+
 import requests
-from eth_account import Account
+
+from awal_bridge import awal_pay_url
+from network_selection import pick_payment_option
+from solana_signing import create_solana_xpayment_from_accept, load_solana_wallet_address
+from wallet_signing import is_awal_mode, load_wallet_address
 
 API_BASE = "https://api.x402layer.cc"
-USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-USDC_NAME = "USD Coin"
-USDC_VERSION = "2"
 
-def load_credentials():
-    """Load wallet credentials from environment."""
-    private_key = os.getenv("PRIVATE_KEY")
-    wallet = os.getenv("WALLET_ADDRESS")
-    if not private_key or not wallet:
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            private_key = os.getenv("PRIVATE_KEY")
-            wallet = os.getenv("WALLET_ADDRESS")
-        except ImportError:
-            pass
-    
-    if not private_key or not wallet:
-        print("Error: Set PRIVATE_KEY and WALLET_ADDRESS environment variables")
-        sys.exit(1)
-    return private_key, wallet
 
-def create_endpoint(slug: str, name: str, origin_url: str, price: float, chain: str = "base",
-                     category: str = None, description: str = None, logo_url: str = None,
-                     banner_url: str = None, list_on_marketplace: bool = True) -> dict:
-    """
-    Create a new agentic endpoint.
+def _resolve_secondary_wallet(cli_value: Optional[str]) -> Optional[str]:
+    if cli_value:
+        return cli_value
+    return os.getenv("WALLET_ADDRESS_SECONDARY") or os.getenv("SOLANA_WALLET_ADDRESS") or load_solana_wallet_address()
 
-    Args:
-        slug: URL-friendly identifier (e.g., "my-api")
-        name: Human-readable name
-        origin_url: Your backend API URL
-        price: Price per call in USD (e.g., 0.01)
-        chain: Payment chain (base, solana, or both)
-        category: Marketplace category (ai, data, finance, utility, social, gaming)
-        description: Public description for marketplace
-        logo_url: Logo image URL for marketplace listing
-        banner_url: Banner image URL for marketplace listing
-        list_on_marketplace: Whether to list on marketplace (default: True)
 
-    Returns:
-        Endpoint details including API key
-    """
-    private_key, wallet = load_credentials()
-    
-    url = f"{API_BASE}/agent/endpoints"
-    
-    data = {
+def create_endpoint(
+    slug: str,
+    name: str,
+    origin_url: str,
+    price: float,
+    chain: str = "base",
+    category: Optional[str] = None,
+    description: Optional[str] = None,
+    logo_url: Optional[str] = None,
+    banner_url: Optional[str] = None,
+    list_on_marketplace: bool = True,
+    wallet_secondary: Optional[str] = None,
+) -> dict:
+    """Create a new agentic endpoint."""
+    if chain == "solana":
+        sol_wallet = load_solana_wallet_address()
+        if not sol_wallet:
+            return {
+                "error": (
+                    "Solana endpoint creation requires a Solana signer: "
+                    "SOLANA_SECRET_KEY (private-key mode) or "
+                    "CDP_SOLANA_ACCOUNT_ADDRESS with CDP credentials (coinbase-wallet mode)."
+                )
+            }
+        wallet_address = sol_wallet
+        header_wallet = sol_wallet
+    else:
+        header_wallet = load_wallet_address(required=True)
+        wallet_address = header_wallet
+
+    data: dict = {
         "name": name,
         "slug": slug,
         "origin_url": origin_url,
         "chain": chain,
-        "wallet_address": wallet,
+        "wallet_address": wallet_address,
         "price": price,
         "currency": "USDC",
-        "list_on_marketplace": list_on_marketplace
+        "list_on_marketplace": list_on_marketplace,
     }
 
-    # Add optional marketplace listing fields
+    if chain == "both":
+        secondary = _resolve_secondary_wallet(wallet_secondary)
+        if not secondary:
+            return {
+                "error": (
+                    "chain='both' requires a Solana secondary wallet. "
+                    "Set --wallet-secondary or WALLET_ADDRESS_SECONDARY/SOLANA_WALLET_ADDRESS"
+                )
+            }
+        data["wallet_address_secondary"] = secondary
+
     if category:
         data["category"] = category
     if description:
@@ -110,175 +109,125 @@ def create_endpoint(slug: str, name: str, origin_url: str, price: float, chain: 
         data["image_url"] = logo_url
     if banner_url:
         data["banner_url"] = banner_url
-    
+
+    url = f"{API_BASE}/agent/endpoints"
+
     print(f"Creating endpoint: {slug}")
     print(f"Origin: {origin_url}")
     print(f"Price: ${price} per call")
     print(f"Chain: {chain}")
     print(f"List on Marketplace: {list_on_marketplace}")
-    if category:
-        print(f"Category: {category}")
-    if logo_url:
-        print(f"Logo: {logo_url}")
-    if banner_url:
-        print(f"Banner: {banner_url}")
     print("Cost: $5 USDC (includes 20,000 credits)")
-    print("\nIMPORTANT: Each request consumes 1 credit. Recharge to keep endpoint active!")
-    
-    # Step 1: Get 402 challenge
-    response = requests.post(url, json=data, headers={"x-wallet-address": wallet})
-    
-    if response.status_code != 402:
-        return {"error": f"Unexpected status: {response.status_code}", "response": response.text}
-    
-    challenge = response.json()
-    
-    # Find Base payment option
-    base_option = None
-    for opt in challenge.get("accepts", []):
-        if opt.get("network") == "base":
-            base_option = opt
-            break
-    
-    if not base_option:
-        return {"error": "No Base payment option available"}
-    
-    # Step 2: Sign EIP-712 payment
-    pay_to = base_option["payTo"]
-    amount = int(base_option["maxAmountRequired"])
-    # Nonce must be bytes32 (0x + 64 hex chars = 32 bytes)
-    import secrets
-    nonce = "0x" + secrets.token_hex(32)
-    valid_after = 0
-    valid_before = int(time.time()) + 3600
-    
-    typed_data = {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "verifyingContract", "type": "address"}
-            ],
-            "TransferWithAuthorization": [
-                {"name": "from", "type": "address"},
-                {"name": "to", "type": "address"},
-                {"name": "value", "type": "uint256"},
-                {"name": "validAfter", "type": "uint256"},
-                {"name": "validBefore", "type": "uint256"},
-                {"name": "nonce", "type": "bytes32"}
-            ]
-        },
-        "primaryType": "TransferWithAuthorization",
-        "domain": {
-            "name": USDC_NAME,
-            "version": USDC_VERSION,
-            "chainId": 8453,
-            "verifyingContract": USDC_ADDRESS
-        },
-        "message": {
-            "from": wallet,
-            "to": pay_to,
-            "value": amount,
-            "validAfter": valid_after,
-            "validBefore": valid_before,
-            "nonce": nonce
-        }
-    }
-    
-    account = Account.from_key(private_key)
-    signed = account.sign_typed_data(
-        typed_data["domain"],
-        {"TransferWithAuthorization": typed_data["types"]["TransferWithAuthorization"]},
-        typed_data["message"]
+
+    challenge_resp = requests.post(
+        url,
+        json=data,
+        headers={"x-wallet-address": header_wallet},
+        timeout=30,
     )
-    
-    payload = {
-        "x402Version": 1,
-        "scheme": "exact",
-        "network": "base",
-        "payload": {
-            "signature": signed.signature.hex(),
-            "authorization": {
-                "from": wallet,
-                "to": pay_to,
-                "value": str(amount),
-                "validAfter": str(valid_after),
-                "validBefore": str(valid_before),
-                "nonce": nonce
-            }
+
+    if challenge_resp.status_code != 402:
+        return {
+            "error": f"Unexpected status: {challenge_resp.status_code}",
+            "response": challenge_resp.text,
         }
-    }
-    
-    x_payment = base64.b64encode(json.dumps(payload).encode()).decode()
-    
-    # Step 3: Complete creation
+
+    challenge = challenge_resp.json()
+
+    # AWAL mode: Use Coinbase Agentic Wallet for Base payments
+    if is_awal_mode():
+        print("Payment mode: AWAL (Base)")
+        result = awal_pay_url(
+            url,
+            method="POST",
+            data=data,
+            headers={"x-wallet-address": header_wallet},
+        )
+        if isinstance(result, dict):
+            if result.get("error"):
+                return result
+            # Check for successful endpoint creation
+            if "endpoint" in result or result.get("success"):
+                print("\nEndpoint created")
+                print(f"URL: https://api.x402layer.cc/e/{slug}")
+                if "endpoint" in result and "api_key" in result["endpoint"]:
+                    print("API Key returned. You must validate x-api-key at your origin.")
+        return result
+
+    # Private-key mode: Use local signing for Base or Solana
+    try:
+        selected_network, selected_option, signer = pick_payment_option(challenge, context="endpoint creation")
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    if selected_network == "base":
+        if signer is None:
+            return {"error": "Internal error: missing Base signer"}
+        x_payment = signer.create_x402_payment_header(
+            pay_to=selected_option["payTo"],
+            amount=int(selected_option["maxAmountRequired"]),
+        )
+        payer_wallet = signer.wallet
+    else:
+        x_payment = create_solana_xpayment_from_accept(selected_option)
+        payer_wallet = load_solana_wallet_address() or header_wallet
+
     response = requests.post(
         url,
         json=data,
         headers={
             "X-Payment": x_payment,
-            "x-wallet-address": wallet
-        }
+            "x-wallet-address": payer_wallet,
+        },
+        timeout=45,
     )
-    
+
+    print(f"Payment network used: {selected_network}")
     print(f"Response: {response.status_code}")
-    
-    if response.status_code in [200, 201]:
+
+    if response.status_code in (200, 201):
         result = response.json()
-        print(f"\\n✅ Endpoint created!")
+        print("\nEndpoint created")
         print(f"URL: https://api.x402layer.cc/e/{slug}")
-        if "api_key" in result:
-            print(f"API Key: {result['api_key']}")
-            print("\nWARNING: SECURITY ACTION REQUIRED")
-            print("---------------------------------------------------------------")
-            print(f"IMPORTANT: You obtained an API Key for your endpoint.")
-            print(f"You MUST verify the 'x-api-key' header in your origin server ({origin_url}).")
-            print(f"Expected Header: 'x-api-key': '{result['api_key']}'")
-            print("Requests missing this header should be rejected (401 Unauthorized).")
-            print("---------------------------------------------------------------\n")
+        if "endpoint" in result and "api_key" in result["endpoint"]:
+            print("API Key returned. You must validate x-api-key at your origin.")
         return result
-    else:
-        return {"error": response.text}
 
-if __name__ == "__main__":
-    import argparse
+    return {"error": response.text}
 
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Create a new x402 monetized endpoint",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic endpoint (not listed on marketplace)
   python create_endpoint.py my-api "My API" https://api.example.com 0.01 --no-list
 
-  # Listed on marketplace with full details
   python create_endpoint.py my-api "My AI Service" https://api.example.com 0.01 \\
       --category ai --description "AI-powered data analysis" \\
       --logo https://example.com/logo.png --banner https://example.com/banner.jpg
 
-Categories: ai, data, finance, utility, social, gaming
-        """
+  python create_endpoint.py my-api "Multi-chain API" https://api.example.com 0.02 \\
+      --chain both --wallet-secondary <SOLANA_ADDRESS>
+""",
     )
 
     parser.add_argument("slug", help="URL-friendly identifier (e.g., 'my-api')")
     parser.add_argument("name", help="Human-readable name")
     parser.add_argument("origin_url", help="Your backend API URL")
-    parser.add_argument("price", type=float, help="Price per call in USD (e.g., 0.01)")
-    parser.add_argument("--chain", choices=["base", "solana", "both"], default="base",
-                        help="Payment chain (default: base)")
-    parser.add_argument("--category", choices=["ai", "data", "finance", "utility", "social", "gaming"],
-                        help="Marketplace category (required for listing)")
+    parser.add_argument("price", type=float, help="Price per call in USD")
+    parser.add_argument("--chain", choices=["base", "solana", "both"], default="base", help="Payment chain")
+    parser.add_argument("--wallet-secondary", help="Required when --chain both (Solana wallet)")
+    parser.add_argument("--category", choices=["ai", "data", "finance", "utility", "social", "gaming"], help="Marketplace category")
     parser.add_argument("--description", help="Public description for marketplace")
     parser.add_argument("--logo", help="Logo image URL for marketplace listing")
     parser.add_argument("--banner", help="Banner image URL for marketplace listing")
-    parser.add_argument("--no-list", action="store_true",
-                        help="Create endpoint WITHOUT listing on marketplace")
+    parser.add_argument("--no-list", action="store_true", help="Create endpoint without listing")
 
     args = parser.parse_args()
 
-    # If no marketplace options provided, don't list by default
-    list_on_marketplace = not args.no_list and (args.category or args.description or args.logo or args.banner)
+    list_on_marketplace = not args.no_list and bool(args.category or args.description or args.logo or args.banner)
 
     result = create_endpoint(
         slug=args.slug,
@@ -290,6 +239,15 @@ Categories: ai, data, finance, utility, social, gaming
         description=args.description,
         logo_url=args.logo,
         banner_url=args.banner,
-        list_on_marketplace=list_on_marketplace
+        list_on_marketplace=list_on_marketplace,
+        wallet_secondary=args.wallet_secondary,
     )
     print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(json.dumps({"error": str(exc)}, indent=2))
+        sys.exit(1)
