@@ -29,7 +29,7 @@ curl https://api.x402layer.cc/e/my-endpoint
       "network": "base",
       "maxAmountRequired": "10000",
       "payTo": "0xCD95802A4aBddD75A5750DD2d6935007eF268275",
-      "asset": "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "extra": {
         "name": "USD Coin",
         "version": "2"
