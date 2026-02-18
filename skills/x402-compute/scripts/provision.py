@@ -65,7 +65,18 @@ def provision_instance(
 
     # Step 1: Get 402 challenge
     path = "/compute/provision"
-    auth_headers = create_compute_auth_headers("POST", path, body_json)
+    try:
+        auth_headers = create_compute_auth_headers("POST", path, body_json)
+    except Exception as exc:
+        if is_awal_mode():
+            return {
+                "error": (
+                    "AWAL mode for compute provisioning requires COMPUTE_API_KEY. "
+                    "Create it once using private-key mode via create_api_key.py."
+                ),
+                "details": str(exc),
+            }
+        return {"error": f"Failed to build auth headers: {exc}"}
     response = requests.post(
         f"{BASE_URL}/compute/provision",
         data=body_json,
@@ -88,17 +99,6 @@ def provision_instance(
     if is_awal_mode():
         # Compute management auth requires signature headers or X-API-Key.
         # In AWAL mode, use a pre-created COMPUTE_API_KEY for auth headers.
-        try:
-            auth_headers = create_compute_auth_headers("POST", path, body_json)
-        except Exception as exc:
-            return {
-                "error": (
-                    "AWAL mode for compute provisioning requires COMPUTE_API_KEY. "
-                    "Create it once using private-key mode via create_api_key.py."
-                ),
-                "details": str(exc),
-            }
-
         wallet = load_wallet_address(required=False)
         print("Payment mode: AWAL (Base)")
         result = awal_pay_url(

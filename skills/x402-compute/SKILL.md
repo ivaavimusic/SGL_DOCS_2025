@@ -125,8 +125,11 @@ python {baseDir}/scripts/browse_plans.py --type vcg
 # Check available regions
 python {baseDir}/scripts/browse_regions.py
 
+# Generate a dedicated SSH key once (recommended for agents)
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/x402_compute
+
 # Provision an instance (triggers x402 payment)
-python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu" --ssh-key-file ~/.ssh/id_ed25519.pub
+python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu" --ssh-key-file ~/.ssh/x402_compute.pub
 
 # ⚠️ After provisioning, wait 2-3 minutes for Vultr to complete setup
 # Then fetch your instance details (IP, status):

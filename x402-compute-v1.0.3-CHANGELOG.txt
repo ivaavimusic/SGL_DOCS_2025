@@ -8,6 +8,7 @@ Summary
 - One-time password fallback support for non-SSH provisioning path.
 - AWAL support added for paid provisioning and extension scripts.
 - Skill hosting/docs synchronized for installer + curl delivery.
+- Compute UI updated with one-time password action in "Your Fleet" cards.
 
 Detailed Changes (1.0.2 -> 1.0.3)
 [done] Version bump to 1.0.3 in SKILL metadata.
@@ -21,7 +22,10 @@ Detailed Changes (1.0.2 -> 1.0.3)
        - scripts/awal_bridge.py
 [done] Added AWAL payment path in scripts/provision.py.
 [done] Added AWAL payment path in scripts/extend_instance.py.
+[done] Fixed AWAL auth pre-check flow in provision/extend scripts so missing COMPUTE_API_KEY returns a clear error.
 [done] AWAL mode now documented as requiring COMPUTE_API_KEY for management auth.
+[done] Added explicit SSH key generation guidance in skill workflows:
+       - ssh-keygen -t ed25519 -N "" -f ~/.ssh/x402_compute
 [done] Updated references/api-reference.md with AWAL + API key auth guidance.
 [done] Kept password handling guidance explicit: SSH key is preferred, password is fallback.
 [done] Removed in-skill CHANGELOG.md files per product decision (changelog moved outside skill folder).
@@ -31,6 +35,7 @@ Worker/Distribution Updates
 [done] Worker installer script list updated to include awal_bridge.py.
 [done] Worker manifest file list updated to include scripts/awal_bridge.py.
 [done] Worker embedded SKILL.md text updated with AWAL + COMPUTE_API_KEY notes.
+[done] Worker embedded SKILL.md workflow updated with SSH key generation and --ssh-key-file example.
 
 SGL_DOCS_2025 Sync
 [done] Synced skill folder at skills/x402-compute with latest local skill files.
@@ -41,7 +46,27 @@ Compatibility Notes
 - Private-key mode: fully supported.
 - AWAL mode for compute provisioning/extension: supported in scripts.
 - AWAL mode requires COMPUTE_API_KEY for compute management auth.
+- Password fallback endpoint can return 409 until provider password is available.
+
+UI Changes (Compute Frontend)
+[done] Added "🔐 Password" button to each live instance card in "Your Fleet".
+[done] Added one-time password modal with:
+       - username, IP, password fields
+       - copy IP and copy password actions
+       - one-time visibility warning
+[done] Wired UI action to POST /compute/instances/:id/password with wallet auth.
+
+Live Test Evidence (2026-02-18 UTC)
+[done] Paid provision test executed once on cheapest plan ($8):
+       - plan: vc2-1c-1gb, region: ewr
+       - order id: 397147d0-b708-4689-8246-021cf2a72674
+       - tx hash: 0x96c70f5ce5923c22be805a89e608841ea193669e795329bdec028af5500e3c00
+[done] Instance reached active status with public IP assigned.
+[done] Direct API-key calls validated for instances and key listing.
+[done] Temporary test API key revoked and verified invalid afterward.
+[done] Test instance destroyed successfully and status confirmed destroyed.
 
 Operational Notes
-- No database migration required specifically for this skill-file update.
+- Required migration for password fallback tracking:
+  - supabase/migrations/20260218_create_compute_password_retrievals.sql
 - This changelog file is external to skill folder by request.
