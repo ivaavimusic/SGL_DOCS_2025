@@ -45,6 +45,14 @@ def get_instance_details(instance_id: str) -> dict:
     if order.get("vultr_instance_id"):
         print(f"  Vultr ID: {order['vultr_instance_id']}")
 
+    # Show credentials when available (after provisioning completes)
+    if order.get("vultr_default_password"):
+        print(f"\n  🔐 Credentials:")
+        print(f"     IP:       {order.get('ip_address', 'pending')}")
+        print(f"     Password: {order['vultr_default_password']}")
+    if order.get("vultr_v6_main_ip"):
+        print(f"     IPv6:     {order['vultr_v6_main_ip']}")
+
     return data
 
 
