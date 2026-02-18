@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.0.1
+version: 1.0.2
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -20,12 +20,10 @@ metadata:
       bins:
         - python3
       env:
-        # Core credentials (required for payments)
         - WALLET_ADDRESS
         - PRIVATE_KEY
-        # AWAL mode (optional - for Coinbase Agentic Wallet)
-        - X402_USE_AWAL
-        - X402_AUTH_MODE
+    credentials:
+      primary: PRIVATE_KEY
 allowed-tools:
   - Read
   - Write
