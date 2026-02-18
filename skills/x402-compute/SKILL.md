@@ -119,6 +119,10 @@ python {baseDir}/scripts/browse_regions.py
 
 # Provision an instance (triggers x402 payment)
 python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
+
+# ⚠️ After provisioning, wait 2-3 minutes for Vultr to complete setup
+# Then fetch your credentials (IP, root password):
+python {baseDir}/scripts/instance_details.py <instance_id>
 ```
 
 ### B. Manage Instances
