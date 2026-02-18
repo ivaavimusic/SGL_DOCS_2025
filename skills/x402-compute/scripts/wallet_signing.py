@@ -8,13 +8,16 @@ Modes:
 """
 
 import base64
+import hashlib
 import json
 import os
 import secrets
 import time
+import uuid
 from typing import Any, Dict, Optional
 
 from eth_account import Account
+from eth_account.messages import encode_defunct
 
 USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 USDC_NAME = "USD Coin"
@@ -180,3 +183,81 @@ def load_payment_signer() -> PaymentSigner:
         raise ValueError("Set PRIVATE_KEY and WALLET_ADDRESS for private-key mode")
 
     return PaymentSigner(wallet=wallet, private_key=private_key)
+
+
+def _compute_auth_message(
+    chain: str,
+    address: str,
+    method: str,
+    path: str,
+    body_hash: str,
+    timestamp_ms: int,
+    nonce: str,
+) -> str:
+    return "\n".join(
+        [
+            "X402-COMPUTE-AUTH",
+            "v1",
+            chain,
+            address,
+            method.upper(),
+            path,
+            body_hash,
+            str(timestamp_ms),
+            nonce,
+        ]
+    )
+
+
+def create_compute_auth_headers(
+    method: str,
+    path: str,
+    body_str: str = "",
+    chain: str = "base",
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Create auth headers for x402 Compute management endpoints.
+    Supports:
+    - API key auth via COMPUTE_API_KEY
+    - Base wallet message signature (EIP-191)
+    """
+    api_key = api_key or os.getenv("COMPUTE_API_KEY")
+    if api_key:
+        return {"X-API-Key": api_key}
+
+    if chain != "base":
+        raise ValueError("Compute auth currently supports Base-only in Python scripts")
+
+    wallet = load_wallet_address(required=True, allow_awal_fallback=False)
+    private_key = os.getenv("PRIVATE_KEY")
+    if not private_key:
+        raise ValueError("Set PRIVATE_KEY for Base auth signing")
+
+    body_hash = hashlib.sha256((body_str or "").encode()).hexdigest()
+    timestamp_ms = int(time.time() * 1000)
+    nonce = uuid.uuid4().hex
+    address = wallet.lower()
+
+    message = _compute_auth_message(
+        chain="base",
+        address=address,
+        method=method,
+        path=path,
+        body_hash=body_hash,
+        timestamp_ms=timestamp_ms,
+        nonce=nonce,
+    )
+    signed = Account.from_key(private_key).sign_message(encode_defunct(text=message))
+    signature = signed.signature.hex()
+    if not signature.startswith("0x"):
+        signature = "0x" + signature
+
+    return {
+        "X-Auth-Address": address,
+        "X-Auth-Chain": "base",
+        "X-Auth-Signature": signature,
+        "X-Auth-Timestamp": str(timestamp_ms),
+        "X-Auth-Nonce": nonce,
+        "X-Auth-Sig-Encoding": "hex",
+    }

@@ -11,7 +11,7 @@ import sys
 
 import requests
 
-from wallet_signing import load_wallet_address
+from wallet_signing import load_wallet_address, create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -20,9 +20,11 @@ def list_instances() -> dict:
     """List all compute instances for the current wallet."""
     wallet = load_wallet_address(required=True)
 
+    path = f"/compute/instances?wallet={wallet}"
+    auth_headers = create_compute_auth_headers("GET", path)
     response = requests.get(
         f"{BASE_URL}/compute/instances",
-        headers={"x-wallet-address": wallet},
+        headers=auth_headers,
         params={"wallet": wallet},
         timeout=30,
     )

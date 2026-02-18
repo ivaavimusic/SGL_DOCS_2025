@@ -8,7 +8,7 @@ Handles the full x402 payment flow:
 3. Resend with X-Payment header → instance provisioned
 
 Usage:
-  python provision.py <plan_id> <region> [--months N] [--os-id ID] [--label NAME] [--network base|solana]
+  python provision.py <plan_id> <region> [--months N] [--os-id ID] [--label NAME] [--network base|solana] [--ssh-public-key KEY | --ssh-key-file PATH]
 
 Example:
   python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
@@ -20,7 +20,7 @@ import sys
 
 import requests
 
-from wallet_signing import is_awal_mode, load_payment_signer, load_wallet_address
+from wallet_signing import is_awal_mode, load_payment_signer, load_wallet_address, create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -40,28 +40,35 @@ def provision_instance(
     os_id: int = 2284,
     label: str = "x402-instance",
     network: str = "base",
+    ssh_public_key: str | None = None,
 ) -> dict:
     """Provision a compute instance with x402 payment."""
     wallet = load_wallet_address(required=True)
 
+    prepaid_hours = max(1, months) * 720
     body = {
         "plan": plan,
         "region": region,
         "os_id": os_id,
         "label": label,
-        "duration_months": months,
+        "prepaid_hours": prepaid_hours,
         "network": network,
     }
+    if ssh_public_key:
+        body["ssh_public_key"] = ssh_public_key.strip()
+    body_json = json.dumps(body, separators=(",", ":"))
 
     print(f"Provisioning {plan} in {region} for {months} month(s)...")
 
     # Step 1: Get 402 challenge
+    path = "/compute/provision"
+    auth_headers = create_compute_auth_headers("POST", path, body_json)
     response = requests.post(
         f"{BASE_URL}/compute/provision",
-        json=body,
+        data=body_json,
         headers={
             "Content-Type": "application/json",
-            "x-wallet-address": wallet,
+            **auth_headers,
         },
         timeout=30,
     )
@@ -89,13 +96,14 @@ def provision_instance(
     x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)
 
     # Step 2: Pay and provision
+    auth_headers = create_compute_auth_headers("POST", path, body_json)
     response = requests.post(
         f"{BASE_URL}/compute/provision",
-        json=body,
+        data=body_json,
         headers={
             "Content-Type": "application/json",
             "X-Payment": x_payment,
-            "x-wallet-address": signer.wallet,
+            **auth_headers,
         },
         timeout=120,
     )
@@ -125,7 +133,21 @@ if __name__ == "__main__":
     parser.add_argument("--os-id", type=int, default=2284, help="OS image ID (default: 2284 = Ubuntu 24.04)")
     parser.add_argument("--label", default="x402-instance", help="Instance label")
     parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
+    parser.add_argument("--ssh-public-key", help="SSH public key contents (recommended)")
+    parser.add_argument("--ssh-key-file", help="Path to SSH public key file (e.g. ~/.ssh/id_ed25519.pub)")
     args = parser.parse_args()
+    if args.ssh_public_key and args.ssh_key_file:
+        print("Error: provide either --ssh-public-key or --ssh-key-file, not both.")
+        sys.exit(1)
+
+    ssh_public_key = args.ssh_public_key
+    if args.ssh_key_file:
+        try:
+            with open(args.ssh_key_file, "r", encoding="utf-8") as handle:
+                ssh_public_key = handle.read().strip()
+        except OSError as exc:
+            print(f"Failed to read SSH key file: {exc}")
+            sys.exit(1)
 
     result = provision_instance(
         plan=args.plan,
@@ -134,6 +156,7 @@ if __name__ == "__main__":
         os_id=args.os_id,
         label=args.label,
         network=args.network,
+        ssh_public_key=ssh_public_key,
     )
     if "error" in result:
         print(json.dumps(result, indent=2))

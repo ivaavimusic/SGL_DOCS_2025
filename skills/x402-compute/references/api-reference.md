@@ -4,6 +4,23 @@ Base URL: `https://compute.x402layer.cc`
 
 ## Endpoints
 
+### Authentication (Required for management endpoints)
+
+All **instance management** endpoints require authentication. Choose one:
+
+- **Signature Auth (wallet signing)**  
+  Required headers:
+  - `X-Auth-Address`: wallet address
+  - `X-Auth-Chain`: `base` or `solana`
+  - `X-Auth-Signature`: signature over the request
+  - `X-Auth-Timestamp`: epoch millis
+  - `X-Auth-Nonce`: unique nonce
+  - `X-Auth-Sig-Encoding`: `hex` (Base) or `base64` (Solana)
+
+- **API Key Auth (agent access)**  
+  Required header:
+  - `X-API-Key`: compute API key (create via `POST /compute/api-keys`)
+
 ### GET /compute/plans
 
 List available compute plans with pricing.
@@ -32,7 +49,7 @@ List available compute plans with pricing.
 }
 ```
 
-Prices include the platform markup and are in USD. The x402 payment amount is calculated as `monthly_cost * duration_months` converted to USDC atomic units (6 decimals).
+Prices include the platform markup and are in USD. The x402 payment amount is calculated from the hourly rate times `prepaid_hours`, converted to USDC atomic units (6 decimals).
 
 ---
 
@@ -87,13 +104,17 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
   "region": "lax",
   "os_id": 2284,
   "label": "my-gpu-instance",
-  "duration_months": 1,
+  "prepaid_hours": 720,
+  "ssh_public_key": "ssh-ed25519 AAAA... user@host",
   "network": "base"
 }
 ```
 
+**Notes:**
+- Provide `ssh_public_key` to enable SSH access. Passwords are not returned by the API.
+
 **Headers:**
-- `x-wallet-address`: Your wallet address
+- Auth headers (see Authentication above)
 - `X-Payment`: Base64-encoded x402 payment payload (after 402 challenge)
 
 **402 Challenge Response:**
@@ -136,11 +157,8 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
 
 List your active instances.
 
-**Query Parameters:**
-- `wallet`: Your wallet address
-
 **Headers:**
-- `x-wallet-address`: Your wallet address (alternative to query param)
+- Auth headers (see Authentication above)
 
 ---
 
@@ -149,7 +167,7 @@ List your active instances.
 Get details for a specific instance.
 
 **Headers:**
-- `x-wallet-address`: Your wallet address
+- Auth headers (see Authentication above)
 
 ---
 
@@ -158,7 +176,7 @@ Get details for a specific instance.
 Destroy an instance immediately.
 
 **Headers:**
-- `x-wallet-address`: Your wallet address (must match the order's user_wallet)
+- Auth headers (see Authentication above)
 
 ---
 
@@ -175,5 +193,55 @@ Extend an instance's lifetime. Returns `402 Payment Required` with payment chall
 ```
 
 **Headers:**
-- `x-wallet-address`: Your wallet address
+- Auth headers (see Authentication above)
 - `X-Payment`: Base64-encoded x402 payment payload (after 402 challenge)
+
+---
+
+### POST /compute/api-keys
+
+Create an API key for agent access (signature auth required).
+
+**Request Body:**
+```json
+{
+  "label": "my-agent"
+}
+```
+
+**Response (201):**
+```json
+{
+  "api_key": "x402c_...",
+  "id": "uuid",
+  "label": "my-agent",
+  "created_at": "2026-02-18T00:00:00Z"
+}
+```
+
+---
+
+### GET /compute/api-keys
+
+List API keys for your wallet.
+
+**Response:**
+```json
+{
+  "api_keys": [
+    {
+      "id": "uuid",
+      "label": "my-agent",
+      "key_last4": "abcd",
+      "created_at": "2026-02-18T00:00:00Z",
+      "revoked_at": null
+    }
+  ]
+}
+```
+
+---
+
+### DELETE /compute/api-keys/:id
+
+Revoke an API key (signature auth required).

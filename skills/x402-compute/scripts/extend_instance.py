@@ -20,7 +20,7 @@ import sys
 
 import requests
 
-from wallet_signing import is_awal_mode, load_payment_signer, load_wallet_address
+from wallet_signing import is_awal_mode, load_payment_signer, load_wallet_address, create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -41,16 +41,19 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
         "extend_hours": hours,
         "network": network,
     }
+    body_json = json.dumps(body, separators=(",", ":"))
 
     print(f"Extending instance {instance_id} by {hours} hours...")
 
     # Step 1: Get 402 challenge
+    path = f"/compute/instances/{instance_id}/extend"
+    auth_headers = create_compute_auth_headers("POST", path, body_json)
     response = requests.post(
         f"{BASE_URL}/compute/instances/{instance_id}/extend",
-        json=body,
+        data=body_json,
         headers={
             "Content-Type": "application/json",
-            "x-wallet-address": wallet,
+            **auth_headers,
         },
         timeout=30,
     )
@@ -78,13 +81,14 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
     x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)
 
     # Step 2: Pay and extend
+    auth_headers = create_compute_auth_headers("POST", path, body_json)
     response = requests.post(
         f"{BASE_URL}/compute/instances/{instance_id}/extend",
-        json=body,
+        data=body_json,
         headers={
             "Content-Type": "application/json",
             "X-Payment": x_payment,
-            "x-wallet-address": signer.wallet,
+            **auth_headers,
         },
         timeout=60,
     )

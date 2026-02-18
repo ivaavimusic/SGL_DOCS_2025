@@ -11,7 +11,7 @@ import sys
 
 import requests
 
-from wallet_signing import load_wallet_address
+from wallet_signing import load_wallet_address, create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -20,9 +20,11 @@ def get_instance_details(instance_id: str) -> dict:
     """Get details for a specific compute instance."""
     wallet = load_wallet_address(required=True)
 
+    path = f"/compute/instances/{instance_id}"
+    auth_headers = create_compute_auth_headers("GET", path)
     response = requests.get(
         f"{BASE_URL}/compute/instances/{instance_id}",
-        headers={"x-wallet-address": wallet},
+        headers=auth_headers,
         timeout=30,
     )
 
@@ -45,11 +47,10 @@ def get_instance_details(instance_id: str) -> dict:
     if order.get("vultr_instance_id"):
         print(f"  Vultr ID: {order['vultr_instance_id']}")
 
-    # Show credentials when available (after provisioning completes)
-    if order.get("vultr_default_password"):
-        print(f"\n  🔐 Credentials:")
-        print(f"     IP:       {order.get('ip_address', 'pending')}")
-        print(f"     Password: {order['vultr_default_password']}")
+    # Credentials note
+    if order.get("ip_address"):
+        print("\n  🔐 Access:")
+        print("     Use the SSH public key you provided at provisioning.")
     if order.get("vultr_v6_main_ip"):
         print(f"     IPv6:     {order['vultr_v6_main_ip']}")
 
