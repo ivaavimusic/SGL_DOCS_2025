@@ -1,5 +1,17 @@
 # x402-compute Changelog
 
+## [1.0.4] - 2026-02-18
+
+### Added
+- `POST /compute/instances/:id/password` one-time password fallback endpoint support
+- `scripts/get_one_time_password.py` helper script
+
+### Changed
+- Kept SSH public key as default/recommended access path
+- Added fallback workflow docs for non-SSH provisioning
+
+---
+
 ## [1.0.3] - 2026-02-18
 
 ### Added

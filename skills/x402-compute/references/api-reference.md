@@ -112,6 +112,7 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
 
 **Notes:**
 - Provide `ssh_public_key` to enable SSH access. Passwords are not returned by the API.
+- If you do not provide an SSH key, use one-time fallback endpoint `POST /compute/instances/:id/password`.
 
 **Headers:**
 - Auth headers (see Authentication above)
@@ -177,6 +178,30 @@ Destroy an instance immediately.
 
 **Headers:**
 - Auth headers (see Authentication above)
+
+---
+
+### POST /compute/instances/:id/password
+
+Retrieve one-time root password fallback (only if SSH key was not used).
+
+**Headers:**
+- Auth headers (see Authentication above)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "access": {
+    "method": "one_time_password",
+    "username": "root",
+    "ip_address": "1.2.3.4",
+    "password": "example-password"
+  }
+}
+```
+
+Subsequent calls return `409`.
 
 ---
 
