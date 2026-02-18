@@ -35,9 +35,12 @@ def browse_plans(plan_type: str = None) -> dict:
 
     print(f"Found {len(plans)} plan(s)")
     for p in plans:
+        monthly = p.get("our_monthly")
+        if monthly is None:
+            monthly = p.get("monthly_cost", p.get("vultr_monthly", 0))
         gpu_info = f" | GPU: {p.get('gpu_type', 'N/A')} {p.get('gpu_vram_gb', '')}GB" if p.get("gpu_vram_gb") else ""
         print(
-            f"  {p['id']:30s}  ${p['monthly_cost']:>8.2f}/mo  "
+            f"  {p['id']:30s}  ${float(monthly):>8.2f}/mo  "
             f"{p['vcpu_count']} vCPU  {p['ram'] // 1024}GB RAM  {p['disk']}GB disk"
             f"{gpu_info}"
         )

@@ -12,6 +12,10 @@ Usage:
 
 Example:
   python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
+
+AWAL mode:
+  export X402_USE_AWAL=1
+  export COMPUTE_API_KEY="x402c_..."  # required for compute management auth
 """
 
 import argparse
@@ -20,6 +24,7 @@ import sys
 
 import requests
 
+from awal_bridge import awal_pay_url
 from wallet_signing import is_awal_mode, load_payment_signer, load_wallet_address, create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
@@ -43,8 +48,6 @@ def provision_instance(
     ssh_public_key: str | None = None,
 ) -> dict:
     """Provision a compute instance with x402 payment."""
-    wallet = load_wallet_address(required=True)
-
     prepaid_hours = max(1, months) * 720
     body = {
         "plan": plan,
@@ -83,8 +86,42 @@ def provision_instance(
     challenge = response.json()
 
     if is_awal_mode():
-        print("AWAL mode not yet supported for compute provisioning. Use private-key mode.")
-        return {"error": "AWAL not supported for compute yet"}
+        # Compute management auth requires signature headers or X-API-Key.
+        # In AWAL mode, use a pre-created COMPUTE_API_KEY for auth headers.
+        try:
+            auth_headers = create_compute_auth_headers("POST", path, body_json)
+        except Exception as exc:
+            return {
+                "error": (
+                    "AWAL mode for compute provisioning requires COMPUTE_API_KEY. "
+                    "Create it once using private-key mode via create_api_key.py."
+                ),
+                "details": str(exc),
+            }
+
+        wallet = load_wallet_address(required=False)
+        print("Payment mode: AWAL (Base)")
+        result = awal_pay_url(
+            f"{BASE_URL}/compute/provision",
+            method="POST",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                **auth_headers,
+                **({"x-wallet-address": wallet} if wallet else {}),
+            },
+        )
+        if "error" in result:
+            return result
+
+        order = result.get("order", {}) if isinstance(result, dict) else {}
+        if order:
+            print("✅ Instance provisioned!")
+            print(f"   ID:      {order.get('id', 'N/A')}")
+            print(f"   IP:      {order.get('ip_address', 'pending')}")
+            print(f"   Plan:    {order.get('plan', plan)}")
+            print(f"   Expires: {order.get('expires_at', 'N/A')}")
+        return result
 
     signer = load_payment_signer()
     base_option = _find_base_accept_option(challenge)
@@ -110,7 +147,7 @@ def provision_instance(
 
     print(f"Response: {response.status_code}")
 
-    if response.status_code == 200:
+    if response.status_code in (200, 201):
         data = response.json()
         order = data.get("order", {})
         print(f"✅ Instance provisioned!")
@@ -122,7 +159,7 @@ def provision_instance(
             print(f"   TX:      {data['tx_hash']}")
         return data
 
-    return {"error": f"Provisioning failed: {response.status_code}", "response": response.text[:500]}
+    return {"error": f"Provisioning failed: {response.status_code}", "response": response.text[:2000]}
 
 
 if __name__ == "__main__":

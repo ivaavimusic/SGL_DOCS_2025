@@ -21,6 +21,10 @@ All **instance management** endpoints require authentication. Choose one:
   Required header:
   - `X-API-Key`: compute API key (create via `POST /compute/api-keys`)
 
+AWAL note:
+- AWAL can handle x402 payment, but compute management endpoints still require auth headers.
+- In AWAL mode, use `X-API-Key` (set `COMPUTE_API_KEY`) for management auth.
+
 ### GET /compute/plans
 
 List available compute plans with pricing.

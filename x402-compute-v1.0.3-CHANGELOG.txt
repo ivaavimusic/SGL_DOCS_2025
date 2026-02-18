@@ -1,0 +1,47 @@
+x402-compute Skill Changelog
+Version: 1.0.3
+Previous: 1.0.2
+Date: 2026-02-18
+
+Summary
+- Security/auth hardening for compute management operations.
+- One-time password fallback support for non-SSH provisioning path.
+- AWAL support added for paid provisioning and extension scripts.
+- Skill hosting/docs synchronized for installer + curl delivery.
+
+Detailed Changes (1.0.2 -> 1.0.3)
+[done] Version bump to 1.0.3 in SKILL metadata.
+[done] Added compute management auth model documentation:
+       - Signature auth (X-Auth-* headers)
+       - API key auth (X-API-Key)
+[done] Added one-time password fallback workflow:
+       - New endpoint documented: POST /compute/instances/:id/password
+       - New helper script: scripts/get_one_time_password.py
+[done] Added AWAL bridge helper script:
+       - scripts/awal_bridge.py
+[done] Added AWAL payment path in scripts/provision.py.
+[done] Added AWAL payment path in scripts/extend_instance.py.
+[done] AWAL mode now documented as requiring COMPUTE_API_KEY for management auth.
+[done] Updated references/api-reference.md with AWAL + API key auth guidance.
+[done] Kept password handling guidance explicit: SSH key is preferred, password is fallback.
+[done] Removed in-skill CHANGELOG.md files per product decision (changelog moved outside skill folder).
+
+Worker/Distribution Updates
+[done] Old worker skill version set to 1.0.3.
+[done] Worker installer script list updated to include awal_bridge.py.
+[done] Worker manifest file list updated to include scripts/awal_bridge.py.
+[done] Worker embedded SKILL.md text updated with AWAL + COMPUTE_API_KEY notes.
+
+SGL_DOCS_2025 Sync
+[done] Synced skill folder at skills/x402-compute with latest local skill files.
+[done] Added scripts/awal_bridge.py to docs-hosted skill assets.
+[done] Updated SKILL.md and references/api-reference.md in docs repo copy.
+
+Compatibility Notes
+- Private-key mode: fully supported.
+- AWAL mode for compute provisioning/extension: supported in scripts.
+- AWAL mode requires COMPUTE_API_KEY for compute management auth.
+
+Operational Notes
+- No database migration required specifically for this skill-file update.
+- This changelog file is external to skill folder by request.

@@ -1,0 +1,112 @@
+---
+title: x402 Compute Skill - x402 Studio Docs
+description: Provision and manage VPS/GPU compute with x402 payments, signed auth, API keys, and one-time password fallback
+---
+
+# x402 Compute Skill
+
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana.
+
+<Note>
+  Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
+</Note>
+
+## Base URL
+
+`https://compute.x402layer.cc`
+
+## Auth Model
+
+Management endpoints require one of:
+
+1. Signature auth headers (`X-Auth-*`)
+2. API key (`X-API-Key`)
+
+Recommended agent flow:
+
+1. Create API key once via `POST /compute/api-keys` with signature auth.
+2. Store key in `COMPUTE_API_KEY`.
+3. Use API key for list/details/destroy/extend/password fallback calls.
+
+## Endpoint Summary
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/compute/plans` | List VPS/GPU plans |
+| `GET` | `/compute/regions` | List deployment regions |
+| `GET` | `/compute/os` | List OS images |
+| `POST` | `/compute/provision` | Provision instance (x402 payment + auth) |
+| `GET` | `/compute/instances` | List instances for authenticated wallet |
+| `GET` | `/compute/instances/:id` | Get instance details |
+| `POST` | `/compute/instances/:id/password` | One-time root password fallback |
+| `POST` | `/compute/instances/:id/extend` | Extend prepaid duration (x402 payment + auth) |
+| `DELETE` | `/compute/instances/:id` | Destroy instance |
+| `POST` | `/compute/api-keys` | Create API key (signature only) |
+| `GET` | `/compute/api-keys` | List API keys |
+| `DELETE` | `/compute/api-keys/:id` | Revoke API key |
+
+## Install Skill
+
+```bash
+curl -fsSL https://api.x402layer.cc/skill/x402-compute/install | bash
+```
+
+## Scripts Included
+
+| Script | Purpose |
+|---|---|
+| `browse_plans.py` | Browse plans and pricing |
+| `browse_regions.py` | Browse regions |
+| `provision.py` | Provision a compute instance |
+| `create_api_key.py` | Create reusable API key |
+| `list_instances.py` | List instances |
+| `instance_details.py` | Get detailed status |
+| `get_one_time_password.py` | Fetch one-time root password fallback |
+| `extend_instance.py` | Extend instance duration |
+| `destroy_instance.py` | Destroy instance |
+
+## Quick Workflow
+
+### 1) Provision with SSH Key (Recommended)
+
+```bash
+python scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --ssh-key-file ~/.ssh/id_ed25519.pub
+```
+
+### 2) Create API Key for Agents
+
+```bash
+python scripts/create_api_key.py --label "my-agent"
+export COMPUTE_API_KEY="x402c_..."
+```
+
+### 3) Manage Instances
+
+```bash
+python scripts/list_instances.py
+python scripts/instance_details.py <instance_id>
+python scripts/extend_instance.py <instance_id> --hours 720
+python scripts/destroy_instance.py <instance_id>
+```
+
+### 4) One-Time Password Fallback (Only if no SSH key)
+
+```bash
+python scripts/get_one_time_password.py <instance_id>
+```
+
+This works once per instance. Repeated calls return `409`.
+
+## Security Notes
+
+- Wallet/agent can only access its own instances.
+- Replay protection uses signed nonce + timestamp.
+- Payment wallet must match authenticated wallet.
+- Passwords are not returned in standard list/details/provision responses.
+- One-time password endpoint is owner-authenticated and single-use.
+
+## References
+
+- Skill definition: `skills/x402-compute/SKILL.md`
+- Skill API reference: `skills/x402-compute/references/api-reference.md`
+- Hosted installer: `https://api.x402layer.cc/skill/x402-compute/install`
