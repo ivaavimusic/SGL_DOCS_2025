@@ -17,14 +17,9 @@ All **instance management** endpoints require authentication. Provision/extend a
   - `X-Auth-Nonce`: unique nonce
   - `X-Auth-Sig-Encoding`: `hex` (Base) or `base64` (Solana)
 
-- **API Key Auth (agent access)**  
+- **API Key Auth (agent access)**
   Required header:
   - `X-API-Key`: compute API key (create via `POST /compute/api-keys`)
-
-AWAL note:
-- AWAL is currently used for Base x402 payment flow only.
-- Provision/extend do not require compute auth headers; AWAL works for those paths.
-- Compute management endpoints still require auth headers; use private-key mode or `X-API-Key` for those.
 
 ### GET /compute/plans
 

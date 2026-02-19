@@ -40,9 +40,9 @@ allowed-tools:
 
 Provision and manage GPU/VPS instances paid with USDC via the x402 payment protocol.
 
-**Base URL:** `https://compute.x402layer.cc`  
-**Networks:** Base (EVM) • Solana  
-**Currency:** USDC  
+**Base URL:** `https://compute.x402layer.cc`
+**Networks:** Base (EVM) • Solana
+**Currency:** USDC
 **Protocol:** HTTP 402 Payment Required
 
 **Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
@@ -71,14 +71,7 @@ export SOLANA_WALLET_ADDRESS="YourSolanaAddress"
 export COMPUTE_AUTH_CHAIN="solana"
 ```
 
-#### Option C: Coinbase Agentic Wallet (AWAL, Base only)
-```bash
-npx skills add coinbase/agentic-wallet-skills
-export X402_USE_AWAL=1
-export COMPUTE_API_KEY="x402c_..."   # optional (for management endpoints)
-```
-
-Create `COMPUTE_API_KEY` (optional) with private-key mode:
+Create `COMPUTE_API_KEY` (optional) for management endpoints:
 ```bash
 python {baseDir}/scripts/create_api_key.py --label "my-agent"
 ```
@@ -205,22 +198,12 @@ For Solana, transient facilitator failures can happen. Retry once or twice if yo
 
 | Variable | Required For | Description |
 |----------|--------------|-------------|
-| `PRIVATE_KEY` | Base payments (private-key mode) | EVM private key (0x...) |
+| `PRIVATE_KEY` | Base payments | EVM private key (0x...) |
 | `WALLET_ADDRESS` | Base mode | Base wallet address (0x...) |
 | `SOLANA_SECRET_KEY` | Solana mode | Solana signer key (base58 or JSON byte array) |
 | `SOLANA_WALLET_ADDRESS` | Solana mode | Solana wallet address (optional if derivable from secret) |
 | `COMPUTE_AUTH_CHAIN` | Solana/base auth override | `base` or `solana` |
 | `COMPUTE_API_KEY` | Optional | Reusable API key for compute management endpoints |
-| `X402_USE_AWAL` | AWAL mode | Set `1` to enable Coinbase Agentic Wallet for Base payments |
-| `X402_AUTH_MODE` | Auth selection (optional) | `auto`, `private-key`, or `awal` |
-
----
-
-## AWAL Notes
-
-- AWAL is currently used for Base payment flow only.
-- Provision + extend no longer require compute auth headers (x402 payment is sufficient).
-- Compute management endpoints (list/details/password/destroy/api-keys) still require auth headers; use private-key mode or `COMPUTE_API_KEY` for those.
 
 ---
 

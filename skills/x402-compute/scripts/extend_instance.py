@@ -12,24 +12,17 @@ Usage:
 
 Example:
   python extend_instance.py abc-123 --hours 720  # extend by 1 month
-
-AWAL mode:
-  export X402_USE_AWAL=1
-  export COMPUTE_API_KEY="x402c_..."  # optional (for management endpoints)
 """
 
 import argparse
 import json
-import os
 import sys
 
 import requests
 
-from awal_bridge import awal_pay_url
 from solana_signing import create_solana_xpayment_from_accept, ensure_solana_destination_ready
 from wallet_signing import (
     create_compute_auth_headers,
-    is_awal_mode,
     load_compute_chain,
     load_payment_signer,
 )
@@ -56,22 +49,15 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
     body_json = json.dumps(body, separators=(",", ":"))
     auth_chain = load_compute_chain()
 
-    if network == "solana" and is_awal_mode():
-        return {"error": "AWAL mode currently supports Base payments only"}
-
     print(f"Extending instance {instance_id} by {hours} hours...")
 
     # Step 1: Get 402 challenge
     path = f"/compute/instances/{instance_id}/extend"
     auth_headers: dict[str, str] = {}
-    if is_awal_mode():
-        if os.getenv("COMPUTE_API_KEY"):
-            auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
-    else:
-        try:
-            auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
-        except Exception as exc:
-            return {"error": f"Failed to build auth headers: {exc}"}
+    try:
+        auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
+    except Exception as exc:
+        return {"error": f"Failed to build auth headers: {exc}"}
     response = requests.post(
         f"{BASE_URL}/compute/instances/{instance_id}/extend",
         data=body_json,
@@ -90,31 +76,6 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
         return {"error": f"Unexpected status {response.status_code}", "response": response.text[:500]}
 
     challenge = response.json()
-
-    if is_awal_mode():
-        # AWAL for Base extension (auth headers optional).
-        print("Payment mode: AWAL (Base)")
-        result = awal_pay_url(
-            f"{BASE_URL}/compute/instances/{instance_id}/extend",
-            method="POST",
-            data=body,
-            headers={
-                "Content-Type": "application/json",
-                **auth_headers,
-            },
-        )
-        if not isinstance(result, dict):
-            return {"error": "Unexpected AWAL response format", "response": str(result)}
-        if "error" in result:
-            return result
-        if "order" not in result:
-            return {"error": "AWAL extension did not return an order", "response": result}
-
-        order = result.get("order", {}) if isinstance(result, dict) else {}
-        if order:
-            print("✅ Instance extended!")
-            print(f"   New Expiry: {order.get('expires_at', 'N/A')}")
-        return result
 
     option = _find_accept_option(challenge, network)
 

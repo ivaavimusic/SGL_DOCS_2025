@@ -12,10 +12,6 @@ Usage:
 
 Example:
   python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
-
-AWAL mode:
-  export X402_USE_AWAL=1
-  export COMPUTE_API_KEY="x402c_..."  # optional (for management endpoints)
 """
 
 import argparse
@@ -25,9 +21,8 @@ import sys
 
 import requests
 
-from awal_bridge import awal_pay_url
 from solana_signing import create_solana_xpayment_from_accept, ensure_solana_destination_ready
-from wallet_signing import create_compute_auth_headers, is_awal_mode, load_compute_chain, load_payment_signer
+from wallet_signing import create_compute_auth_headers, load_compute_chain, load_payment_signer
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -66,22 +61,15 @@ def provision_instance(
     body_json = json.dumps(body, separators=(",", ":"))
     auth_chain = load_compute_chain()
 
-    if network == "solana" and is_awal_mode():
-        return {"error": "AWAL mode currently supports Base payments only"}
-
     print(f"Provisioning {plan} in {region} for {months} month(s)...")
 
     # Step 1: Get 402 challenge
     path = "/compute/provision"
     auth_headers: dict[str, str] = {}
-    if is_awal_mode():
-        if os.getenv("COMPUTE_API_KEY"):
-            auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
-    else:
-        try:
-            auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
-        except Exception as exc:
-            return {"error": f"Failed to build auth headers: {exc}"}
+    try:
+        auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
+    except Exception as exc:
+        return {"error": f"Failed to build auth headers: {exc}"}
     response = requests.post(
         f"{BASE_URL}/compute/provision",
         data=body_json,
@@ -100,33 +88,6 @@ def provision_instance(
         return {"error": f"Unexpected status {response.status_code}", "response": response.text[:500]}
 
     challenge = response.json()
-
-    if is_awal_mode():
-        # AWAL for Base provisioning (auth headers optional).
-        print("Payment mode: AWAL (Base)")
-        result = awal_pay_url(
-            f"{BASE_URL}/compute/provision",
-            method="POST",
-            data=body,
-            headers={
-                "Content-Type": "application/json",
-                **auth_headers,
-            },
-        )
-        if not isinstance(result, dict):
-            return {"error": "Unexpected AWAL response format", "response": str(result)}
-        if "error" in result:
-            return result
-        if "order" not in result:
-            return {"error": "AWAL provision did not return an order", "response": result}
-        order = result.get("order", {}) if isinstance(result, dict) else {}
-        if order:
-            print("✅ Instance provisioned!")
-            print(f"   ID:      {order.get('id', 'N/A')}")
-            print(f"   IP:      {order.get('ip_address', 'pending')}")
-            print(f"   Plan:    {order.get('plan', plan)}")
-            print(f"   Expires: {order.get('expires_at', 'N/A')}")
-        return result
 
     option = _find_accept_option(challenge, network)
     pay_to = option["payTo"]

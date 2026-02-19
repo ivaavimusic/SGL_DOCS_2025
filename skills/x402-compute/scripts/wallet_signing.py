@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
 Shared Base payment signing utilities for x402 scripts.
-
-Modes:
-- private-key: local EVM private key signing (existing behavior)
-- awal: use Coinbase Agentic Wallet CLI (AWAL) from wrapper helpers
+Uses local EVM private key signing for USDC TransferWithAuthorization.
 """
 
 import base64
@@ -32,23 +29,6 @@ def load_dotenv_if_available() -> None:
         load_dotenv()
     except Exception:
         pass
-
-
-def load_auth_mode() -> str:
-    """
-    Supported values:
-    - auto (default): private-key if creds exist, otherwise error
-    - private-key: force local EVM key signing
-    - awal: force AWAL mode for Base payments
-    """
-    load_dotenv_if_available()
-    if (os.getenv("X402_USE_AWAL") or "").strip() == "1":
-        return "awal"
-    return (os.getenv("X402_AUTH_MODE") or "auto").strip().lower()
-
-
-def is_awal_mode() -> bool:
-    return load_auth_mode() == "awal"
 
 
 def _load_solders_keypair() -> Any:
@@ -91,23 +71,11 @@ def load_solana_wallet_address(required: bool = True) -> Optional[str]:
         return None
 
 
-def load_wallet_address(required: bool = True, allow_awal_fallback: bool = True) -> Optional[str]:
+def load_wallet_address(required: bool = True) -> Optional[str]:
     load_dotenv_if_available()
     wallet = os.getenv("WALLET_ADDRESS")
 
-    if not wallet and allow_awal_fallback and is_awal_mode():
-        try:
-            from awal_bridge import get_awal_evm_address  # type: ignore
-
-            wallet = get_awal_evm_address(required=False)
-        except Exception:
-            wallet = None
-
     if required and not wallet:
-        if is_awal_mode() and allow_awal_fallback:
-            raise ValueError(
-                "Set WALLET_ADDRESS or authenticate AWAL so address can be resolved"
-            )
         raise ValueError("Set WALLET_ADDRESS environment variable")
     return wallet
 
@@ -135,14 +103,8 @@ def load_compute_chain() -> str:
     return "base"
 
 
-def has_private_key_credentials() -> bool:
-    load_dotenv_if_available()
-    return bool(os.getenv("PRIVATE_KEY") and os.getenv("WALLET_ADDRESS"))
-
-
 class PaymentSigner:
     def __init__(self, wallet: str, private_key: str) -> None:
-        self.mode = "private-key"
         self.wallet = wallet
         self.private_key = private_key
 
@@ -232,18 +194,11 @@ class PaymentSigner:
 def load_payment_signer() -> PaymentSigner:
     load_dotenv_if_available()
 
-    mode = load_auth_mode()
-    if mode == "awal":
-        raise ValueError("AWAL mode does not use local Base signer")
-
-    if mode not in ("auto", "private-key"):
-        raise ValueError("X402_AUTH_MODE must be one of: auto, private-key, awal")
-
-    wallet = load_wallet_address(required=True, allow_awal_fallback=False)
+    wallet = load_wallet_address(required=True)
     private_key = os.getenv("PRIVATE_KEY")
 
     if not private_key or not wallet:
-        raise ValueError("Set PRIVATE_KEY and WALLET_ADDRESS for private-key mode")
+        raise ValueError("Set PRIVATE_KEY and WALLET_ADDRESS for Base payments")
 
     return PaymentSigner(wallet=wallet, private_key=private_key)
 
@@ -284,6 +239,7 @@ def create_compute_auth_headers(
     Supports:
     - API key auth via COMPUTE_API_KEY
     - Base wallet message signature (EIP-191)
+    - Solana wallet message signature
     """
     api_key = api_key or os.getenv("COMPUTE_API_KEY")
     if api_key:
@@ -298,7 +254,7 @@ def create_compute_auth_headers(
     nonce = uuid.uuid4().hex
 
     if resolved_chain == "base":
-        wallet = load_wallet_address(required=True, allow_awal_fallback=False)
+        wallet = load_wallet_address(required=True)
         private_key = os.getenv("PRIVATE_KEY")
         if not private_key:
             raise ValueError("Set PRIVATE_KEY for Base auth signing")
