@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.0.3
+version: 1.0.4
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -20,8 +20,11 @@ metadata:
       bins:
         - python3
       env:
-        - WALLET_ADDRESS
         - PRIVATE_KEY
+        - WALLET_ADDRESS
+        - SOLANA_SECRET_KEY
+        - SOLANA_WALLET_ADDRESS
+        - COMPUTE_API_KEY
     credentials:
       primary: PRIVATE_KEY
 allowed-tools:
@@ -42,7 +45,7 @@ Provision and manage GPU/VPS instances paid with USDC via the x402 payment proto
 **Currency:** USDC  
 **Protocol:** HTTP 402 Payment Required
 
-**Access Note:** Provide an SSH public key when provisioning. Passwords are not returned by the API.
+**Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
 
 ---
 
@@ -55,20 +58,27 @@ pip install -r {baseDir}/requirements.txt
 
 ### 2. Set Up Wallet
 
-#### Option A: Private Keys
+#### Option A: Base (EVM) Private Key
 ```bash
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
 ```
 
-#### Option B: Coinbase Agentic Wallet (AWAL)
+#### Option B: Solana Private Key
+```bash
+export SOLANA_SECRET_KEY="base58-or-json-array"
+export SOLANA_WALLET_ADDRESS="YourSolanaAddress"
+export COMPUTE_AUTH_CHAIN="solana"
+```
+
+#### Option C: Coinbase Agentic Wallet (AWAL, Base only)
 ```bash
 npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
-export COMPUTE_API_KEY="x402c_..."   # required for compute management auth in AWAL mode
+export COMPUTE_API_KEY="x402c_..."   # optional (for management endpoints)
 ```
 
-Create `COMPUTE_API_KEY` once with private-key mode:
+Create `COMPUTE_API_KEY` (optional) with private-key mode:
 ```bash
 python {baseDir}/scripts/create_api_key.py --label "my-agent"
 ```
@@ -98,6 +108,7 @@ python {baseDir}/scripts/create_api_key.py --label "my-agent"
 | `get_one_time_password.py` | Retrieve one-time root password fallback |
 | `extend_instance.py` | Extend instance lifetime (x402 payment) |
 | `destroy_instance.py` | Destroy an instance |
+| `solana_signing.py` | Internal helper for Solana x402 payment signing |
 
 ---
 
@@ -131,6 +142,9 @@ ssh-keygen -t ed25519 -N "" -f ~/.ssh/x402_compute
 # Provision an instance (triggers x402 payment)
 python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu" --ssh-key-file ~/.ssh/x402_compute.pub
 
+# Provision on Solana
+python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-sol-vps" --network solana --ssh-key-file ~/.ssh/x402_compute.pub
+
 # ⚠️ After provisioning, wait 2-3 minutes for Vultr to complete setup
 # Then fetch your instance details (IP, status):
 python {baseDir}/scripts/instance_details.py <instance_id>
@@ -154,6 +168,9 @@ python {baseDir}/scripts/get_one_time_password.py <instance_id>
 # Extend by 1 month
 python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720
 
+# Extend on Solana
+python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network solana
+
 # Destroy
 python {baseDir}/scripts/destroy_instance.py <instance_id>
 ```
@@ -163,9 +180,13 @@ python {baseDir}/scripts/destroy_instance.py <instance_id>
 ## x402 Payment Flow
 
 1. Request provision/extend → server returns `HTTP 402` with payment requirements
-2. Script signs USDC `TransferWithAuthorization` (EIP-712) locally
+2. Script signs payment locally:
+   - Base: USDC `TransferWithAuthorization` (EIP-712)
+   - Solana: signed SPL transfer transaction payload
 3. Script resends request with `X-Payment` header containing signed payload
 4. Server verifies payment, settles on-chain, provisions/extends instance
+
+For Solana, transient facilitator failures can happen. Retry once or twice if you get a temporary 5xx verify error.
 
 ---
 
@@ -185,10 +206,21 @@ python {baseDir}/scripts/destroy_instance.py <instance_id>
 | Variable | Required For | Description |
 |----------|--------------|-------------|
 | `PRIVATE_KEY` | Base payments (private-key mode) | EVM private key (0x...) |
-| `WALLET_ADDRESS` | All operations | Your wallet address |
-| `COMPUTE_API_KEY` | AWAL mode / optional | Reusable API key for compute management endpoints |
+| `WALLET_ADDRESS` | Base mode | Base wallet address (0x...) |
+| `SOLANA_SECRET_KEY` | Solana mode | Solana signer key (base58 or JSON byte array) |
+| `SOLANA_WALLET_ADDRESS` | Solana mode | Solana wallet address (optional if derivable from secret) |
+| `COMPUTE_AUTH_CHAIN` | Solana/base auth override | `base` or `solana` |
+| `COMPUTE_API_KEY` | Optional | Reusable API key for compute management endpoints |
 | `X402_USE_AWAL` | AWAL mode | Set `1` to enable Coinbase Agentic Wallet for Base payments |
 | `X402_AUTH_MODE` | Auth selection (optional) | `auto`, `private-key`, or `awal` |
+
+---
+
+## AWAL Notes
+
+- AWAL is currently used for Base payment flow only.
+- Provision + extend no longer require compute auth headers (x402 payment is sufficient).
+- Compute management endpoints (list/details/password/destroy/api-keys) still require auth headers; use private-key mode or `COMPUTE_API_KEY` for those.
 
 ---
 

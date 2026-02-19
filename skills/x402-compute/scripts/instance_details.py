@@ -11,15 +11,13 @@ import sys
 
 import requests
 
-from wallet_signing import load_wallet_address, create_compute_auth_headers
+from wallet_signing import create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
 
 def get_instance_details(instance_id: str) -> dict:
     """Get details for a specific compute instance."""
-    wallet = load_wallet_address(required=True)
-
     path = f"/compute/instances/{instance_id}"
     auth_headers = create_compute_auth_headers("GET", path)
     response = requests.get(

@@ -11,15 +11,13 @@ import sys
 
 import requests
 
-from wallet_signing import load_wallet_address, create_compute_auth_headers
+from wallet_signing import create_compute_auth_headers
 
 BASE_URL = "https://compute.x402layer.cc"
 
 
 def destroy_instance(instance_id: str) -> dict:
     """Destroy a compute instance."""
-    wallet = load_wallet_address(required=True)
-
     print(f"Destroying instance {instance_id}...")
 
     path = f"/compute/instances/{instance_id}"

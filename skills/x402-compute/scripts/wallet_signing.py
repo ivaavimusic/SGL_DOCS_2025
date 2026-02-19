@@ -51,6 +51,46 @@ def is_awal_mode() -> bool:
     return load_auth_mode() == "awal"
 
 
+def _load_solders_keypair() -> Any:
+    try:
+        from solders.keypair import Keypair  # type: ignore
+    except ImportError as exc:
+        raise ValueError("Solana signing requires solders. Install solders>=0.20.0") from exc
+
+    load_dotenv_if_available()
+    secret_key = (os.getenv("SOLANA_SECRET_KEY") or "").strip()
+    if not secret_key:
+        raise ValueError("Set SOLANA_SECRET_KEY for Solana signing")
+
+    # Support either JSON array format or base58 keypair string.
+    if secret_key.startswith("["):
+        try:
+            secret_bytes = bytes(json.loads(secret_key))
+            return Keypair.from_bytes(secret_bytes)
+        except Exception as exc:
+            raise ValueError("Invalid SOLANA_SECRET_KEY JSON array format") from exc
+
+    try:
+        return Keypair.from_base58_string(secret_key)
+    except Exception as exc:
+        raise ValueError("Invalid SOLANA_SECRET_KEY base58 format") from exc
+
+
+def load_solana_wallet_address(required: bool = True) -> Optional[str]:
+    load_dotenv_if_available()
+    explicit = (os.getenv("SOLANA_WALLET_ADDRESS") or os.getenv("WALLET_ADDRESS_SECONDARY") or "").strip()
+    if explicit:
+        return explicit
+
+    try:
+        keypair = _load_solders_keypair()
+        return str(keypair.pubkey())
+    except Exception:
+        if required:
+            raise ValueError("Set SOLANA_WALLET_ADDRESS or SOLANA_SECRET_KEY")
+        return None
+
+
 def load_wallet_address(required: bool = True, allow_awal_fallback: bool = True) -> Optional[str]:
     load_dotenv_if_available()
     wallet = os.getenv("WALLET_ADDRESS")
@@ -70,6 +110,29 @@ def load_wallet_address(required: bool = True, allow_awal_fallback: bool = True)
             )
         raise ValueError("Set WALLET_ADDRESS environment variable")
     return wallet
+
+
+def load_compute_chain() -> str:
+    """
+    Resolve compute auth chain from env/wallet context.
+    Priority:
+    1) COMPUTE_AUTH_CHAIN (base|solana)
+    2) WALLET_ADDRESS shape (0x... => base)
+    3) SOLANA credentials present => solana
+    4) default base
+    """
+    load_dotenv_if_available()
+    explicit = (os.getenv("COMPUTE_AUTH_CHAIN") or "").strip().lower()
+    if explicit in ("base", "solana"):
+        return explicit
+
+    wallet = (os.getenv("WALLET_ADDRESS") or "").strip()
+    if wallet:
+        return "base" if wallet.lower().startswith("0x") else "solana"
+
+    if os.getenv("SOLANA_SECRET_KEY") or os.getenv("SOLANA_WALLET_ADDRESS"):
+        return "solana"
+    return "base"
 
 
 def has_private_key_credentials() -> bool:
@@ -213,7 +276,7 @@ def create_compute_auth_headers(
     method: str,
     path: str,
     body_str: str = "",
-    chain: str = "base",
+    chain: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -226,21 +289,49 @@ def create_compute_auth_headers(
     if api_key:
         return {"X-API-Key": api_key}
 
-    if chain != "base":
-        raise ValueError("Compute auth currently supports Base-only in Python scripts")
-
-    wallet = load_wallet_address(required=True, allow_awal_fallback=False)
-    private_key = os.getenv("PRIVATE_KEY")
-    if not private_key:
-        raise ValueError("Set PRIVATE_KEY for Base auth signing")
+    resolved_chain = (chain or load_compute_chain()).strip().lower()
+    if resolved_chain not in ("base", "solana"):
+        raise ValueError("Compute auth chain must be 'base' or 'solana'")
 
     body_hash = hashlib.sha256((body_str or "").encode()).hexdigest()
     timestamp_ms = int(time.time() * 1000)
     nonce = uuid.uuid4().hex
-    address = wallet.lower()
 
+    if resolved_chain == "base":
+        wallet = load_wallet_address(required=True, allow_awal_fallback=False)
+        private_key = os.getenv("PRIVATE_KEY")
+        if not private_key:
+            raise ValueError("Set PRIVATE_KEY for Base auth signing")
+
+        address = wallet.lower()
+        message = _compute_auth_message(
+            chain="base",
+            address=address,
+            method=method,
+            path=path,
+            body_hash=body_hash,
+            timestamp_ms=timestamp_ms,
+            nonce=nonce,
+        )
+        signed = Account.from_key(private_key).sign_message(encode_defunct(text=message))
+        signature = signed.signature.hex()
+        if not signature.startswith("0x"):
+            signature = "0x" + signature
+
+        return {
+            "X-Auth-Address": address,
+            "X-Auth-Chain": "base",
+            "X-Auth-Signature": signature,
+            "X-Auth-Timestamp": str(timestamp_ms),
+            "X-Auth-Nonce": nonce,
+            "X-Auth-Sig-Encoding": "hex",
+        }
+
+    # Solana auth signing
+    address = load_solana_wallet_address(required=True)
+    keypair = _load_solders_keypair()
     message = _compute_auth_message(
-        chain="base",
+        chain="solana",
         address=address,
         method=method,
         path=path,
@@ -248,16 +339,14 @@ def create_compute_auth_headers(
         timestamp_ms=timestamp_ms,
         nonce=nonce,
     )
-    signed = Account.from_key(private_key).sign_message(encode_defunct(text=message))
-    signature = signed.signature.hex()
-    if not signature.startswith("0x"):
-        signature = "0x" + signature
+    sig = keypair.sign_message(message.encode())
+    signature = base64.b64encode(bytes(sig)).decode()
 
     return {
         "X-Auth-Address": address,
-        "X-Auth-Chain": "base",
+        "X-Auth-Chain": "solana",
         "X-Auth-Signature": signature,
         "X-Auth-Timestamp": str(timestamp_ms),
         "X-Auth-Nonce": nonce,
-        "X-Auth-Sig-Encoding": "hex",
+        "X-Auth-Sig-Encoding": "base64",
     }

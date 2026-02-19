@@ -115,6 +115,42 @@ def _build_pay_args(
     return args
 
 
+def _build_x402_pay_args(
+    url: str,
+    method: str,
+    data: Optional[Dict[str, Any]],
+    query: Optional[Dict[str, Any]],
+    headers: Optional[Dict[str, Any]],
+    max_amount: Optional[int],
+    short_flags: bool,
+) -> List[str]:
+    args: List[str] = ["x402", "pay", url]
+    if method and method.upper() != "GET":
+        args += (["-X", method.upper()] if short_flags else ["--method", method.upper()])
+    if data is not None:
+        payload = json.dumps(data, separators=(",", ":"))
+        args += (["-d", payload] if short_flags else ["--data", payload])
+    if query is not None:
+        payload = json.dumps(query, separators=(",", ":"))
+        args += (["-q", payload] if short_flags else ["--query", payload])
+    if headers is not None:
+        payload = json.dumps(headers, separators=(",", ":"))
+        args += (["-h", payload] if short_flags else ["--headers", payload])
+    if max_amount is not None:
+        args += ["--max-amount", str(max_amount)]
+    args += ["--json"]
+    return args
+
+
+def _looks_like_usage(text: str) -> bool:
+    raw = (text or "").strip().lower()
+    if not raw:
+        return False
+    if raw.startswith("usage: awal"):
+        return True
+    return "display help for command" in raw and "usage:" in raw
+
+
 def awal_pay_url(
     url: str,
     method: str = "GET",
@@ -126,7 +162,10 @@ def awal_pay_url(
     base_url, path = _split_url(url)
 
     attempts = [
-        _build_pay_args(base_url, path, method, data, query, headers, max_amount, short_flags=True),
+        # Newer AWAL CLI style: `awal x402 pay <full-url>`
+        _build_x402_pay_args(url, method, data, query, headers, max_amount, short_flags=True),
+        _build_x402_pay_args(url, method, data, query, headers, max_amount, short_flags=False),
+        # Legacy AWAL CLI style: `awal pay <base-url> <path>`
         _build_pay_args(base_url, path, method, data, query, headers, max_amount, short_flags=False),
     ]
 
@@ -134,20 +173,34 @@ def awal_pay_url(
     for args in attempts:
         result = _run_awal(args)
         last_result = result
-        parsed = _extract_json(result["stdout"])
+        stdout = result["stdout"] or ""
+        stderr = result["stderr"] or ""
+        combined = f"{stdout}\n{stderr}"
+        parsed = _extract_json(stdout)
         if result["ok"]:
+            if _looks_like_usage(combined):
+                # Some AWAL builds return usage text with exit code 0 for bad args.
+                continue
             if isinstance(parsed, dict):
                 return parsed
             if parsed is not None:
                 return {"result": parsed}
-            output = (result["stdout"] or "").strip()
+            output = stdout.strip()
             return {"success": True, "output": output}
 
-        stderr = (result["stderr"] or "").lower()
-        if "unknown option" not in stderr and "unknown command" not in stderr:
+        stderr_lower = stderr.lower()
+        if "unknown option" not in stderr_lower and "unknown command" not in stderr_lower:
             break
 
     if not last_result:
         return {"error": "AWAL invocation failed before execution"}
     err = (last_result["stderr"] or last_result["stdout"] or f"AWAL command failed ({last_result['code']})").strip()
+    if "missing auth headers" in err.lower():
+        return {
+            "error": (
+                "AWAL could not forward compute auth headers during payment discovery. "
+                "Use private-key mode for provisioning/extension, or wait for AWAL CLI fix."
+            ),
+            "output": (last_result["stdout"] or "").strip(),
+        }
     return {"error": err, "output": (last_result["stdout"] or "").strip()}

@@ -6,7 +6,7 @@ Base URL: `https://compute.x402layer.cc`
 
 ### Authentication (Required for management endpoints)
 
-All **instance management** endpoints require authentication. Choose one:
+All **instance management** endpoints require authentication. Provision/extend accept x402 payment without compute auth headers. Choose one for management:
 
 - **Signature Auth (wallet signing)**  
   Required headers:
@@ -22,8 +22,9 @@ All **instance management** endpoints require authentication. Choose one:
   - `X-API-Key`: compute API key (create via `POST /compute/api-keys`)
 
 AWAL note:
-- AWAL can handle x402 payment, but compute management endpoints still require auth headers.
-- In AWAL mode, use `X-API-Key` (set `COMPUTE_API_KEY`) for management auth.
+- AWAL is currently used for Base x402 payment flow only.
+- Provision/extend do not require compute auth headers; AWAL works for those paths.
+- Compute management endpoints still require auth headers; use private-key mode or `X-API-Key` for those.
 
 ### GET /compute/plans
 
@@ -138,6 +139,8 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
   ]
 }
 ```
+
+For Solana challenges, `network` may be `solana` (or facilitator-style `solana:*`) and may include `extra.feePayer`.
 
 **Success Response (200):**
 ```json
