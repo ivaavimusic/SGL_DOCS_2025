@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.0.6
+version: 1.0.7
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -20,13 +20,16 @@ metadata:
       bins:
         - python3
       env:
-        - PRIVATE_KEY
-        - WALLET_ADDRESS
-        - SOLANA_SECRET_KEY
-        - SOLANA_WALLET_ADDRESS
-        - COMPUTE_API_KEY
+        # Option A — Base/EVM payments (provide these OR Option B, not both)
+        - PRIVATE_KEY        # EVM private key for signing payments (0x...)
+        - WALLET_ADDRESS     # EVM wallet address (0x...)
+        # Option B — Solana payments (alternative to Option A)
+        - SOLANA_SECRET_KEY        # Solana signer key (base58 or JSON byte array)
+        - SOLANA_WALLET_ADDRESS    # Solana public address
+        # Optional — preferred for routine management without exposing private keys
+        - COMPUTE_API_KEY   # Reusable API key (create once via create_api_key.py)
     credentials:
-      primary: PRIVATE_KEY
+      primary: COMPUTE_API_KEY   # Recommended: use API key for management over raw private keys
 allowed-tools:
   - Read
   - Write
