@@ -17,15 +17,12 @@ Example:
 import argparse
 import json
 import sys
+from typing import Dict
 
 import requests
 
 from solana_signing import create_solana_xpayment_from_accept, ensure_solana_destination_ready
-from wallet_signing import (
-    create_compute_auth_headers,
-    load_compute_chain,
-    load_payment_signer,
-)
+from wallet_signing import create_compute_auth_headers, load_compute_chain, load_payment_signer
 
 BASE_URL = "https://compute.x402layer.cc"
 
@@ -53,7 +50,7 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
 
     # Step 1: Get 402 challenge
     path = f"/compute/instances/{instance_id}/extend"
-    auth_headers: dict[str, str] = {}
+    auth_headers: Dict[str, str] = {}
     try:
         auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
     except Exception as exc:
@@ -91,14 +88,15 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base") -
         x_payment = create_solana_xpayment_from_accept(option)
 
     # Step 2: Pay and extend
-    auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
+    # NOTE: Do NOT send compute auth headers here.
+    # The x402 X-Payment header authenticates the payer via on-chain payment.
+    # Sending auth headers causes 401 (nonce already consumed from step 1).
     response = requests.post(
         f"{BASE_URL}/compute/instances/{instance_id}/extend",
         data=body_json,
         headers={
             "Content-Type": "application/json",
             "X-Payment": x_payment,
-            **auth_headers,
         },
         timeout=60,
     )

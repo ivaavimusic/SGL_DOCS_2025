@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.0.4
+version: 1.0.6
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -94,7 +94,7 @@ python {baseDir}/scripts/create_api_key.py --label "my-agent"
 |--------|---------|
 | `browse_plans.py` | List available GPU/VPS plans with pricing |
 | `browse_regions.py` | List deployment regions |
-| `provision.py` | Provision a new instance (x402 payment) |
+| `provision.py` | Provision a new instance (x402 payment, `--months` or `--days`) |
 | `create_api_key.py` | Create an API key for agent access (optional) |
 | `list_instances.py` | List your active instances |
 | `instance_details.py` | Get details for a specific instance |
@@ -132,8 +132,14 @@ python {baseDir}/scripts/browse_regions.py
 # Generate a dedicated SSH key once (recommended for agents)
 ssh-keygen -t ed25519 -N "" -f ~/.ssh/x402_compute
 
-# Provision an instance (triggers x402 payment)
+# Provision an instance for 1 month (triggers x402 payment)
 python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu" --ssh-key-file ~/.ssh/x402_compute.pub
+
+# Provision a daily instance (cheaper, use-and-throw)
+python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --days 1 --label "test-daily" --ssh-key-file ~/.ssh/x402_compute.pub
+
+# Provision for 3 days
+python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --days 3 --label "short-task" --ssh-key-file ~/.ssh/x402_compute.pub
 
 # Provision on Solana
 python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-sol-vps" --network solana --ssh-key-file ~/.ssh/x402_compute.pub
@@ -157,6 +163,9 @@ python {baseDir}/scripts/instance_details.py <instance_id>
 
 # Optional fallback if no SSH key was provided during provisioning
 python {baseDir}/scripts/get_one_time_password.py <instance_id>
+
+# Extend by 1 day
+python {baseDir}/scripts/extend_instance.py <instance_id> --hours 24
 
 # Extend by 1 month
 python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720

@@ -8,16 +8,18 @@ Handles the full x402 payment flow:
 3. Resend with X-Payment header → instance provisioned
 
 Usage:
-  python provision.py <plan_id> <region> [--months N] [--os-id ID] [--label NAME] [--network base|solana] [--ssh-public-key KEY | --ssh-key-file PATH]
+  python provision.py <plan_id> <region> [--months N | --days N] [--os-id ID] [--label NAME] [--network base|solana] [--ssh-public-key KEY | --ssh-key-file PATH]
 
 Example:
   python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
+  python provision.py vc2-1c-1gb ewr --days 1 --label "test-daily"
 """
 
 import argparse
 import json
 import os
 import sys
+from typing import Dict, Optional
 
 import requests
 
@@ -40,14 +42,20 @@ def _find_accept_option(challenge: dict, requested_network: str) -> dict:
 def provision_instance(
     plan: str,
     region: str,
-    months: int = 1,
+    months: int = 0,
+    days: int = 0,
     os_id: int = 2284,
     label: str = "x402-instance",
     network: str = "base",
-    ssh_public_key: str | None = None,
+    ssh_public_key: Optional[str] = None,
 ) -> dict:
     """Provision a compute instance with x402 payment."""
-    prepaid_hours = max(1, months) * 720
+    if days > 0:
+        prepaid_hours = days * 24
+        duration_label = f"{days} day(s)"
+    else:
+        prepaid_hours = max(1, months) * 720
+        duration_label = f"{max(1, months)} month(s)"
     body = {
         "plan": plan,
         "region": region,
@@ -61,11 +69,11 @@ def provision_instance(
     body_json = json.dumps(body, separators=(",", ":"))
     auth_chain = load_compute_chain()
 
-    print(f"Provisioning {plan} in {region} for {months} month(s)...")
+    print(f"Provisioning {plan} in {region} for {duration_label}...")
 
     # Step 1: Get 402 challenge
     path = "/compute/provision"
-    auth_headers: dict[str, str] = {}
+    auth_headers: Dict[str, str] = {}
     try:
         auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
     except Exception as exc:
@@ -102,14 +110,15 @@ def provision_instance(
         x_payment = create_solana_xpayment_from_accept(option)
 
     # Step 2: Pay and provision
-    auth_headers = create_compute_auth_headers("POST", path, body_json, chain=auth_chain)
+    # NOTE: Do NOT send compute auth headers here.
+    # The x402 X-Payment header authenticates the payer via on-chain payment.
+    # Sending auth headers causes 401 (nonce already consumed from step 1).
     response = requests.post(
         f"{BASE_URL}/compute/provision",
         data=body_json,
         headers={
             "Content-Type": "application/json",
             "X-Payment": x_payment,
-            **auth_headers,
         },
         timeout=120,
     )
@@ -135,7 +144,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Provision a compute instance")
     parser.add_argument("plan", help="Plan ID (e.g. vcg-a100-1c-2g-6gb)")
     parser.add_argument("region", help="Region ID (e.g. lax)")
-    parser.add_argument("--months", type=int, default=1, help="Duration in months (default: 1)")
+    duration = parser.add_mutually_exclusive_group()
+    duration.add_argument("--months", type=int, default=0, help="Duration in months (default: 1 if --days not set)")
+    duration.add_argument("--days", type=int, default=0, help="Duration in days (minimum: 1)")
     parser.add_argument("--os-id", type=int, default=2284, help="OS image ID (default: 2284 = Ubuntu 24.04)")
     parser.add_argument("--label", default="x402-instance", help="Instance label")
     parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
@@ -155,10 +166,15 @@ if __name__ == "__main__":
             print(f"Failed to read SSH key file: {exc}")
             sys.exit(1)
 
+    # Default to 1 month if neither --days nor --months specified
+    months = args.months if args.months > 0 else (0 if args.days > 0 else 1)
+    days = args.days
+
     result = provision_instance(
         plan=args.plan,
         region=args.region,
-        months=args.months,
+        months=months,
+        days=days,
         os_id=args.os_id,
         label=args.label,
         network=args.network,
