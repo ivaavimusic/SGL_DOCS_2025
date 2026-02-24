@@ -4,7 +4,7 @@
 x402 Agentic Endpoint Creation
 
 Create a new monetized API endpoint on the x402 network.
-Cost: $5 USDC (includes 20,000 credits)
+Cost: $1 USDC (includes 4,000 credits)
 
 IMPORTANT: Credits are production credits.
 - Each API request to your endpoint consumes 1 credit
@@ -117,7 +117,7 @@ def create_endpoint(
     print(f"Price: ${price} per call")
     print(f"Chain: {chain}")
     print(f"List on Marketplace: {list_on_marketplace}")
-    print("Cost: $5 USDC (includes 20,000 credits)")
+    print("Cost: $1 USDC (includes 4,000 credits)")
 
     challenge_resp = requests.post(
         url,

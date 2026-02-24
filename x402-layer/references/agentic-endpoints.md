@@ -6,7 +6,7 @@ Deploy your own monetized API endpoints programmatically.
 POST https://api.x402layer.cc/agent/endpoints
 
 ## Pricing
-Create: $5 (20,000 credits included)
+Create: $1 (4,000 credits included)
 Top-up: $1 = 500 credits
 
 ## Create Flow

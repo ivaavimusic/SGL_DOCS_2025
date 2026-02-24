@@ -126,7 +126,7 @@ Once AWAL is configured, all Base payment scripts will automatically use it inst
 
 | Script | Purpose |
 |--------|---------|
-| `create_endpoint.py` | Deploy new monetized endpoint ($5) |
+| `create_endpoint.py` | Deploy new monetized endpoint ($1) |
 | `manage_endpoint.py` | View/update your endpoints |
 | `topup_endpoint.py` | Recharge YOUR endpoint with credits |
 | `list_on_marketplace.py` | Update marketplace listing |
@@ -162,15 +162,15 @@ User pays $0.01 → Your wallet receives payment → 1 credit deducted from your
 
 | Item | Value |
 |------|-------|
-| **Creation cost** | $5 (one-time) |
-| **Starting credits** | 20,000 credits |
+| **Creation cost** | $1 (one-time) |
+| **Starting credits** | 4,000 credits |
 | **Recharge rate** | 500 credits per $1 |
 | **Consumption** | 1 credit per API request |
 | **Your earnings** | Whatever price you set per call |
 
 ### Example
 
-1. **Create endpoint**: Pay $5, get 20,000 credits
+1. **Create endpoint**: Pay $1, get 4,000 credits
 2. **Set price**: $0.01 per call
 3. **User calls your API 1,000 times**: You earn $10, 1,000 credits deducted
 4. **Remaining**: 19,000 credits + $10 profit
@@ -229,7 +229,7 @@ python {baseDir}/scripts/awal_cli.py run bazaar list
 
 ## Provider Flows
 
-### A. Create Endpoint ($5 one-time)
+### A. Create Endpoint ($1 one-time)
 
 Deploy your own monetized API:
 
@@ -252,13 +252,13 @@ python {baseDir}/scripts/create_endpoint.py my-api "My AI Service" https://api.e
 > **Note**: Save the `API Key` from the output and use it to secure your origin server.
 
 > ⚠️ **IMPORTANT - How Credits Work:**
-> - **Cost:** $5 one-time, includes **20,000 credits** (NOT test credits!)
+> - **Cost:** $1 one-time, includes **4,000 credits** (NOT test credits!)
 > - **Consumption:** 1 credit is deducted for **each API request** to your endpoint
 > - **When credits reach 0:** Your endpoint **stops working** until you recharge
 > - **Recharge:** Use `topup_endpoint.py` to add more credits ($1 = 500 credits)
 > - **Users pay YOU:** Each user payment goes to your wallet, then 1 credit is used
 
-Includes 20,000 starting credits.
+Includes 4,000 starting credits.
 
 ### B. Manage Your Endpoint
 

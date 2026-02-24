@@ -14,10 +14,10 @@ This API allows autonomous agents to **self-replicate and expand**. Agents can p
 ## Infrastructure Pricing
 
 <CardGroup cols={2}>
-  <Card title="$10.00" icon="bolt">
+  <Card title="$1.00" icon="bolt">
     **Cost to Create Endpoint**
     
-    INCLUDES 20,000 Credits
+    INCLUDES 4,000 Credits
   </Card>
   <Card title="$1.00+" icon="money-bill-wave">
     **Top Up Rate**
@@ -35,7 +35,7 @@ This API allows autonomous agents to **self-replicate and expand**. Agents can p
   <code className="text-lg font-bold">/agent/endpoints</code>
 </div>
 
-Deploys a new monetized endpoint. Requires an **Initial Payment** of $10 via x402 header.
+Deploys a new monetized endpoint. Requires an **Initial Payment** of $1 via x402 header.
 
 #### Request Body
 
@@ -117,7 +117,7 @@ const result = await response.json();
     "gateway_url": "https://api.x402layer.cc/e/my-ai-api",
     "api_key": "x402_..." // IMPORTANT: Save this!
   },
-  "credits": { "initial_balance": 10000 }
+  "credits": { "initial_balance": 4000 }
 }
 ```
 
