@@ -1,12 +1,14 @@
 ---
 name: x402-layer
-version: 1.1.0
+version: 1.2.0
 description: |
   This skill should be used when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
-  "topup endpoint", "browse x402 marketplace", use "Coinbase Agentic Wallet
-  (AWAL)", or manage x402 Singularity Layer operations on Base or Solana networks.
+  "topup endpoint", "browse x402 marketplace", "set up webhook",
+  "receive payment notifications", "manage endpoint webhook",
+  use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
+  operations on Base or Solana networks.
 homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
 metadata:
   clawdbot:
@@ -50,6 +52,7 @@ x402 is a **Web3 payment layer** enabling AI agents to:
 - 🚀 **Deploy** monetized endpoints
 - 🔍 **Discover** services via marketplace
 - 📊 **Manage** endpoints and credits
+- 🔔 **Webhooks** — receive payment notifications
 
 **Networks:** Base (EVM) • Solana  
 **Currency:** USDC  
@@ -130,6 +133,7 @@ Once AWAL is configured, all Base payment scripts will automatically use it inst
 | `manage_endpoint.py` | View/update your endpoints |
 | `topup_endpoint.py` | Recharge YOUR endpoint with credits |
 | `list_on_marketplace.py` | Update marketplace listing |
+| `manage_webhook.py` | Set/update/remove webhook URL |
 
 ---
 
@@ -315,6 +319,70 @@ python {baseDir}/scripts/list_on_marketplace.py my-api --unlist
 ```
 
 > **Tip:** Use `list_on_marketplace.py` to update your listing anytime - change category, description, or images without recreating the endpoint.
+
+### E. Webhooks (Payment Notifications)
+
+Receive `payment.succeeded` events when someone pays for your endpoint. Optional — not required for endpoints to work.
+
+**Set webhook at creation time:**
+```bash
+python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01 \
+    --webhook-url https://my-server.com/webhook
+```
+
+**Add or update webhook on existing endpoint:**
+```bash
+python {baseDir}/scripts/manage_webhook.py set my-api https://my-server.com/webhook
+```
+
+**Check webhook status:**
+```bash
+python {baseDir}/scripts/manage_webhook.py info my-api
+```
+
+**Remove webhook:**
+```bash
+python {baseDir}/scripts/manage_webhook.py remove my-api
+```
+
+> ⚠️ **IMPORTANT**: The `signing_secret` is returned only once when you set a webhook. Save it immediately.
+
+#### Webhook Event Format
+
+Your endpoint receives POST requests with:
+```http
+Content-Type: application/json
+X-X402-Event: payment.succeeded
+X-X402-Signature: t=<timestamp>,v1=<hmac_sha256>
+```
+
+```json
+{
+  "id": "event-uuid",
+  "type": "payment.succeeded",
+  "created_at": "2026-01-01T00:00:00.000Z",
+  "data": {
+    "source": "endpoint",
+    "source_slug": "my-api",
+    "amount": 0.01,
+    "currency": "USDC",
+    "tx_hash": "0x...",
+    "payer_wallet": "0x...",
+    "network": "base",
+    "status": "confirmed"
+  }
+}
+```
+
+#### Verify Webhook Signature
+```python
+import hmac, hashlib
+def verify(secret, timestamp, body, received_sig):
+    expected = hmac.new(secret.encode(), f"{timestamp}.{body}".encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, received_sig)
+```
+
+> **When credits = 0**, no requests go through, so no payments happen and no webhook events fire. Self-regulating.
 
 ---
 

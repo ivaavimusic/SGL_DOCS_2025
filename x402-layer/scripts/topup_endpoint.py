@@ -1,195 +1,139 @@
 #!/usr/bin/env python3
 """
-x402 Endpoint Credit Topup (SELLER/PROVIDER)
+x402 Endpoint Credit Topup (PROVIDER)
 
-Add credits to YOUR OWN agentic endpoint to maintain balance.
-This is for endpoint OWNERS, not consumers.
+Add credits to YOUR OWN agentic endpoint.
 
-For CONSUMER credit purchases, use recharge_credits.py instead.
-
-Usage:
-    python topup_endpoint.py <your_endpoint_slug> <amount_usd>
-    
-Example:
-    python topup_endpoint.py my-weather-api 10  # Add $10 worth of credits
-    
-Environment Variables:
-    PRIVATE_KEY - Your EVM private key (0x...) - must be endpoint owner
-    WALLET_ADDRESS - Your wallet address (0x...) - must be endpoint owner
+Modes:
+- private-key (default): Base + Solana supported
+- awal: Base payments via AWAL CLI
 """
 
+import json
 import os
 import sys
-import json
-import time
-import base64
-import secrets
+
 import requests
-from eth_account import Account
+
+from awal_bridge import awal_pay_url
+from network_selection import pick_payment_option
+from solana_signing import create_solana_xpayment_from_accept
+from wallet_signing import is_awal_mode, load_wallet_address
 
 API_BASE = "https://api.x402layer.cc"
-USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-USDC_NAME = "USD Coin"
-USDC_VERSION = "2"
 
-def load_credentials():
-    """Load wallet credentials from environment."""
-    private_key = os.getenv("PRIVATE_KEY")
-    wallet = os.getenv("WALLET_ADDRESS")
-    if not private_key or not wallet:
+
+def _load_api_key() -> str:
+    api_key = os.getenv("X_API_KEY") or os.getenv("API_KEY")
+    if not api_key:
         try:
-            from dotenv import load_dotenv
+            from dotenv import load_dotenv  # type: ignore
+
             load_dotenv()
-            private_key = os.getenv("PRIVATE_KEY")
-            wallet = os.getenv("WALLET_ADDRESS")
-        except ImportError:
+            api_key = os.getenv("X_API_KEY") or os.getenv("API_KEY")
+        except Exception:
             pass
-    
-    if not private_key or not wallet:
-        print("Error: Set PRIVATE_KEY and WALLET_ADDRESS environment variables")
-        sys.exit(1)
-    return private_key, wallet
+    if not api_key:
+        raise ValueError("Set X_API_KEY (or API_KEY) environment variable")
+    return api_key
+
 
 def topup_endpoint(endpoint_slug: str, amount_usd: float) -> dict:
-    """
-    Add credits to your own endpoint.
-    
-    This is a SELLER/PROVIDER operation - you must own the endpoint.
-    Credits allow consumers to access your endpoint faster.
-    
-    Args:
-        endpoint_slug: Your endpoint's slug
-        amount_usd: Amount in USD to add as credits
-    
-    Returns:
-        Transaction result
-    """
-    private_key, wallet = load_credentials()
-    
-    url = f"{API_BASE}/agent/endpoints/{endpoint_slug}/topup"
-    headers = {"x-wallet-address": wallet}
-    data = {"amount": amount_usd, "chain": "base"}
-    
-    print(f"[SELLER] Topping up endpoint: {endpoint_slug}")
+    if amount_usd <= 0:
+        return {"error": "Amount must be positive"}
+
+    api_key = _load_api_key()
+
+    url = f"{API_BASE}/agent/endpoints"
+    params = {"slug": endpoint_slug}
+    data = {"topup_amount": amount_usd}
+
+    print(f"[PROVIDER] Topping up endpoint: {endpoint_slug}")
     print(f"Amount: ${amount_usd} USD")
-    
-    # Step 1: Get 402 challenge
-    response = requests.post(url, json=data, headers=headers)
-    
-    if response.status_code != 402:
-        if response.status_code == 403:
-            return {"error": "You don't own this endpoint. Use recharge_credits.py for consumer credit purchases."}
-        return {"error": f"Unexpected status: {response.status_code}", "response": response.text}
-    
-    challenge = response.json()
-    
-    # Find Base payment option
-    base_option = None
-    for opt in challenge.get("accepts", []):
-        if opt.get("network") == "base":
-            base_option = opt
-            break
-    
-    if not base_option:
-        return {"error": "No Base payment option available"}
-    
-    # Step 2: Sign EIP-712 payment
-    pay_to = base_option["payTo"]
-    amount = int(base_option["maxAmountRequired"])
-    
-    # Nonce must be bytes32 (0x + 64 hex chars = 32 bytes)
-    nonce = "0x" + secrets.token_hex(32)
-    valid_after = 0
-    valid_before = int(time.time()) + 3600
-    
-    typed_data = {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "verifyingContract", "type": "address"}
-            ],
-            "TransferWithAuthorization": [
-                {"name": "from", "type": "address"},
-                {"name": "to", "type": "address"},
-                {"name": "value", "type": "uint256"},
-                {"name": "validAfter", "type": "uint256"},
-                {"name": "validBefore", "type": "uint256"},
-                {"name": "nonce", "type": "bytes32"}
-            ]
-        },
-        "primaryType": "TransferWithAuthorization",
-        "domain": {
-            "name": USDC_NAME,
-            "version": USDC_VERSION,
-            "chainId": 8453,
-            "verifyingContract": USDC_ADDRESS
-        },
-        "message": {
-            "from": wallet,
-            "to": pay_to,
-            "value": amount,
-            "validAfter": valid_after,
-            "validBefore": valid_before,
-            "nonce": nonce
-        }
-    }
-    
-    account = Account.from_key(private_key)
-    signed = account.sign_typed_data(
-        typed_data["domain"],
-        {"TransferWithAuthorization": typed_data["types"]["TransferWithAuthorization"]},
-        typed_data["message"]
-    )
-    
-    payload = {
-        "x402Version": 1,
-        "scheme": "exact",
-        "network": "base",
-        "payload": {
-            "signature": signed.signature.hex(),
-            "authorization": {
-                "from": wallet,
-                "to": pay_to,
-                "value": str(amount),
-                "validAfter": str(valid_after),
-                "validBefore": str(valid_before),
-                "nonce": nonce
-            }
-        }
-    }
-    
-    x_payment = base64.b64encode(json.dumps(payload).encode()).decode()
-    
-    # Step 3: Complete topup
-    response = requests.post(
+
+    if is_awal_mode():
+        wallet = load_wallet_address(required=False)
+        headers = {"X-API-Key": api_key}
+        if wallet:
+            headers["x-wallet-address"] = wallet
+        print("Payment mode: AWAL (Base)")
+        return awal_pay_url(
+            f"{url}?slug={endpoint_slug}",
+            method="PUT",
+            data=data,
+            headers=headers,
+        )
+
+    response = requests.put(
         url,
+        params=params,
+        json=data,
+        headers={"X-API-Key": api_key},
+        timeout=30,
+    )
+
+    if response.status_code != 402:
+        if response.status_code == 401:
+            return {"error": "Invalid API key. Use the endpoint API key returned at creation time."}
+        return {"error": f"Unexpected status: {response.status_code}", "response": response.text}
+
+    challenge = response.json()
+    try:
+        selected_network, selected_option, signer = pick_payment_option(challenge, context="endpoint topup")
+    except ValueError as exc:
+        return {"error": str(exc)}
+
+    try:
+        if selected_network == "base":
+            if signer is None:
+                return {"error": "Internal error: missing Base signer"}
+            x_payment = signer.create_x402_payment_header(
+                pay_to=selected_option["payTo"],
+                amount=int(selected_option["maxAmountRequired"]),
+            )
+        else:
+            x_payment = create_solana_xpayment_from_accept(selected_option)
+    except Exception as exc:
+        return {"error": f"Failed to build {selected_network} payment: {exc}"}
+
+    response = requests.put(
+        url,
+        params=params,
         json=data,
         headers={
+            "X-API-Key": api_key,
             "X-Payment": x_payment,
-            "x-wallet-address": wallet
-        }
+        },
+        timeout=45,
     )
-    
-    print(f"Response: {response.status_code}")
-    
-    if response.status_code == 200:
-        print(f"\n✅ Credits added to your endpoint!")
-        return response.json()
-    else:
-        return {"error": response.text}
 
-if __name__ == "__main__":
+    print(f"Payment network used: {selected_network}")
+    print(f"Response: {response.status_code}")
+
+    if response.status_code == 200:
+        print("\nCredits added to endpoint")
+        return response.json()
+
+    return {"error": response.text}
+
+
+def main() -> None:
     if len(sys.argv) < 3:
         print("=" * 60)
-        print("SELLER/PROVIDER: Top up YOUR OWN endpoint with credits")
+        print("PROVIDER MODE: Top up YOUR OWN endpoint credits")
         print("=" * 60)
         print("\nUsage: python topup_endpoint.py <your_endpoint_slug> <amount_usd>")
         print("Example: python topup_endpoint.py my-weather-api 10")
-        print("\nNote: You must OWN the endpoint to use this script.")
-        print("For CONSUMER credit purchases, use recharge_credits.py instead.")
+        print("\nRequired env: X_API_KEY (or API_KEY)")
         sys.exit(1)
-    
+
     result = topup_endpoint(sys.argv[1], float(sys.argv[2]))
     print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(json.dumps({"error": str(exc)}, indent=2))
+        sys.exit(1)

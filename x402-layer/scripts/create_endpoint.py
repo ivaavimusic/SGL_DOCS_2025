@@ -61,6 +61,7 @@ def create_endpoint(
     banner_url: Optional[str] = None,
     list_on_marketplace: bool = True,
     wallet_secondary: Optional[str] = None,
+    webhook_url: Optional[str] = None,
 ) -> dict:
     """Create a new agentic endpoint."""
     if chain == "solana":
@@ -109,6 +110,8 @@ def create_endpoint(
         data["image_url"] = logo_url
     if banner_url:
         data["banner_url"] = banner_url
+    if webhook_url:
+        data["webhook_url"] = webhook_url
 
     url = f"{API_BASE}/agent/endpoints"
 
@@ -191,6 +194,9 @@ def create_endpoint(
         print(f"URL: https://api.x402layer.cc/e/{slug}")
         if "endpoint" in result and "api_key" in result["endpoint"]:
             print("API Key returned. You must validate x-api-key at your origin.")
+        if "webhook" in result:
+            print(f"\n⚠️  SAVE WEBHOOK SECRET — it will not be shown again:")
+            print(f"   {result['webhook'].get('signing_secret', 'N/A')}")
         return result
 
     return {"error": response.text}
@@ -224,6 +230,7 @@ Examples:
     parser.add_argument("--logo", help="Logo image URL for marketplace listing")
     parser.add_argument("--banner", help="Banner image URL for marketplace listing")
     parser.add_argument("--no-list", action="store_true", help="Create endpoint without listing")
+    parser.add_argument("--webhook-url", help="HTTPS URL to receive payment.succeeded webhook events (optional)")
 
     args = parser.parse_args()
 
@@ -241,6 +248,7 @@ Examples:
         banner_url=args.banner,
         list_on_marketplace=list_on_marketplace,
         wallet_secondary=args.wallet_secondary,
+        webhook_url=args.webhook_url,
     )
     print(json.dumps(result, indent=2))
 

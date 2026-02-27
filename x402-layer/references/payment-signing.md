@@ -2,7 +2,7 @@
 
 ## Critical Understanding
 
-x402 uses EIP-712 typed data signatures for TransferWithAuthorization. The CDP facilitator verifies the signature and broadcasts the actual on-chain transaction.
+x402 uses EIP-712 typed data signatures for TransferWithAuthorization. The facilitator verifies signatures and settles the payment.
 
 ## Base (EVM) - EIP-712 Signing
 
@@ -53,6 +53,22 @@ signed = Account.sign_message(encoded, private_key)
 
 Solana uses SPL Token transfers with base64 encoding.
 
+## Coinbase Agentic Wallet (AWAL) Mode
+
+You can avoid direct key management by using AWAL:
+
+```bash
+python {baseDir}/scripts/awal_cli.py run auth login agent@example.com
+python {baseDir}/scripts/awal_cli.py run auth verify <flow_id> <otp>
+python {baseDir}/scripts/awal_cli.py pay-url https://api.x402layer.cc/e/weather-data
+```
+
+AWAL package version can be pinned:
+
+```bash
+export AWAL_PACKAGE="awal@1.0.0"
+```
+
 ## X-Payment Header Format
 
 Base64 encode the payment JSON:
@@ -60,4 +76,3 @@ Base64 encode the payment JSON:
 import json, base64
 x_payment = base64.b64encode(json.dumps(payload).encode()).decode()
 ```
-

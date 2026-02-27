@@ -166,9 +166,14 @@ def create_eip712_signature(
     
     encoded = encode_typed_data(full_message=typed_data)
     signed = Account.sign_message(encoded, private_key=private_key)
-    
+
+    # Ensure 0x prefix on signature for EVM compatibility
+    sig = signed.signature.hex()
+    if not sig.startswith("0x"):
+        sig = "0x" + sig
+
     return {
-        "signature": signed.signature.hex(),
+        "signature": sig,
         "nonce": nonce,
         "validAfter": valid_after,
         "validBefore": valid_before
@@ -285,7 +290,12 @@ def consume_product(product_input: str, download_file: bool = False) -> dict:
     
     # Optional: Download the file
     if download_file and result.get("downloadUrl"):
-        filename = result.get("fileName", "downloaded_product")
+        # Sanitize filename to prevent path traversal attacks
+        raw_filename = result.get("fileName", "downloaded_product")
+        filename = os.path.basename(raw_filename)
+        # Additional safety: reject empty or dangerous filenames
+        if not filename or filename in ('.', '..'):
+            filename = "downloaded_product"
         print(f"\nDownloading file to: {filename}")
         
         file_response = requests.get(result["downloadUrl"])

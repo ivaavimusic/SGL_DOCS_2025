@@ -2,84 +2,70 @@
 """
 x402 Marketplace Discovery
 
-Browse and search the x402 marketplace for available API endpoints.
+Browse and search the x402 marketplace for available listings.
 
 Usage:
-    python discover_marketplace.py                    # List all endpoints
-    python discover_marketplace.py search <query>     # Search endpoints
+    python discover_marketplace.py                    # List all
+    python discover_marketplace.py search <query>     # Search listings
     python discover_marketplace.py category <type>    # Filter by category
-    python discover_marketplace.py featured           # Show featured endpoints
-    
+    python discover_marketplace.py featured           # Show featured
+    python discover_marketplace.py details <slug>     # Find a listing by slug
+
 Categories: ai, data, finance, utility, social, gaming
 """
 
-import os
-import sys
 import json
+import sys
 import requests
 
 API_BASE = "https://api.x402layer.cc"
 
-def list_all_endpoints() -> dict:
-    """List all marketplace endpoints."""
-    url = f"{API_BASE}/api/marketplace"
-    
-    response = requests.get(url)
-    
+
+def _query_marketplace(**params) -> dict:
+    try:
+        response = requests.get(f"{API_BASE}/api/marketplace", params=params, timeout=30)
+    except requests.RequestException as exc:
+        return {"error": str(exc)}
+
     if response.status_code == 200:
         return response.json()
-    else:
-        return {"error": response.text}
+    return {"error": response.text, "status": response.status_code}
+
+
+def list_all_endpoints() -> dict:
+    return _query_marketplace(limit=50)
+
 
 def search_endpoints(query: str) -> dict:
-    """Search marketplace by keyword."""
-    url = f"{API_BASE}/api/marketplace/search"
-    params = {"q": query}
-    
-    response = requests.get(url, params=params)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.text}
+    return _query_marketplace(search=query, limit=50)
+
 
 def get_by_category(category: str) -> dict:
-    """Get endpoints by category."""
-    url = f"{API_BASE}/api/marketplace"
-    params = {"category": category}
-    
-    response = requests.get(url, params=params)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.text}
+    return _query_marketplace(category=category, limit=50)
+
 
 def get_featured() -> dict:
-    """Get featured endpoints."""
-    url = f"{API_BASE}/api/marketplace/featured"
-    
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.text}
+    return _query_marketplace(featured="true", limit=50)
+
 
 def get_endpoint_details(slug: str) -> dict:
-    """Get detailed info about an endpoint."""
-    url = f"{API_BASE}/api/marketplace/{slug}"
-    
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.text}
+    data = _query_marketplace(search=slug, limit=50)
+    if "listings" not in data:
+        return data
 
-def main():
+    listings = data.get("listings", [])
+    exact = [item for item in listings if item.get("slug") == slug]
+    if exact:
+        return {"listing": exact[0]}
+
+    if listings:
+        return {"note": "No exact slug match; returning closest matches", "listings": listings[:5]}
+
+    return {"error": f"No listing found for slug '{slug}'"}
+
+
+def main() -> None:
     if len(sys.argv) < 2:
-        # Default: list all
         result = list_all_endpoints()
     elif sys.argv[1] == "search" and len(sys.argv) >= 3:
         result = search_endpoints(sys.argv[2])
@@ -95,17 +81,21 @@ def main():
         print("  python discover_marketplace.py search <query>     # Search")
         print("  python discover_marketplace.py category <type>    # By category")
         print("  python discover_marketplace.py featured           # Featured")
-        print("  python discover_marketplace.py details <slug>     # Endpoint info")
+        print("  python discover_marketplace.py details <slug>     # Listing info")
         return
-    
-    # Pretty print results
-    if "endpoints" in result:
-        endpoints = result["endpoints"]
-        print(f"Found {len(endpoints)} endpoints:")
-        for ep in endpoints[:10]:  # Show first 10
-            print(f"  - {ep.get('slug', '?')} | ${ep.get('price', 0)} | {ep.get('name', 'Unnamed')}")
+
+    if "listings" in result:
+        listings = result["listings"]
+        print(f"Found {len(listings)} listings:")
+        for item in listings[:10]:
+            slug = item.get("slug", "?")
+            price = item.get("price", 0)
+            name = item.get("name", "Unnamed")
+            item_type = item.get("type", "unknown")
+            print(f"  - {slug} | ${price} | {name} [{item_type}]")
     else:
         print(json.dumps(result, indent=2))
+
 
 if __name__ == "__main__":
     main()

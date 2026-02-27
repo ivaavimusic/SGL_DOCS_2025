@@ -18,7 +18,7 @@ Usage:
 Categories: ai, data, finance, utility, social, gaming
 
 Environment Variables:
-    WALLET_ADDRESS - Your wallet address (must match endpoint owner)
+    X_API_KEY - Your endpoint API key (required)
 """
 
 import os
@@ -29,39 +29,36 @@ import requests
 
 API_BASE = "https://api.x402layer.cc"
 
-def load_wallet():
-    """Load wallet address from environment."""
-    wallet = os.getenv("WALLET_ADDRESS")
-    if not wallet:
+def load_api_key(args_key=None):
+    """Load API Key from argument or environment."""
+    if args_key:
+        return args_key
+    
+    api_key = os.getenv("X_API_KEY")
+    if not api_key:
         try:
             from dotenv import load_dotenv
             load_dotenv()
-            wallet = os.getenv("WALLET_ADDRESS")
+            api_key = os.getenv("X_API_KEY")
         except ImportError:
             pass
 
-    if not wallet:
-        print("Error: Set WALLET_ADDRESS environment variable")
+    if not api_key:
+        print("Error: content of X_API_KEY environment variable or --api-key argument needed")
+        print("You received this key when you created your endpoint.")
         sys.exit(1)
-    return wallet
+    return api_key
 
-def list_endpoint(slug: str, category: str = None, description: str = None,
+def list_endpoint(slug: str, api_key: str, category: str = None, description: str = None,
                   logo_url: str = None, banner_url: str = None, tags: list = None) -> dict:
     """
     List or update an endpoint on the marketplace.
-
-    Args:
-        slug: Endpoint slug
-        category: Marketplace category (ai, data, finance, utility, social, gaming)
-        description: Public description
-        logo_url: Logo image URL
-        banner_url: Banner image URL
-        tags: Optional list of tags
     """
-    wallet = load_wallet()
-
     url = f"{API_BASE}/api/marketplace/list"
-    headers = {"x-wallet-address": wallet}
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
 
     data = {"slug": slug}
 
@@ -97,15 +94,16 @@ def list_endpoint(slug: str, category: str = None, description: str = None,
             print(f"\\n⚠️ {result.get('message', 'Operation completed')}")
         return result
     else:
-        print(f"\\n❌ Error: {response.status_code}")
+        print(f"\\n❌ Error: {response.status_code} - {response.text}")
         return {"error": response.text}
 
-def unlist_endpoint(slug: str) -> dict:
+def unlist_endpoint(slug: str, api_key: str) -> dict:
     """Remove an endpoint from the marketplace."""
-    wallet = load_wallet()
-
     url = f"{API_BASE}/api/marketplace/unlist"
-    headers = {"x-wallet-address": wallet}
+    headers = {
+        "x-api-key": api_key,
+        "Content-Type": "application/json"
+    }
     data = {"slug": slug}
 
     print(f"Unlisting endpoint: {slug} from marketplace...")
@@ -118,7 +116,7 @@ def unlist_endpoint(slug: str) -> dict:
             print(f"\\n✅ Endpoint '{slug}' removed from marketplace")
         return result
     else:
-        print(f"\\n❌ Error: {response.status_code}")
+        print(f"\\n❌ Error: {response.status_code} - {response.text}")
         return {"error": response.text}
 
 def main():
@@ -127,18 +125,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # List on marketplace (minimum required)
+  # List on marketplace (uses X_API_KEY env var)
   python list_on_marketplace.py my-api --category ai --description "My AI API"
 
-  # Update existing listing with images
-  python list_on_marketplace.py my-api --logo https://example.com/logo.png
-
-  # Unlist from marketplace
-  python list_on_marketplace.py my-api --unlist
+  # Pass API key explicitly
+  python list_on_marketplace.py my-api --api-key "x402_..." --unlist
         """
     )
 
     parser.add_argument("slug", help="Endpoint slug")
+    parser.add_argument("--api-key", help="Endpoint API Key (or set X_API_KEY env)")
     parser.add_argument("--category", choices=["ai", "data", "finance", "utility", "social", "gaming"],
                         help="Marketplace category")
     parser.add_argument("--description", help="Public description")
@@ -148,9 +144,11 @@ Examples:
     parser.add_argument("--unlist", action="store_true", help="Remove from marketplace")
 
     args = parser.parse_args()
+    
+    api_key = load_api_key(args.api_key)
 
     if args.unlist:
-        result = unlist_endpoint(args.slug)
+        result = unlist_endpoint(args.slug, api_key)
     else:
         # At least category or description should be provided for listing
         if not args.category and not args.description and not args.logo and not args.banner:
@@ -159,6 +157,7 @@ Examples:
             sys.exit(1)
         result = list_endpoint(
             args.slug,
+            api_key,
             category=args.category,
             description=args.description,
             logo_url=args.logo,

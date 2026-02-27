@@ -19,6 +19,7 @@ import os
 import sys
 import json
 import requests
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 def load_wallet():
     """Load wallet address from environment."""
@@ -39,17 +40,25 @@ def load_wallet():
 def consume_with_credits(endpoint_url: str) -> dict:
     """Consume an endpoint using credits."""
     wallet = load_wallet()
+    parsed = urlparse(endpoint_url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query["useCredits"] = "1"
+    credits_url = urlunparse(parsed._replace(query=urlencode(query)))
     
     print(f"Wallet: {wallet}")
-    print(f"Consuming: {endpoint_url}")
+    print(f"Consuming: {credits_url}")
     
-    response = requests.get(
-        endpoint_url,
-        headers={
-            "x-wallet-address": wallet,
-            "Accept": "application/json"
-        }
-    )
+    try:
+        response = requests.get(
+            credits_url,
+            headers={
+                "x-wallet-address": wallet,
+                "Accept": "application/json"
+            },
+            timeout=30
+        )
+    except requests.RequestException as exc:
+        return {"error": str(exc)}
     
     print(f"Response: {response.status_code}")
     
