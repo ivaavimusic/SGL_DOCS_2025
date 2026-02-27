@@ -1,0 +1,139 @@
+---
+title: SDK & Receipts
+description: Verify payment receipts with the x402layer SDK for Node.js and Python
+---
+
+# SDK & Receipts
+
+Every successful payment through x402 Studio returns a signed **receipt token** (JWT). The x402layer SDK lets you verify these receipts server-side to gate premium content, confirm purchases, or audit payments.
+
+🔗 **GitHub**: [Singularity-SDK](https://github.com/ivaavimusic/Singularity-SDK)
+🔑 **JWKS Endpoint**: [api.x402layer.cc/.well-known/jwks.json](https://api.x402layer.cc/.well-known/jwks.json)
+
+## How It Works
+
+When a payment is processed through x402, the worker signs a receipt JWT with a private key. The SDK verifies that signature using the corresponding public key from the JWKS endpoint — proving the receipt is genuine and untampered.
+
+1. **Client hits your API** — Without a valid receipt token
+2. **SDK middleware returns 402** — With x402 payment instructions
+3. **Client pays via x402** — Receives a signed receipt JWT
+4. **Client retries with receipt** — Token in header
+5. **SDK verifies receipt** — Cryptographic signature check against JWKS public keys → access granted
+
+## Installation
+
+### Node.js
+
+```bash
+npm install github:ivaavimusic/Singularity-SDK
+```
+
+```js
+const { verifyX402ReceiptToken, createX402ReceiptMiddleware } = require('@x402layer/sdk');
+```
+
+### Python
+
+```bash
+pip install git+https://github.com/ivaavimusic/Singularity-SDK.git#subdirectory=python
+```
+
+```python
+from x402layer_middleware import X402ReceiptVerifier, require_x402_receipt
+```
+
+Dependencies (`PyJWT`, `cryptography`) are installed automatically. For FastAPI support: `pip install x402layer-sdk[fastapi]`.
+
+## Receipt Token Contract
+
+Receipt tokens are standard JWTs signed with `RS256`. Public keys are served from the JWKS endpoint for verification.
+
+| Property | Value |
+|----------|-------|
+| Algorithm | `RS256` |
+| JWKS URL | `https://api.x402layer.cc/.well-known/jwks.json` |
+| Issuer | `https://api.x402layer.cc` |
+| Audience | `x402layer:receipt` |
+
+## Receipt Claims
+
+| Claim | Type | Description |
+|-------|------|-------------|
+| `event` | string | `"payment.succeeded"` |
+| `source` | string | `"endpoint"` \| `"product"` |
+| `source_id` | string | UUID of the resource |
+| `source_slug` | string | Slug of the resource |
+| `amount` | string | Payment amount (e.g. `"1.00"`) |
+| `currency` | string | Asset symbol (e.g. `"USDC"`) |
+| `tx_hash` | string | On-chain transaction hash |
+| `payer_wallet` | string | Buyer wallet address |
+| `network` | string | `"base"` \| `"solana"` |
+| `status` | string | Settlement status |
+| `iat` | number | Issued-at timestamp (Unix) |
+| `exp` | number | Expiration timestamp (Unix) |
+| `jti` | string | Unique receipt ID |
+
+## Node.js Quick Start
+
+```javascript
+const { createX402ReceiptMiddleware } = require('@x402layer/sdk');
+
+// Protect any route
+app.get(
+  '/premium-data',
+  createX402ReceiptMiddleware({
+    requiredSourceSlug: 'my-api-endpoint'  // prevents token replay
+  }),
+  (req, res) => {
+    // req.x402Receipt contains the verified claims
+    console.log('Paid by:', req.x402Receipt.payer_wallet);
+    console.log('Amount:', req.x402Receipt.amount, req.x402Receipt.currency);
+    res.json({ data: 'premium content here' });
+  }
+);
+```
+
+Manual verification:
+
+```javascript
+const { verifyX402ReceiptToken } = require('@x402layer/sdk');
+
+const claims = await verifyX402ReceiptToken(token);
+// claims.source_slug, claims.amount, claims.tx_hash, etc.
+```
+
+## Python / FastAPI Quick Start
+
+```python
+from x402layer_middleware import X402ReceiptVerifier, require_x402_receipt
+
+verifier = X402ReceiptVerifier()
+
+@app.get("/premium")
+async def premium_endpoint(
+    receipt=require_x402_receipt(verifier, required_source_slug="my-endpoint")
+):
+    print(f"Paid by: {receipt['payer_wallet']}")
+    return {"ok": True, "amount": receipt["amount"]}
+```
+
+## Where the Token Comes From
+
+After a successful payment, the x402 worker includes the receipt token in the response header:
+
+```http
+X-X402-Receipt-Token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InJlY2VpcHQtdjEifQ...
+```
+
+Your client should extract this token and include it in subsequent requests to your backend, either as an `Authorization: Bearer` header or the `X-X402-Receipt-Token` header.
+
+## Security Notes
+
+- 🛡️ **Always set `requiredSourceSlug`** in production — prevents a receipt for endpoint A being replayed against endpoint B.
+- 🔄 **Key rotation** — Publish a new JWKS key with a new `kid`, then update the worker private key. Old tokens remain verifiable until they expire.
+- ⏳ **Expiration** — Receipt tokens have a limited lifetime. Always check the `exp` claim (the SDK does this automatically).
+
+## Related
+
+- [Webhooks](../user-guide/webhooks.mdx) — Receive server-side payment notifications
+- [Creating Endpoints](../user-guide/creating-endpoints.mdx) — Set up paid API endpoints

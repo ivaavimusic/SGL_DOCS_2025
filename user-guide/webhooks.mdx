@@ -1,0 +1,122 @@
+---
+title: Webhooks
+description: Receive real-time payment notifications via webhooks
+---
+
+# Webhooks
+
+Webhooks let you receive real-time `payment.succeeded` notifications whenever a buyer pays for any of your resources — endpoints, products, components, or agent endpoints.
+
+> **Plan Requirement:** Webhooks are available on **Pro and Business** plans only. Free plan accounts receive a `403` response.
+
+## How It Works
+
+Webhooks are **account-level** (seller-level), not per-resource. You register one webhook URL and it receives events for **all** resources you own.
+
+1. 💰 **Payment Happens** — Buyer pays for any of your resources
+2. 📡 **Webhook Fires** — Signed POST request to your URL
+3. ✅ **You Act** — Fulfill order, grant access, log it
+
+## Setup via Dashboard
+
+1. Go to **Dashboard → Webhooks**
+2. Click **Create Webhook**
+3. Enter your HTTPS endpoint URL
+4. A signing secret is generated automatically — copy and store it securely
+
+From the Webhooks dashboard you can also **toggle** webhooks on/off, **rotate** the signing secret, **delete** webhooks, and view **recent delivery logs**.
+
+## Event: `payment.succeeded`
+
+Every webhook delivery is a `POST` request with this JSON body:
+
+```json
+{
+  "id": "evt_abc123",
+  "event": "payment.succeeded",
+  "timestamp": "2026-02-26T19:30:00Z",
+  "data": {
+    "source": "endpoint",
+    "source_id": "ep_xyz789",
+    "source_slug": "my-api",
+    "amount": "1.00",
+    "currency": "USDC",
+    "tx_hash": "0xabc...def",
+    "payer_wallet": "0x1234...5678",
+    "network": "base",
+    "status": "settled"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `source` | Resource type: `endpoint`, `product` |
+| `source_slug` | The slug of the resource that was paid for |
+| `amount` / `currency` | Payment amount and asset (e.g. `USDC`) |
+| `tx_hash` | On-chain transaction hash |
+| `network` | `base` or `solana` |
+
+## Verifying Signatures
+
+Every delivery includes two headers for HMAC verification:
+
+- `X-X402-Signature` — HMAC-SHA256 hex digest of the raw body
+- `X-X402-Timestamp` — Unix timestamp of when the event was sent
+
+### Node.js
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(rawBody, signature, timestamp, secret) {
+  const payload = `${timestamp}.${rawBody}`;
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+```
+
+### Python
+
+```python
+import hmac, hashlib
+
+def verify_webhook(raw_body: bytes, signature: str, timestamp: str, secret: str) -> bool:
+    payload = f"{timestamp}.{raw_body.decode()}"
+    expected = hmac.new(
+        secret.encode(), payload.encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+```
+
+## Coverage Matrix
+
+| Source | Route | Status |
+|--------|-------|--------|
+| Endpoint payments | `/e/:slug` | ✅ Live |
+| Product payments | `/p/:slug` | ✅ Live |
+| Components (via endpoints) | — | ✅ Live |
+| Agent endpoint create | `/agent/endpoints` | ✅ Live |
+| Agent endpoint top-up | `/agent/endpoints` | ✅ Live |
+
+## Best Practices
+
+- 🔐 **Always verify signatures** — Never trust unverified payloads.
+- ⚡ **Respond quickly (< 5s)** — Process asynchronously and return `200` immediately. Queue heavy work.
+- 🔄 **Handle duplicates** — Use the event `id` for idempotency.
+- 🔑 **Rotate secrets periodically** — Use Dashboard → Webhooks → Rotate Secret.
+
+## Webhook API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/webhooks` | List your webhooks |
+| `POST` | `/api/webhooks` | Create a new webhook |
+| `PATCH` | `/api/webhooks/:id` | Toggle active / rotate secret |
+| `DELETE` | `/api/webhooks/:id` | Delete a webhook |
