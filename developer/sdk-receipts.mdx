@@ -25,11 +25,11 @@ When a payment is processed through x402, the worker signs a receipt JWT with a 
 ### Node.js
 
 ```bash
-npm install github:ivaavimusic/Singularity-SDK
+npm install x402sgl
 ```
 
 ```js
-const { verifyX402ReceiptToken, createX402ReceiptMiddleware } = require('@x402layer/sdk');
+const { verifyX402ReceiptToken, createX402ReceiptMiddleware } = require('x402sgl');
 ```
 
 ### Python
@@ -76,7 +76,7 @@ Receipt tokens are standard JWTs signed with `RS256`. Public keys are served fro
 ## Node.js Quick Start
 
 ```javascript
-const { createX402ReceiptMiddleware } = require('@x402layer/sdk');
+const { createX402ReceiptMiddleware } = require('x402sgl');
 
 // Protect any route
 app.get(
@@ -96,7 +96,7 @@ app.get(
 Manual verification:
 
 ```javascript
-const { verifyX402ReceiptToken } = require('@x402layer/sdk');
+const { verifyX402ReceiptToken } = require('x402sgl');
 
 const claims = await verifyX402ReceiptToken(token);
 // claims.source_slug, claims.amount, claims.tx_hash, etc.
