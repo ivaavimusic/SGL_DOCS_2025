@@ -347,15 +347,23 @@ python {baseDir}/scripts/manage_webhook.py remove my-api
 
 > ⚠️ **IMPORTANT**: The `signing_secret` is returned only once when you set a webhook. Save it immediately.
 
-#### Webhook Event Format
+#### Webhook Event Types
+
+| Event | When | Key Fields |
+|-------|------|-----------|
+| `payment.succeeded` | Any payment for your endpoint | `amount`, `tx_hash`, `payer_wallet`, `network` |
+| `credits.depleted` | Owner credits hit 0 | `remaining_credits`, `topup_endpoint` |
+| `credits.low` | Credits drop to ≤100 | `remaining_credits` |
+| `credits.recharged` | Top-up payment succeeds | `credits_added`, `new_balance`, `amount_paid` |
 
 Your endpoint receives POST requests with:
 ```http
 Content-Type: application/json
-X-X402-Event: payment.succeeded
+X-X402-Event: <event_type>
 X-X402-Signature: t=<timestamp>,v1=<hmac_sha256>
 ```
 
+**payment.succeeded example:**
 ```json
 {
   "id": "event-uuid",
@@ -370,6 +378,35 @@ X-X402-Signature: t=<timestamp>,v1=<hmac_sha256>
     "payer_wallet": "0x...",
     "network": "base",
     "status": "confirmed"
+  }
+}
+```
+
+**credits.depleted example:**
+```json
+{
+  "type": "credits.depleted",
+  "data": {
+    "source": "endpoint",
+    "source_slug": "my-api",
+    "remaining_credits": 0,
+    "message": "Endpoint credits exhausted. Top up to resume service."
+  }
+}
+```
+
+**credits.recharged example:**
+```json
+{
+  "type": "credits.recharged",
+  "data": {
+    "source": "endpoint",
+    "source_slug": "my-api",
+    "credits_added": 5000,
+    "previous_balance": 0,
+    "new_balance": 5000,
+    "amount_paid": 10,
+    "currency": "USDC"
   }
 }
 ```

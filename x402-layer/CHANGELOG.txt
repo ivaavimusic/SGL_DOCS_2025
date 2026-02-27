@@ -1,0 +1,91 @@
+x402-layer Skill - Changelog
+=============================
+
+v1.2.0 (2026-02-27)
+--------------------
+NEW: Agentic Webhooks - endpoint-level payment notifications
+- Agents can now receive payment.succeeded events at their own HTTPS URL
+- No user account or Pro plan required - works purely via API key
+- Webhook fires on: credit purchase, direct payment, top-up
+
+NEW SCRIPT: manage_webhook.py
+- manage_webhook.py set <slug> <url>    — add or update webhook
+- manage_webhook.py remove <slug>       — remove webhook
+- manage_webhook.py info <slug>         — check if webhook is configured
+
+UPDATED: create_endpoint.py
+- New --webhook-url flag: set a webhook at endpoint creation time
+- Returns signing_secret in response (shown once, save immediately)
+
+API (for direct callers without skill):
+- POST /agent/endpoints: add webhook_url in body
+- PATCH /agent/endpoints?slug=X: set/update/remove webhook after creation
+  Requires: X-API-Key header (from creation response)
+  Body: {"webhook_url": "https://..."} or {"webhook_url": null}
+
+Webhook signature verification:
+  HMAC-SHA256 over "timestamp.body" using your signing_secret
+  Header: X-X402-Signature: t=<ts>,v1=<hex>
+
+Event format:
+  {
+    "id": "<uuid>",
+    "type": "payment.succeeded",
+    "created_at": "<iso8601>",
+    "data": {
+      "source": "endpoint",
+      "source_slug": "my-api",
+      "amount": 0.01,
+      "currency": "USDC",
+      "tx_hash": "0x...",
+      "payer_wallet": "0x...",
+      "network": "base",
+      "status": "confirmed"
+    }
+  }
+
+Credits note: when endpoint credits = 0, no requests go through,
+so no payments happen and no webhook events fire.
+
+Backward compatible: all existing endpoints unaffected (webhook_url
+defaults to null, events fire only when webhook_url is set).
+
+---
+
+v1.1.3 (2026-02-26)
+--------------------
+- Fixed: AWAL CLI command updated for latest awal package
+- Fixed: Network selection improvements for multi-chain endpoints
+- Fix: Solana signing improvements and retry logic
+- Fix: Endpoint creation cost corrected to $1 (was showing $5 in some places)
+
+v1.1.2 (2026-01-xx)
+--------------------
+- Security: Added input validation to awal_bridge.py (prevent shell injection)
+- Security: Added filename sanitization to consume_product.py (prevent path traversal)
+- Fix: Ensure 0x prefix on EVM signatures for compatibility
+
+v1.1.1 (2026-01-xx)
+--------------------
+- Fix: AWAL CLI command updated from `pay` to `x402 pay`
+- Fix: AWAL URL handling now passes full URL
+- Fix: Backend includes EIP-712 domain params for AWAL compatibility
+
+v1.1.0 (2026-01-xx)
+--------------------
+- Feature: Coinbase Agentic Wallet (AWAL) integration for Base payments
+- Feature: No-private-key mode using AWAL
+- Feature: Auto-detection of authentication mode (private-key vs awal)
+
+v1.0.1 (2025-xx-xx)
+--------------------
+- Security: Strict x-api-key verification for marketplace listing/unlisting
+- Script: Updated list_on_marketplace.py to support X_API_KEY env var
+
+v1.0.0 (2025-xx-xx)
+--------------------
+- Initial release
+- Pay-per-request on Base and Solana
+- Endpoint creation and management
+- Marketplace discovery and listing
+- Credit-based access system
