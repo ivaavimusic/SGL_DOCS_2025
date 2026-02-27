@@ -1,6 +1,15 @@
 x402-layer Skill - Changelog
 =============================
 
+v1.2.1 (2026-02-27)
+--------------------
+UPDATED: Webhook support expanded to 4 event types
+- payment.succeeded: fires on any payment (unchanged)
+- credits.depleted: fires when endpoint owner_credits hit 0
+- credits.low: fires when credits drop to 100 or below
+- credits.recharged: fires on top-up with credits_added, new_balance
+- SKILL.md updated with event type table and example payloads
+
 v1.2.0 (2026-02-27)
 --------------------
 NEW: Agentic Webhooks - endpoint-level payment notifications
