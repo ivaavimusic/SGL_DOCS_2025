@@ -1,12 +1,14 @@
 ---
 name: x402-layer
-version: 1.2.1
+version: 1.3.0
 description: |
   This skill should be used when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
   "topup endpoint", "browse x402 marketplace", "set up webhook",
   "receive payment notifications", "manage endpoint webhook",
+  "register ERC-8004 agent", "register Solana 8004 agent",
+  "submit on-chain reputation feedback", "rate ERC-8004 agent",
   use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
   operations on Base or Solana networks.
 homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
@@ -21,21 +23,20 @@ metadata:
       bins:
         - python3
       env:
-        # Core credentials (required for payments)
+        # Core runtime variables
         - WALLET_ADDRESS
-        - PRIVATE_KEY
-        # Solana payments (required for Solana network)
-        - SOLANA_SECRET_KEY
-        # Provider operations (required for endpoint management)
+        - X402_AUTH_MODE
+        - X402_USE_AWAL
+        - X402_PREFER_NETWORK
+        - X402_API_BASE
+        # Provider operations (endpoint management)
         - X_API_KEY
         - API_KEY
-        # AWAL mode (optional - for Coinbase Agentic Wallet)
-        - X402_USE_AWAL
-        - X402_AUTH_MODE
-        - X402_PREFER_NETWORK
-        - AWAL_PACKAGE
-        - AWAL_BIN
-        - AWAL_FORCE_NPX
+        # Agentic reputation operations
+        - WORKER_FEEDBACK_API_KEY
+        # Optional wallet routing helpers
+        - SOLANA_WALLET_ADDRESS
+        - WALLET_ADDRESS_SECONDARY
 allowed-tools:
   - Read
   - Write
@@ -53,6 +54,8 @@ x402 is a **Web3 payment layer** enabling AI agents to:
 - 🔍 **Discover** services via marketplace
 - 📊 **Manage** endpoints and credits
 - 🔔 **Webhooks** — receive payment notifications
+- 🪪 **Register** ERC-8004 / Solana-8004 agents
+- ⭐ **Write** on-chain reputation feedback
 
 **Networks:** Base (EVM) • Solana  
 **Currency:** USDC  
@@ -106,6 +109,7 @@ Once AWAL is configured, all Base payment scripts will automatically use it inst
 > - **Signed payloads are sent to api.x402layer.cc** - Payment signatures and wallet addresses are transmitted to settle payments
 > - **For testing**: Use a throwaway wallet with minimal USDC ($1-5 is enough for testing)
 > - **API Keys**: When you create an endpoint, store the returned API key securely
+> - **AWAL fallback hardening**: `npx` fallback is disabled by default; set `AWAL_ALLOW_NPX=1` only when you intentionally want remote package execution
 > - **Review the code**: All scripts are auditable in the `scripts/` directory
 
 ---
@@ -134,6 +138,13 @@ Once AWAL is configured, all Base payment scripts will automatically use it inst
 | `topup_endpoint.py` | Recharge YOUR endpoint with credits |
 | `list_on_marketplace.py` | Update marketplace listing |
 | `manage_webhook.py` | Set/update/remove webhook URL |
+
+### 🤖 AGENT REGISTRY & REPUTATION
+
+| Script | Purpose |
+|--------|---------|
+| `register_agent.py` | Register ERC-8004 / Solana-8004 agent via worker |
+| `submit_feedback.py` | Submit on-chain reputation feedback via worker |
 
 ---
 
@@ -421,6 +432,41 @@ def verify(secret, timestamp, body, received_sig):
 
 > **When credits = 0**, no requests go through, so no payments happen and no webhook events fire. Self-regulating.
 
+### F. Agent Registration (ERC-8004 + Solana 8004)
+
+```bash
+# Register on Base Sepolia (default)
+python {baseDir}/scripts/register_agent.py \
+  "My Trading Agent" \
+  "Autonomous strategy agent" \
+  "https://api.example.com/agent"
+
+# Register on Solana Mainnet
+python {baseDir}/scripts/register_agent.py \
+  "My Solana Agent" \
+  "Autonomous Solana workflow agent" \
+  "https://api.example.com/agent" \
+  --network solanaMainnet
+```
+
+### G. Reputation Feedback (On-Chain)
+
+```bash
+# EVM feedback (same chain as agent registration)
+python {baseDir}/scripts/submit_feedback.py \
+  --network base \
+  --agent-id 123 \
+  --rating 5 \
+  --comment "High quality responses"
+
+# Solana feedback (same chain as asset registration)
+python {baseDir}/scripts/submit_feedback.py \
+  --network solanaMainnet \
+  --asset-address <SOLANA_ASSET_ADDRESS> \
+  --rating 4 \
+  --comment "Reliable execution"
+```
+
 ---
 
 ## Payment Technical Details
@@ -448,12 +494,18 @@ Uses `VersionedTransaction` with `MessageV0`:
 | `PRIVATE_KEY` | Base payments (private-key mode) | EVM private key (0x...) |
 | `WALLET_ADDRESS` | All operations | Your wallet address |
 | `SOLANA_SECRET_KEY` | Solana payments | JSON array of bytes |
+| `SOLANA_WALLET_ADDRESS` | Solana payments (optional) | Explicit Solana wallet override |
+| `WALLET_ADDRESS_SECONDARY` | Dual-chain endpoint mode (optional) | Secondary Solana wallet address |
 | `X402_USE_AWAL` | AWAL mode | Set `1` to enable Coinbase Agentic Wallet for Base |
 | `X402_AUTH_MODE` | Auth selection (optional) | `auto`, `private-key`, or `awal` (default: auto) |
 | `X402_PREFER_NETWORK` | Network selection (optional) | `base` or `solana` (default: base) |
+| `X402_API_BASE` | API base override (optional) | Base URL for worker/api endpoints (default: `https://api.x402layer.cc`) |
 | `AWAL_PACKAGE` | AWAL mode (optional) | NPM package/version for AWAL CLI (default: `awal@1.0.0`) |
 | `AWAL_BIN` | AWAL mode (optional) | Preinstalled `awal` binary path/name |
 | `AWAL_FORCE_NPX` | AWAL mode (optional) | Set `1` to force npx even when `awal` binary exists |
+| `AWAL_ALLOW_NPX` | AWAL mode (optional) | Set `1` to allow npx fallback when no local `awal` binary exists |
+| `X_API_KEY` / `API_KEY` | Provider endpoint management | Endpoint API key |
+| `WORKER_FEEDBACK_API_KEY` | Agentic reputation feedback | Worker auth key for `/agent/erc8004/feedback` |
 
 ---
 

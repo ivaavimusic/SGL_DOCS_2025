@@ -15,6 +15,7 @@ DEFAULT_AWAL_PACKAGE = "awal@1.0.0"
 
 # Shell metacharacters to reject for security
 _SHELL_DANGEROUS_CHARS = set(';&|`$()<>!\n\r')
+_SAFE_AWAL_VALUE = re.compile(r"^[A-Za-z0-9._/@:+-]{1,180}$")
 
 
 def _validate_safe_string(value: str) -> str:
@@ -27,16 +28,31 @@ def _validate_safe_string(value: str) -> str:
     return value
 
 
+def _validate_env_token(name: str, value: str) -> str:
+    if not value:
+        raise ValueError(f"{name} cannot be empty")
+    if not _SAFE_AWAL_VALUE.match(value):
+        raise ValueError(f"{name} contains unsupported characters")
+    return value
+
+
 def build_awal_command(args: List[str]) -> List[str]:
     explicit_bin = os.getenv("AWAL_BIN", "").strip()
     if explicit_bin:
+        _validate_env_token("AWAL_BIN", explicit_bin)
         return [explicit_bin, *args]
 
     local_awal = shutil.which("awal")
     if local_awal and os.getenv("AWAL_FORCE_NPX", "").strip() != "1":
         return [local_awal, *args]
 
+    if os.getenv("AWAL_ALLOW_NPX", "").strip() != "1":
+        raise ValueError(
+            "AWAL binary not found in PATH. Install `awal`, set AWAL_BIN, or explicitly allow npx fallback with AWAL_ALLOW_NPX=1."
+        )
+
     package = os.getenv("AWAL_PACKAGE", DEFAULT_AWAL_PACKAGE).strip() or DEFAULT_AWAL_PACKAGE
+    _validate_env_token("AWAL_PACKAGE", package)
     return ["npx", "-y", package, *args]
 
 

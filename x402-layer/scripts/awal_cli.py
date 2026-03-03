@@ -7,38 +7,19 @@ use Coinbase Agentic Wallet (AWAL) commands without embedding secrets.
 """
 
 import argparse
-import os
-import shutil
-import subprocess
 import sys
 from typing import List, Tuple
 from urllib.parse import urlparse
 
-
-DEFAULT_AWAL_PACKAGE = "awal@1.0.0"
-
-
-def _build_awal_command(args: List[str]) -> List[str]:
-    explicit_bin = os.getenv("AWAL_BIN", "").strip()
-    if explicit_bin:
-        return [explicit_bin, *args]
-
-    local_awal = shutil.which("awal")
-    if local_awal and os.getenv("AWAL_FORCE_NPX", "").strip() != "1":
-        return [local_awal, *args]
-
-    package = os.getenv("AWAL_PACKAGE", DEFAULT_AWAL_PACKAGE).strip() or DEFAULT_AWAL_PACKAGE
-    return ["npx", "-y", package, *args]
-
+from awal_bridge import run_awal
 
 def _run_awal(args: List[str]) -> int:
-    cmd = _build_awal_command(args)
-    process = subprocess.run(cmd, text=True, capture_output=True)
-    if process.stdout:
-        print(process.stdout, end="")
-    if process.stderr:
-        print(process.stderr, end="", file=sys.stderr)
-    return process.returncode
+    result = run_awal(args)
+    if result["stdout"]:
+        print(result["stdout"], end="")
+    if result["stderr"]:
+        print(result["stderr"], end="", file=sys.stderr)
+    return int(result["code"])
 
 
 def _split_url(url: str) -> Tuple[str, str]:
@@ -69,7 +50,8 @@ Examples:
   python awal_cli.py discover-url https://api.x402layer.cc/e/gifu?action=purchase
 
 Notes:
-  - Wrapper uses AWAL_BIN first, then local `awal` binary in PATH, then npx fallback.
+  - Wrapper uses AWAL_BIN first, then local `awal` binary in PATH.
+  - npx fallback is disabled by default and only used when AWAL_ALLOW_NPX=1.
   - Default package is AWAL v1.0.0 for reliability in current npm ecosystem.
   - Override with AWAL_PACKAGE, e.g.:
       export AWAL_PACKAGE=awal@latest

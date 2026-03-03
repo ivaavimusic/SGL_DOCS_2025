@@ -6,7 +6,6 @@ Pay for API access using USDC on Solana.
 
 Signer support:
 - private-key mode: SOLANA_SECRET_KEY
-- coinbase-wallet mode: CDP_SOLANA_ACCOUNT_ADDRESS + CDP credentials
 """
 
 import json
@@ -29,8 +28,8 @@ def pay_for_access(endpoint_url: str) -> dict:
     if not has_solana_credentials():
         return {
             "error": (
-                "No Solana signer available. Set SOLANA_SECRET_KEY, or set CDP_API_KEY_ID, "
-                "CDP_API_KEY_SECRET, CDP_WALLET_SECRET, CDP_SOLANA_ACCOUNT_ADDRESS."
+                "No Solana signer available. Set SOLANA_SECRET_KEY "
+                "(and optionally SOLANA_WALLET_ADDRESS if you need explicit wallet override)."
             )
         }
 
