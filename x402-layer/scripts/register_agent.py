@@ -138,7 +138,20 @@ def main() -> None:
     parser.add_argument(
         "--network",
         default="baseSepolia",
-        choices=["base", "baseSepolia", "solanaMainnet", "solanaDevnet"],
+        choices=[
+            "base",
+            "baseSepolia",
+            "ethereum",
+            "ethereumSepolia",
+            "polygon",
+            "polygonAmoy",
+            "bsc",
+            "bscTestnet",
+            "monad",
+            "monadTestnet",
+            "solanaMainnet",
+            "solanaDevnet",
+        ],
         help="Target registration network",
     )
     parser.add_argument("--owner-address", help="Owner wallet address (auto-resolved if omitted)")
@@ -162,4 +175,3 @@ if __name__ == "__main__":
     except Exception as exc:
         print(json.dumps({"error": str(exc)}, indent=2))
         sys.exit(1)
-

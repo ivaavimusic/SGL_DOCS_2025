@@ -84,7 +84,20 @@ def main() -> None:
     parser.add_argument(
         "--network",
         required=True,
-        choices=["base", "baseSepolia", "solanaMainnet", "solanaDevnet"],
+        choices=[
+            "base",
+            "baseSepolia",
+            "ethereum",
+            "ethereumSepolia",
+            "polygon",
+            "polygonAmoy",
+            "bsc",
+            "bscTestnet",
+            "monad",
+            "monadTestnet",
+            "solanaMainnet",
+            "solanaDevnet",
+        ],
         help="Feedback target network (must match agent registration chain)",
     )
     parser.add_argument("--agent-id", type=int, help="EVM agent id")
@@ -125,4 +138,3 @@ if __name__ == "__main__":
     except Exception as exc:
         print(json.dumps({"error": str(exc)}, indent=2))
         sys.exit(1)
-

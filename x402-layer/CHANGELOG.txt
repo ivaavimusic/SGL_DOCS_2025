@@ -17,3 +17,4 @@ COMPATIBILITY/DOCS
 - Updated environment guidance to match actual script usage (`SOLANA_WALLET_ADDRESS`, `WALLET_ADDRESS_SECONDARY`, `WORKER_FEEDBACK_API_KEY`, `X402_API_BASE`).
 - Removed stale coinbase-wallet/CDP wording from Solana payment script messaging.
 - Reduced over-broad `requires.env` declarations in SKILL metadata to lower false-positive security flags.
+- Expanded skill script network options to match current worker capabilities (Base/Ethereum/Polygon/BSC/Monad + Solana).

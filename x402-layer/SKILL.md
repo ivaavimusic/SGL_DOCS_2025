@@ -449,6 +449,14 @@ python {baseDir}/scripts/register_agent.py \
   --network solanaMainnet
 ```
 
+Supported `--network` values:
+- `base`, `baseSepolia`
+- `ethereum`, `ethereumSepolia`
+- `polygon`, `polygonAmoy`
+- `bsc`, `bscTestnet`
+- `monad`, `monadTestnet`
+- `solanaMainnet`, `solanaDevnet`
+
 ### G. Reputation Feedback (On-Chain)
 
 ```bash
@@ -466,6 +474,14 @@ python {baseDir}/scripts/submit_feedback.py \
   --rating 4 \
   --comment "Reliable execution"
 ```
+
+Supported `--network` values:
+- `base`, `baseSepolia`
+- `ethereum`, `ethereumSepolia`
+- `polygon`, `polygonAmoy`
+- `bsc`, `bscTestnet`
+- `monad`, `monadTestnet`
+- `solanaMainnet`, `solanaDevnet`
 
 ---
 
