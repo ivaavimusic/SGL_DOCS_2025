@@ -97,8 +97,6 @@ npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
 ```
 
-No separate `SETUP_AWAL.md` flow is required.
-
 ---
 
 ## Script Inventory
