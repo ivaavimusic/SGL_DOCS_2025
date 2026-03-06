@@ -2,11 +2,14 @@
 name: x402-layer
 version: 1.3.0
 description: |
-  This skill should be used when the user asks to "create x402 endpoint",
+  x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
+  manage credits/webhooks/marketplace listings, and handle ERC-8004 registration/reputation on Base/Solana.
+  Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
   "topup endpoint", "browse x402 marketplace", "set up webhook",
   "receive payment notifications", "manage endpoint webhook",
+  "verify webhook payment", "verify payment genuineness",
   "register ERC-8004 agent", "register Solana 8004 agent",
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
@@ -23,18 +26,14 @@ metadata:
       bins:
         - python3
       env:
-        # Core runtime variables
         - WALLET_ADDRESS
         - X402_AUTH_MODE
         - X402_USE_AWAL
         - X402_PREFER_NETWORK
         - X402_API_BASE
-        # Provider operations (endpoint management)
         - X_API_KEY
         - API_KEY
-        # Agentic reputation operations
         - WORKER_FEEDBACK_API_KEY
-        # Optional wallet routing helpers
         - SOLANA_WALLET_ADDRESS
         - WALLET_ADDRESS_SECONDARY
 allowed-tools:
@@ -45,504 +44,238 @@ allowed-tools:
   - WebFetch
 ---
 
-
 # x402 Singularity Layer
 
-x402 is a **Web3 payment layer** enabling AI agents to:
-- 💰 **Pay** for API access using USDC
-- 🚀 **Deploy** monetized endpoints
-- 🔍 **Discover** services via marketplace
-- 📊 **Manage** endpoints and credits
-- 🔔 **Webhooks** — receive payment notifications
-- 🪪 **Register** ERC-8004 / Solana-8004 agents
-- ⭐ **Write** on-chain reputation feedback
+x402 is a Web3 payment layer where humans and agents can sell/consume APIs and products.
+This skill covers the full Singularity Layer lifecycle:
+- pay/consume services
+- create/manage/list endpoints
+- receive and verify webhook payment events
+- register agents and submit on-chain reputation feedback
 
-**Networks:** Base (EVM) • Solana  
-**Currency:** USDC  
-**Protocol:** HTTP 402 Payment Required
+Networks: Base (EVM), Solana  
+Currency: USDC  
+Protocol: HTTP 402 Payment Required
+
+---
+
+## Intent Router
+
+Use this routing first, then load the relevant reference doc.
+
+| User intent | Primary scripts | Reference |
+|---|---|---|
+| Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md` |
+| Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md` |
+| Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md` |
+| Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.js` | `references/webhooks-verification.md` |
+| Register/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 
 ---
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1) Install Skill Dependencies
 ```bash
 pip install -r {baseDir}/requirements.txt
 ```
 
-### 2. Set Up Wallet (Choose One Mode)
+### 2) Choose Wallet Mode
 
-#### Option A: Private Keys (existing mode)
+Option A: private keys
 ```bash
-# For Base (EVM)
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
-
-# For Solana (optional)
-export SOLANA_SECRET_KEY="[1,2,3,...]"  # JSON array
+# Solana optional
+export SOLANA_SECRET_KEY="[1,2,3,...]"
 ```
 
-#### Option B: Coinbase Agentic Wallet (AWAL)
-
-For Base payments without exposing private keys, use Coinbase Agentic Wallet:
-
+Option B: Coinbase AWAL
 ```bash
-# First, install and set up AWAL (one-time setup)
 npx skills add coinbase/agentic-wallet-skills
-
-# Then enable AWAL mode for this skill
 export X402_USE_AWAL=1
 ```
 
-> **Note**: See [Coinbase AWAL docs](https://docs.cdp.coinbase.com/agentic-wallet/welcome) for full setup instructions. You'll need to authenticate and fund your AWAL wallet with USDC on Base.
-
-Once AWAL is configured, all Base payment scripts will automatically use it instead of PRIVATE_KEY.
-
 ---
 
-## ⚠️ Security Notice
+## Script Inventory
 
-> **IMPORTANT**: This skill handles private keys for signing blockchain transactions.
->
-> - **Never use your primary custody wallet** - Create a dedicated wallet with limited funds
-> - **Private keys are used locally only** - They sign transactions locally and are never transmitted
-> - **Signed payloads are sent to api.x402layer.cc** - Payment signatures and wallet addresses are transmitted to settle payments
-> - **For testing**: Use a throwaway wallet with minimal USDC ($1-5 is enough for testing)
-> - **API Keys**: When you create an endpoint, store the returned API key securely
-> - **AWAL fallback hardening**: `npx` fallback is disabled by default; set `AWAL_ALLOW_NPX=1` only when you intentionally want remote package execution
-> - **Review the code**: All scripts are auditable in the `scripts/` directory
-
----
-
-## Scripts Overview
-
-### 🛒 CONSUMER MODE (Buying Services)
-
+### Consumer
 | Script | Purpose |
-|--------|---------|
-| `pay_base.py` | Pay for endpoint on Base network |
-| `pay_solana.py` | Pay for endpoint on Solana network |
-| `consume_credits.py` | Use pre-purchased credits (fast) |
-| `consume_product.py` | Purchase digital products (files) |
-| `awal_cli.py` | Run Coinbase Agentic Wallet CLI commands (auth, bazaar, pay, discover) |
-| `check_credits.py` | Check your credit balance |
-| `recharge_credits.py` | Buy credit packs for an endpoint |
-| `discover_marketplace.py` | Browse available services |
+|---|---|
+| `pay_base.py` | Pay endpoint on Base |
+| `pay_solana.py` | Pay endpoint on Solana |
+| `consume_credits.py` | Consume using credits |
+| `consume_product.py` | Purchase digital products/files |
+| `check_credits.py` | Check credit balance |
+| `recharge_credits.py` | Buy endpoint credit packs |
+| `discover_marketplace.py` | Browse/search marketplace |
+| `awal_cli.py` | Run AWAL auth/pay/discover commands |
 
-### 🏭 PROVIDER MODE (Selling Services)
-
+### Provider
 | Script | Purpose |
-|--------|---------|
-| `create_endpoint.py` | Deploy new monetized endpoint ($1) |
-| `manage_endpoint.py` | View/update your endpoints |
-| `topup_endpoint.py` | Recharge YOUR endpoint with credits |
-| `list_on_marketplace.py` | Update marketplace listing |
-| `manage_webhook.py` | Set/update/remove webhook URL |
+|---|---|
+| `create_endpoint.py` | Deploy endpoint ($1 one-time, includes 4,000 credits) |
+| `manage_endpoint.py` | List/update endpoint settings |
+| `topup_endpoint.py` | Recharge provider endpoint credits |
+| `list_on_marketplace.py` | List/unlist/update marketplace listing |
+| `manage_webhook.py` | Set/remove/check endpoint webhook URL |
+| `verify_webhook_payment.js` | Verify webhook signature + receipt genuineness (`x402sgl`) |
 
-### 🤖 AGENT REGISTRY & REPUTATION
-
+### Agent Registry + Reputation
 | Script | Purpose |
-|--------|---------|
-| `register_agent.py` | Register ERC-8004 / Solana-8004 agent via worker |
-| `submit_feedback.py` | Submit on-chain reputation feedback via worker |
+|---|---|
+| `register_agent.py` | Register ERC-8004/Solana-8004 agent |
+| `submit_feedback.py` | Submit on-chain reputation feedback |
 
 ---
 
-## Security: API Key Verification
+## Core Security Requirements
 
-> [!IMPORTANT]
-> When you create an endpoint, x402 acts as a proxy to your origin server. You MUST verify that requests are coming from x402.
-
-1. **Get your API Key**: Returned when you run `create_endpoint.py`.
-2. **Verify Headers**: Your origin server MUST check for this header in every request:
-   ```http
-   x-api-key: <YOUR_API_KEY>
-   ```
-   If the header is missing or incorrect, reject the request (401 Unauthorized).
-
----
-
-## Credit System: How It Works
-
-> [!WARNING]
-> **Credits are NOT test credits!** They are consumed with every API request.
-
-### Flow
-
+### API Key Verification at Origin (mandatory)
+When x402 proxies traffic to your origin, verify:
+```http
+x-api-key: <YOUR_API_KEY>
 ```
-User pays $0.01 → Your wallet receives payment → 1 credit deducted from your endpoint
-```
+Reject requests when missing/invalid.
 
-### Economics
-
-| Item | Value |
-|------|-------|
-| **Creation cost** | $1 (one-time) |
-| **Starting credits** | 4,000 credits |
-| **Recharge rate** | 500 credits per $1 |
-| **Consumption** | 1 credit per API request |
-| **Your earnings** | Whatever price you set per call |
-
-### Example
-
-1. **Create endpoint**: Pay $1, get 4,000 credits
-2. **Set price**: $0.01 per call
-3. **User calls your API 1,000 times**: You earn $10, 1,000 credits deducted
-4. **Remaining**: 19,000 credits + $10 profit
-5. **Credits run low?** Recharge with `topup_endpoint.py`
-
-### What Happens When Credits = 0?
-
-Your endpoint **stops working** and returns an error. Users cannot access it until you recharge.
+### Credit Economics (provider side)
+- Endpoint creation: $1 one-time
+- Starting credits: 4,000
+- Top-up rate: 500 credits per $1
+- Consumption: 1 credit per request
+- If credits hit 0, endpoint stops serving until recharged
 
 ---
 
-## Consumer Flows
+## Fast Runbooks
 
-### A. Pay-Per-Request (Recommended)
-
+### A) Pay and Consume
 ```bash
-# Pay with Base (EVM) - 100% reliable
 python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data
-
-# Pay with Solana - includes retry logic
 python {baseDir}/scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
-
-# Pay with Coinbase Agentic Wallet (AWAL)
-python {baseDir}/scripts/awal_cli.py pay-url https://api.x402layer.cc/e/weather-data
-```
-
-### B. Credit-Based Access (Fastest)
-
-Pre-purchase credits for instant access without blockchain latency:
-
-```bash
-# Check your balance
-python {baseDir}/scripts/check_credits.py weather-data
-
-# Buy credits (consumer purchasing credits)
-python {baseDir}/scripts/recharge_credits.py weather-data pack_100
-
-# Use credits for instant access
 python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
 ```
 
-### C. Discover Services
-
+### B) Discover/Search Marketplace
 ```bash
-# Browse all services
 python {baseDir}/scripts/discover_marketplace.py
-
-# Search by keyword
 python {baseDir}/scripts/discover_marketplace.py search weather
-
-# AWAL bazaar discovery
-python {baseDir}/scripts/awal_cli.py run bazaar list
 ```
 
----
-
-## Provider Flows
-
-### A. Create Endpoint ($1 one-time)
-
-Deploy your own monetized API:
-
-**Basic (not listed on marketplace):**
+### C) Create and Manage Endpoint
 ```bash
-python {baseDir}/scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01 --no-list
-```
-
-**With marketplace listing (recommended):**
-```bash
-python {baseDir}/scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01 \
-    --category ai \
-    --description "AI-powered data analysis API" \
-    --logo https://example.com/logo.png \
-    --banner https://example.com/banner.jpg
-```
-
-**Available categories:** `ai`, `data`, `finance`, `utility`, `social`, `gaming`
-
-> **Note**: Save the `API Key` from the output and use it to secure your origin server.
-
-> ⚠️ **IMPORTANT - How Credits Work:**
-> - **Cost:** $1 one-time, includes **4,000 credits** (NOT test credits!)
-> - **Consumption:** 1 credit is deducted for **each API request** to your endpoint
-> - **When credits reach 0:** Your endpoint **stops working** until you recharge
-> - **Recharge:** Use `topup_endpoint.py` to add more credits ($1 = 500 credits)
-> - **Users pay YOU:** Each user payment goes to your wallet, then 1 credit is used
-
-Includes 4,000 starting credits.
-
-### B. Manage Your Endpoint
-
-```bash
-# List your endpoints
+python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01
 python {baseDir}/scripts/manage_endpoint.py list
-
-# View stats
-python {baseDir}/scripts/manage_endpoint.py stats my-api
-
-# Update price
 python {baseDir}/scripts/manage_endpoint.py update my-api --price 0.02
-```
-
-### C. Recharge Your Endpoint (Required to Keep It Working)
-
-**Your endpoint consumes 1 credit per request.** When credits run out, it stops working. Recharge to keep it active:
-
-```bash
-# Add $10 worth of credits (5,000 credits at 500 credits/$1)
 python {baseDir}/scripts/topup_endpoint.py my-api 10
-
-# Check remaining credits first
-python {baseDir}/scripts/manage_endpoint.py stats my-api
 ```
 
-> ⚠️ **Remember:** `topup_endpoint.py` is for **providers** to recharge THEIR endpoint.
-> `recharge_credits.py` is for **consumers** to buy credits at someone else's endpoint.
-
-### D. Marketplace Listing Management
-
-Marketplace listing can be done **during creation** OR **separately afterward**:
-
-**Option 1: During Creation** (Recommended)
+### D) List/Update in Marketplace
 ```bash
-python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01 \
-    --category ai \
-    --description "AI-powered analysis" \
-    --logo https://example.com/logo.png \
-    --banner https://example.com/banner.jpg
-```
-
-**Option 2: After Creation** (Update or List Later)
-```bash
-# List or update marketplace listing
 python {baseDir}/scripts/list_on_marketplace.py my-api \
-    --category ai \
-    --description "AI-powered analysis" \
-    --logo https://example.com/logo.png \
-    --banner https://example.com/banner.jpg
-
-# Unlist from marketplace
-python {baseDir}/scripts/list_on_marketplace.py my-api --unlist
+  --category ai \
+  --description "AI-powered analysis" \
+  --logo https://example.com/logo.png \
+  --banner https://example.com/banner.jpg
 ```
 
-> **Tip:** Use `list_on_marketplace.py` to update your listing anytime - change category, description, or images without recreating the endpoint.
-
-### E. Webhooks (Payment Notifications)
-
-Receive `payment.succeeded` events when someone pays for your endpoint. Optional — not required for endpoints to work.
-
-**Set webhook at creation time:**
-```bash
-python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01 \
-    --webhook-url https://my-server.com/webhook
-```
-
-**Add or update webhook on existing endpoint:**
+### E) Webhook Setup and Genuineness Verification
 ```bash
 python {baseDir}/scripts/manage_webhook.py set my-api https://my-server.com/webhook
-```
-
-**Check webhook status:**
-```bash
 python {baseDir}/scripts/manage_webhook.py info my-api
-```
-
-**Remove webhook:**
-```bash
 python {baseDir}/scripts/manage_webhook.py remove my-api
 ```
 
-> ⚠️ **IMPORTANT**: The `signing_secret` is returned only once when you set a webhook. Save it immediately.
-
-#### Webhook Event Types
-
-| Event | When | Key Fields |
-|-------|------|-----------|
-| `payment.succeeded` | Any payment for your endpoint | `amount`, `tx_hash`, `payer_wallet`, `network` |
-| `credits.depleted` | Owner credits hit 0 | `remaining_credits`, `topup_endpoint` |
-| `credits.low` | Credits drop to ≤100 | `remaining_credits` |
-| `credits.recharged` | Top-up payment succeeds | `credits_added`, `new_balance`, `amount_paid` |
-
-Your endpoint receives POST requests with:
-```http
-Content-Type: application/json
-X-X402-Event: <event_type>
-X-X402-Signature: t=<timestamp>,v1=<hmac_sha256>
-```
-
-**payment.succeeded example:**
-```json
-{
-  "id": "event-uuid",
-  "type": "payment.succeeded",
-  "created_at": "2026-01-01T00:00:00.000Z",
-  "data": {
-    "source": "endpoint",
-    "source_slug": "my-api",
-    "amount": 0.01,
-    "currency": "USDC",
-    "tx_hash": "0x...",
-    "payer_wallet": "0x...",
-    "network": "base",
-    "status": "confirmed"
-  }
-}
-```
-
-**credits.depleted example:**
-```json
-{
-  "type": "credits.depleted",
-  "data": {
-    "source": "endpoint",
-    "source_slug": "my-api",
-    "remaining_credits": 0,
-    "message": "Endpoint credits exhausted. Top up to resume service."
-  }
-}
-```
-
-**credits.recharged example:**
-```json
-{
-  "type": "credits.recharged",
-  "data": {
-    "source": "endpoint",
-    "source_slug": "my-api",
-    "credits_added": 5000,
-    "previous_balance": 0,
-    "new_balance": 5000,
-    "amount_paid": 10,
-    "currency": "USDC"
-  }
-}
-```
-
-#### Verify Webhook Signature
-```python
-import hmac, hashlib
-def verify(secret, timestamp, body, received_sig):
-    expected = hmac.new(secret.encode(), f"{timestamp}.{body}".encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, received_sig)
-```
-
-> **When credits = 0**, no requests go through, so no payments happen and no webhook events fire. Self-regulating.
-
-### F. Agent Registration (ERC-8004 + Solana 8004)
-
+Webhook verification helper:
 ```bash
-# Register on Base Sepolia (default)
-python {baseDir}/scripts/register_agent.py \
-  "My Trading Agent" \
-  "Autonomous strategy agent" \
-  "https://api.example.com/agent"
+npm install x402sgl
+# Optional Python SDK variant:
+pip install "git+https://github.com/ivaavimusic/Singularity-SDK.git#subdirectory=python"
 
-# Register on Solana Mainnet
+node {baseDir}/scripts/verify_webhook_payment.js \
+  --body-file ./webhook.json \
+  --signature 't=1700000000,v1=<hex>' \
+  --secret '<YOUR_SIGNING_SECRET>' \
+  --required-source-slug my-api \
+  --require-receipt
+```
+
+### F) Agent Registration + Reputation
+```bash
 python {baseDir}/scripts/register_agent.py \
-  "My Solana Agent" \
-  "Autonomous Solana workflow agent" \
+  "My Agent" \
+  "Autonomous service agent" \
   "https://api.example.com/agent" \
-  --network solanaMainnet
-```
+  --network baseSepolia
 
-Supported `--network` values:
-- `base`, `baseSepolia`
-- `ethereum`, `ethereumSepolia`
-- `polygon`, `polygonAmoy`
-- `bsc`, `bscTestnet`
-- `monad`, `monadTestnet`
-- `solanaMainnet`, `solanaDevnet`
-
-### G. Reputation Feedback (On-Chain)
-
-```bash
-# EVM feedback (same chain as agent registration)
 python {baseDir}/scripts/submit_feedback.py \
   --network base \
   --agent-id 123 \
   --rating 5 \
   --comment "High quality responses"
-
-# Solana feedback (same chain as asset registration)
-python {baseDir}/scripts/submit_feedback.py \
-  --network solanaMainnet \
-  --asset-address <SOLANA_ASSET_ADDRESS> \
-  --rating 4 \
-  --comment "Reliable execution"
 ```
-
-Supported `--network` values:
-- `base`, `baseSepolia`
-- `ethereum`, `ethereumSepolia`
-- `polygon`, `polygonAmoy`
-- `bsc`, `bscTestnet`
-- `monad`, `monadTestnet`
-- `solanaMainnet`, `solanaDevnet`
 
 ---
 
-## Payment Technical Details
+## References
 
-### Base (EVM) - EIP-712 Signatures
+Load only what is needed for the user task:
 
-Uses USDC `TransferWithAuthorization` (EIP-3009):
-- Gasless for payer
-- Facilitator settles on-chain
-- 100% reliable
-
-### Solana - Versioned Transactions
-
-Uses `VersionedTransaction` with `MessageV0`:
-- Facilitator pays gas (from `extra.feePayer`)
-- SPL Token `TransferChecked` instruction
-- ~75% success rate (retry logic included)
+- `references/pay-per-request.md`:
+  EIP-712/Solana payment flow and low-level signing details.
+- `references/credit-based.md`:
+  credit purchase + consumption behavior and examples.
+- `references/marketplace.md`:
+  search/list/unlist marketplace endpoints.
+- `references/agentic-endpoints.md`:
+  endpoint creation/top-up/status API behavior.
+- `references/webhooks-verification.md`:
+  webhook events, signature verification, and receipt cross-checks.
+- `references/agent-registry-reputation.md`:
+  ERC-8004/Solana-8004 registration and feedback rules.
+- `references/payment-signing.md`:
+  exact signing domains/types/header payload details.
 
 ---
 
 ## Environment Reference
 
-| Variable | Required For | Description |
-|----------|--------------|-------------|
-| `PRIVATE_KEY` | Base payments (private-key mode) | EVM private key (0x...) |
-| `WALLET_ADDRESS` | All operations | Your wallet address |
-| `SOLANA_SECRET_KEY` | Solana payments | JSON array of bytes |
-| `SOLANA_WALLET_ADDRESS` | Solana payments (optional) | Explicit Solana wallet override |
-| `WALLET_ADDRESS_SECONDARY` | Dual-chain endpoint mode (optional) | Secondary Solana wallet address |
-| `X402_USE_AWAL` | AWAL mode | Set `1` to enable Coinbase Agentic Wallet for Base |
-| `X402_AUTH_MODE` | Auth selection (optional) | `auto`, `private-key`, or `awal` (default: auto) |
-| `X402_PREFER_NETWORK` | Network selection (optional) | `base` or `solana` (default: base) |
-| `X402_API_BASE` | API base override (optional) | Base URL for worker/api endpoints (default: `https://api.x402layer.cc`) |
-| `AWAL_PACKAGE` | AWAL mode (optional) | NPM package/version for AWAL CLI (default: `awal@1.0.0`) |
-| `AWAL_BIN` | AWAL mode (optional) | Preinstalled `awal` binary path/name |
-| `AWAL_FORCE_NPX` | AWAL mode (optional) | Set `1` to force npx even when `awal` binary exists |
-| `AWAL_ALLOW_NPX` | AWAL mode (optional) | Set `1` to allow npx fallback when no local `awal` binary exists |
-| `X_API_KEY` / `API_KEY` | Provider endpoint management | Endpoint API key |
-| `WORKER_FEEDBACK_API_KEY` | Agentic reputation feedback | Worker auth key for `/agent/erc8004/feedback` |
+| Variable | Required for | Notes |
+|---|---|---|
+| `PRIVATE_KEY` | Base private-key mode | EVM signing key |
+| `WALLET_ADDRESS` | Most operations | Primary wallet |
+| `SOLANA_SECRET_KEY` | Solana private-key mode | JSON array bytes |
+| `SOLANA_WALLET_ADDRESS` | Solana override | optional |
+| `WALLET_ADDRESS_SECONDARY` | dual-chain endpoint mode | optional |
+| `X402_USE_AWAL` | AWAL mode | set `1` |
+| `X402_AUTH_MODE` | auth selection | `auto`, `private-key`, `awal` |
+| `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
+| `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
+| `X_API_KEY` / `API_KEY` | provider endpoint/webhook management | endpoint key |
+| `WORKER_REGISTRATION_API_KEY` | agent registration | worker auth key |
+| `WORKER_FEEDBACK_API_KEY` | reputation feedback | worker auth key |
 
 ---
 
-## API Base URL
+## API Base Paths
 
-- **Endpoints:** `https://api.x402layer.cc/e/{slug}`
-- **Marketplace:** `https://api.x402layer.cc/api/marketplace`
-- **Credits:** `https://api.x402layer.cc/api/credits/*`
-- **Agent API:** `https://api.x402layer.cc/agent/*`
+- Endpoints: `https://api.x402layer.cc/e/{slug}`
+- Marketplace: `https://api.x402layer.cc/api/marketplace`
+- Credits: `https://api.x402layer.cc/api/credits/*`
+- Agent routes: `https://api.x402layer.cc/agent/*`
 
 ---
 
 ## Resources
 
-- 📖 **Documentation:** [studio.x402layer.cc/docs/agentic-access/openclaw-skill](https://studio.x402layer.cc/docs/agentic-access/openclaw-skill)
-- 💻 **GitHub Docs:** [github.com/ivaavimusic/SGL_DOCS_2025](https://github.com/ivaavimusic/SGL_DOCS_2025)
-- 🐦 **OpenClaw:** [x.com/openclaw](https://x.com/openclaw)
-- 🌐 **x402 Studio:** [studio.x402layer.cc](https://studio.x402layer.cc)
+- Docs: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+- SDK docs: https://studio.x402layer.cc/docs/developer/sdk-receipts
+- GitHub docs repo: https://github.com/ivaavimusic/SGL_DOCS_2025
+- x402 Studio: https://studio.x402layer.cc
 
 ---
 
-## Known Issues
+## Known Issue
 
-⚠️ **Solana payments** have ~75% success rate due to facilitator-side fee payer infrastructure issue. Retry logic is included in `pay_solana.py`. **Base (EVM) payments are 100% reliable** and recommended for production.
+Solana payments currently have lower reliability than Base due to facilitator-side fee payer infra. Use retry logic in `pay_solana.py`, and prefer Base for production-critical flows.
