@@ -33,15 +33,8 @@ def load_api_key(args_key=None):
     """Load API Key from argument or environment."""
     if args_key:
         return args_key
-    
+
     api_key = os.getenv("X_API_KEY")
-    if not api_key:
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            api_key = os.getenv("X_API_KEY")
-        except ImportError:
-            pass
 
     if not api_key:
         print("Error: content of X_API_KEY environment variable or --api-key argument needed")

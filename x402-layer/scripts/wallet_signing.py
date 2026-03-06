@@ -22,15 +22,6 @@ USDC_VERSION = "2"
 BASE_CHAIN_ID = 8453
 
 
-def load_dotenv_if_available() -> None:
-    try:
-        from dotenv import load_dotenv  # type: ignore
-
-        load_dotenv()
-    except Exception:
-        pass
-
-
 def load_auth_mode() -> str:
     """
     Supported values:
@@ -38,7 +29,6 @@ def load_auth_mode() -> str:
     - private-key: force local EVM key signing
     - awal: force AWAL mode for Base payments
     """
-    load_dotenv_if_available()
     if (os.getenv("X402_USE_AWAL") or "").strip() == "1":
         return "awal"
     return (os.getenv("X402_AUTH_MODE") or "auto").strip().lower()
@@ -49,7 +39,6 @@ def is_awal_mode() -> bool:
 
 
 def load_wallet_address(required: bool = True, allow_awal_fallback: bool = True) -> Optional[str]:
-    load_dotenv_if_available()
     wallet = os.getenv("WALLET_ADDRESS")
 
     if not wallet and allow_awal_fallback and is_awal_mode():
@@ -70,7 +59,6 @@ def load_wallet_address(required: bool = True, allow_awal_fallback: bool = True)
 
 
 def has_private_key_credentials() -> bool:
-    load_dotenv_if_available()
     return bool(os.getenv("PRIVATE_KEY") and os.getenv("WALLET_ADDRESS"))
 
 
@@ -164,8 +152,6 @@ class PaymentSigner:
 
 
 def load_payment_signer() -> PaymentSigner:
-    load_dotenv_if_available()
-
     mode = load_auth_mode()
     if mode == "awal":
         raise ValueError("AWAL mode does not use local Base signer")

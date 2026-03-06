@@ -29,14 +29,6 @@ API_BASE = "https://api.x402layer.cc"
 
 def _load_api_key(optional: bool = True) -> Optional[str]:
     api_key = os.getenv("X_API_KEY") or os.getenv("API_KEY")
-    if not api_key:
-        try:
-            from dotenv import load_dotenv  # type: ignore
-
-            load_dotenv()
-            api_key = os.getenv("X_API_KEY") or os.getenv("API_KEY")
-        except Exception:
-            pass
 
     if not optional and not api_key:
         raise ValueError("Set X_API_KEY (or API_KEY) environment variable")

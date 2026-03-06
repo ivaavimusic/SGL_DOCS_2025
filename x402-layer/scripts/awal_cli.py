@@ -51,10 +51,8 @@ Examples:
 
 Notes:
   - Wrapper uses AWAL_BIN first, then local `awal` binary in PATH.
-  - npx fallback is disabled by default and only used when AWAL_ALLOW_NPX=1.
-  - Default package is AWAL v1.0.0 for reliability in current npm ecosystem.
-  - Override with AWAL_PACKAGE, e.g.:
-      export AWAL_PACKAGE=awal@latest
+  - If `awal` is missing, install Coinbase AWAL skill:
+      npx skills add coinbase/agentic-wallet-skills
 """,
     )
 

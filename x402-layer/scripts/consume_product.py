@@ -43,16 +43,7 @@ def load_credentials() -> Tuple[str, str]:
     """Load wallet credentials from environment."""
     private_key = os.getenv("PRIVATE_KEY")
     wallet = os.getenv("WALLET_ADDRESS")
-    
-    if not private_key or not wallet:
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            private_key = os.getenv("PRIVATE_KEY")
-            wallet = os.getenv("WALLET_ADDRESS")
-        except ImportError:
-            pass
-    
+
     if not private_key or not wallet:
         print("Error: Set PRIVATE_KEY and WALLET_ADDRESS environment variables")
         sys.exit(1)

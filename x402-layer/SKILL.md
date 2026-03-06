@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.3.0
+version: 1.3.1
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle ERC-8004 registration/reputation on Base/Solana.
@@ -27,15 +27,12 @@ metadata:
         - python3
       env:
         - WALLET_ADDRESS
-        - X402_AUTH_MODE
-        - X402_USE_AWAL
-        - X402_PREFER_NETWORK
-        - X402_API_BASE
+        - PRIVATE_KEY
+        - SOLANA_SECRET_KEY
         - X_API_KEY
         - API_KEY
+        - WORKER_REGISTRATION_API_KEY
         - WORKER_FEEDBACK_API_KEY
-        - SOLANA_WALLET_ADDRESS
-        - WALLET_ADDRESS_SECONDARY
 allowed-tools:
   - Read
   - Write
@@ -96,6 +93,8 @@ Option B: Coinbase AWAL
 npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
 ```
+
+Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
 
 ---
 

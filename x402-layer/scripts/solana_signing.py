@@ -17,17 +17,7 @@ import requests
 RPC_URL = "https://api.mainnet-beta.solana.com"
 
 
-def _load_dotenv_if_available() -> None:
-    try:
-        from dotenv import load_dotenv  # type: ignore
-
-        load_dotenv()
-    except Exception:
-        pass
-
-
 def _load_auth_mode() -> str:
-    _load_dotenv_if_available()
     if (os.getenv("X402_USE_AWAL") or "").strip() == "1":
         return "awal"
     return (os.getenv("X402_AUTH_MODE") or "auto").strip().lower()
@@ -64,12 +54,10 @@ def has_solana_credentials() -> bool:
     mode = _load_auth_mode()
     if mode == "awal":
         return False
-    _load_dotenv_if_available()
     return bool(os.getenv("SOLANA_SECRET_KEY"))
 
 
 def _load_keypair(keypair_cls: Any) -> Any:
-    _load_dotenv_if_available()
     secret_key_json = os.getenv("SOLANA_SECRET_KEY")
     if not secret_key_json:
         raise ValueError("Set SOLANA_SECRET_KEY for Solana private-key signing")
@@ -86,7 +74,6 @@ def _derive_local_solana_wallet_address() -> Optional[str]:
 
 
 def load_solana_wallet_address() -> Optional[str]:
-    _load_dotenv_if_available()
     explicit = os.getenv("SOLANA_WALLET_ADDRESS") or os.getenv("WALLET_ADDRESS_SECONDARY")
     local_derived = _derive_local_solana_wallet_address()
     return explicit or local_derived

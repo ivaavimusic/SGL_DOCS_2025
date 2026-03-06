@@ -25,15 +25,6 @@ API_BASE = "https://api.x402layer.cc"
 def load_wallet() -> str:
     wallet = os.getenv("WALLET_ADDRESS")
     if not wallet:
-        try:
-            from dotenv import load_dotenv  # type: ignore
-
-            load_dotenv()
-            wallet = os.getenv("WALLET_ADDRESS")
-        except Exception:
-            pass
-
-    if not wallet:
         raise ValueError("Set WALLET_ADDRESS environment variable")
     return wallet
 

@@ -63,12 +63,6 @@ python {baseDir}/scripts/awal_cli.py run auth verify <flow_id> <otp>
 python {baseDir}/scripts/awal_cli.py pay-url https://api.x402layer.cc/e/weather-data
 ```
 
-AWAL package version can be pinned:
-
-```bash
-export AWAL_PACKAGE="awal@1.0.0"
-```
-
 ## X-Payment Header Format
 
 Base64 encode the payment JSON:

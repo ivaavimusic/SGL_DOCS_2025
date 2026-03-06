@@ -24,14 +24,7 @@ from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 def load_wallet():
     """Load wallet address from environment."""
     wallet = os.getenv("WALLET_ADDRESS")
-    if not wallet:
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            wallet = os.getenv("WALLET_ADDRESS")
-        except ImportError:
-            pass
-    
+
     if not wallet:
         print("Error: Set WALLET_ADDRESS environment variable")
         sys.exit(1)
