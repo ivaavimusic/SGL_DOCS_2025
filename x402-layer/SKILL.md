@@ -92,9 +92,12 @@ export SOLANA_SECRET_KEY="[1,2,3,...]"
 
 Option B: Coinbase AWAL
 ```bash
+# Install Coinbase AWAL skill (shortcut)
 npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
 ```
+
+No separate `SETUP_AWAL.md` flow is required.
 
 ---
 
