@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.3.2
+version: 1.3.3
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle ERC-8004 registration/reputation on Base/Solana.
@@ -27,9 +27,10 @@ metadata:
         - python3
       env:
         - WALLET_ADDRESS
+        - PRIVATE_KEY
+        - SOLANA_SECRET_KEY
         - X_API_KEY
         - API_KEY
-        - WORKER_REGISTRATION_API_KEY
         - WORKER_FEEDBACK_API_KEY
 allowed-tools:
   - Read
