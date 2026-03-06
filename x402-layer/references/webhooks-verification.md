@@ -50,13 +50,12 @@ def verify(secret: str, timestamp: str, raw_body: str, received_sig: str) -> boo
     return hmac.compare_digest(expected, received_sig)
 ```
 
-## Receipt Verification (`x402sgl`)
+## Receipt Verification (PyJWT/JWKS)
 
 For stronger authenticity checks, verify receipt JWT (RS256/JWKS):
 
 ```bash
-npm install x402sgl
-node {baseDir}/scripts/verify_webhook_payment.js \
+python {baseDir}/scripts/verify_webhook_payment.py \
   --body-file ./webhook.json \
   --signature 't=1700000000,v1=<hex>' \
   --secret '<YOUR_SIGNING_SECRET>' \
@@ -64,10 +63,9 @@ node {baseDir}/scripts/verify_webhook_payment.js \
   --require-receipt
 ```
 
-Optional Python SDK install variant:
-
+Dependencies (already in `requirements.txt`):
 ```bash
-pip install "git+https://github.com/ivaavimusic/Singularity-SDK.git#subdirectory=python"
+pip install pyjwt[crypto] cryptography
 ```
 
 ## Cross-check Rules

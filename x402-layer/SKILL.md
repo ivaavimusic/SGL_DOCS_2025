@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.3.1
+version: 1.3.2
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle ERC-8004 registration/reputation on Base/Solana.
@@ -27,8 +27,6 @@ metadata:
         - python3
       env:
         - WALLET_ADDRESS
-        - PRIVATE_KEY
-        - SOLANA_SECRET_KEY
         - X_API_KEY
         - API_KEY
         - WORKER_REGISTRATION_API_KEY
@@ -65,7 +63,7 @@ Use this routing first, then load the relevant reference doc.
 | Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md` |
-| Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.js` | `references/webhooks-verification.md` |
+| Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 
 ---
@@ -120,7 +118,7 @@ Security note: scripts read only explicit process environment variables. `.env` 
 | `topup_endpoint.py` | Recharge provider endpoint credits |
 | `list_on_marketplace.py` | List/unlist/update marketplace listing |
 | `manage_webhook.py` | Set/remove/check endpoint webhook URL |
-| `verify_webhook_payment.js` | Verify webhook signature + receipt genuineness (`x402sgl`) |
+| `verify_webhook_payment.py` | Verify webhook signature + receipt genuineness (PyJWT/JWKS) |
 
 ### Agent Registry + Reputation
 | Script | Purpose |
@@ -189,11 +187,7 @@ python {baseDir}/scripts/manage_webhook.py remove my-api
 
 Webhook verification helper:
 ```bash
-npm install x402sgl
-# Optional Python SDK variant:
-pip install "git+https://github.com/ivaavimusic/Singularity-SDK.git#subdirectory=python"
-
-node {baseDir}/scripts/verify_webhook_payment.js \
+python {baseDir}/scripts/verify_webhook_payment.py \
   --body-file ./webhook.json \
   --signature 't=1700000000,v1=<hex>' \
   --secret '<YOUR_SIGNING_SECRET>' \

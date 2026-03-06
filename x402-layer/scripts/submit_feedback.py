@@ -110,11 +110,7 @@ def main() -> None:
     parser.add_argument("--api-key", help="Worker feedback API key")
     args = parser.parse_args()
 
-    api_key = (
-        args.api_key
-        or os.getenv("WORKER_FEEDBACK_API_KEY")
-        or os.getenv("WORKER_REGISTRATION_API_KEY")
-    )
+    api_key = args.api_key or os.getenv("WORKER_FEEDBACK_API_KEY")
     if not api_key:
         raise ValueError("Missing API key. Set --api-key or WORKER_FEEDBACK_API_KEY")
 
