@@ -3,7 +3,7 @@ name: x402-layer
 version: 1.4.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
-  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/reputation on Base/Solana.
+  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base/Solana.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -65,7 +65,7 @@ Use this routing first, then load the relevant reference doc.
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md` |
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
-| Register/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
+| Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 
 ---
 
@@ -126,7 +126,10 @@ Security note: scripts read only explicit process environment variables. `.env` 
 ### Agent Registry + Reputation
 | Script | Purpose |
 |---|---|
-| `register_agent.py` | Register ERC-8004/Solana-8004 agent (wallet-first by default, legacy fallback available) |
+| `register_agent.py` | Register ERC-8004/Solana-8004 agent with image/version/tags and endpoint binding support |
+| `list_agents.py` | List ERC-8004 agents owned by the configured wallet or linked dashboard user |
+| `list_my_endpoints.py` | List platform endpoints that can be linked to ERC-8004 agents |
+| `update_agent.py` | Update existing ERC-8004/Solana-8004 agent metadata, visibility, and endpoint bindings |
 | `submit_feedback.py` | Submit on-chain reputation feedback |
 
 ---
@@ -200,11 +203,29 @@ python {baseDir}/scripts/verify_webhook_payment.py \
 
 ### F) Agent Registration + Reputation
 ```bash
+python {baseDir}/scripts/list_my_endpoints.py
+
 python {baseDir}/scripts/register_agent.py \
   "My Agent" \
   "Autonomous service agent" \
-  "https://api.example.com/agent" \
-  --network baseSepolia
+  --network baseSepolia \
+  --image https://example.com/agent.png \
+  --version 1.4.0 \
+  --tag finance \
+  --tag automation \
+  --endpoint-id <ENDPOINT_UUID> \
+  --custom-endpoint https://api.example.com/agent
+
+python {baseDir}/scripts/list_agents.py --network baseSepolia
+
+python {baseDir}/scripts/update_agent.py \
+  --network baseSepolia \
+  --agent-id 123 \
+  --version 1.4.1 \
+  --tag finance \
+  --tag automation \
+  --endpoint-id <ENDPOINT_UUID> \
+  --public
 
 # Legacy fallback only when needed
 python {baseDir}/scripts/register_agent.py \
@@ -238,7 +259,7 @@ Load only what is needed for the user task:
 - `references/webhooks-verification.md`:
   webhook events, signature verification, and receipt cross-checks.
 - `references/agent-registry-reputation.md`:
-  ERC-8004/Solana-8004 registration and feedback rules.
+  ERC-8004/Solana-8004 registration, discovery, management, and feedback rules.
 - `references/payment-signing.md`:
   exact signing domains/types/header payload details.
 

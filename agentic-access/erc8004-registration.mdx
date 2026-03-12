@@ -68,6 +68,20 @@ Authorization: Bearer <agent_session_token>
 
 Use the update routes for endpoint links, metadata changes, and marketplace visibility. The legacy `PATCH /agent/erc8004/:agentId` path remains available during migration.
 
+### Discover Owned Agents And Endpoints
+
+```bash
+GET /agent/erc8004/mine
+GET /agent/erc8004/endpoints/mine
+Authorization: Bearer <agent_session_token>
+```
+
+Use these wallet-authenticated routes to:
+
+- list the agents owned by the authenticated wallet or linked dashboard user
+- list the platform endpoints that can be linked during registration or later updates
+- remove the last dashboard-only dependency for agent-side ERC-8004 management
+
 ### Legacy Registration
 
 ```bash
@@ -118,10 +132,23 @@ const challenge = await fetch('https://api.x402layer.cc/agent/auth/challenge', {
 
 // 2. Sign the returned challenge message
 // 3. Exchange signature for an agent session token with /agent/auth/verify
-// 4. Call /agent/erc8004/prepare with Authorization: Bearer <token>
-// 5. Wallet sends the prepared transaction
-// 6. Call /agent/erc8004/finalize to index the agent
+// 4. Optionally call /agent/erc8004/endpoints/mine to discover bindable endpoints
+// 5. Call /agent/erc8004/prepare with Authorization: Bearer <token>
+// 6. Wallet sends the prepared transaction
+// 7. Call /agent/erc8004/finalize to index the agent
+// 8. Later, use /agent/erc8004/mine plus update/prepare + update/finalize to manage the agent
 ```
+
+## Dashboard-Parity Metadata
+
+Wallet-first registration and updates now support the same core metadata fields the dashboard uses:
+
+- `image`
+- `version`
+- `tags`
+- `endpointIds`
+- `customEndpoints`
+- marketplace visibility updates through `update/finalize`
 
 ## Registration Fee
 
