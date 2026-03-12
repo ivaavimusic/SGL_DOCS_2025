@@ -71,6 +71,10 @@ Owned-agent discovery:
 
 ```bash
 python {baseDir}/scripts/list_agents.py --network baseSepolia
+python {baseDir}/scripts/list_agents.py --network ethereum
+python {baseDir}/scripts/list_agents.py --network polygon
+python {baseDir}/scripts/list_agents.py --network bsc
+python {baseDir}/scripts/list_agents.py --network monad
 python {baseDir}/scripts/list_agents.py --network solanaDevnet
 ```
 
@@ -97,6 +101,8 @@ python {baseDir}/scripts/update_agent.py \
   --custom-endpoint https://api.example.com/fallback \
   --public
 ```
+
+Use the same wallet-first EVM lifecycle with `--network ethereum`, `--network polygon`, `--network bsc`, or `--network monad` when the wallet and contract deployment exist on that chain.
 
 Update a Solana agent:
 

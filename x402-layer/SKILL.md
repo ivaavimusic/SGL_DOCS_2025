@@ -3,7 +3,7 @@ name: x402-layer
 version: 1.4.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
-  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base/Solana.
+  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -13,7 +13,7 @@ description: |
   "register ERC-8004 agent", "register Solana 8004 agent",
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
-  operations on Base or Solana networks.
+  operations on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
 homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
 metadata:
   clawdbot:
@@ -226,6 +226,12 @@ python {baseDir}/scripts/update_agent.py \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
   --public
+
+# The same EVM flow also supports:
+#   --network ethereum
+#   --network polygon
+#   --network bsc
+#   --network monad
 
 # Legacy fallback only when needed
 python {baseDir}/scripts/register_agent.py \
