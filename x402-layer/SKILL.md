@@ -49,7 +49,7 @@ This skill covers the full Singularity Layer lifecycle:
 - receive and verify webhook payment events
 - register agents and submit on-chain reputation feedback
 
-Networks: Base (EVM), Solana  
+Networks: Base, Ethereum, Polygon, BSC, Monad, Solana  
 Currency: USDC  
 Protocol: HTTP 402 Payment Required
 
@@ -233,14 +233,6 @@ python {baseDir}/scripts/update_agent.py \
 #   --network bsc
 #   --network monad
 
-# Legacy fallback only when needed
-python {baseDir}/scripts/register_agent.py \
-  "My Agent" \
-  "Autonomous service agent" \
-  "https://api.example.com/agent" \
-  --network baseSepolia \
-  --legacy
-
 python {baseDir}/scripts/submit_feedback.py \
   --network base \
   --agent-id 123 \
@@ -285,8 +277,6 @@ Load only what is needed for the user task:
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
 | `X_API_KEY` / `API_KEY` | provider endpoint/webhook management | endpoint key |
-| `X402_ERC8004_LEGACY` | legacy registration fallback | set `1` to force old x402-paid registration path |
-| `WORKER_REGISTRATION_API_KEY` | legacy registration only | worker auth key for deprecated x402 registration |
 | `WORKER_FEEDBACK_API_KEY` | reputation feedback | worker auth key |
 
 ---

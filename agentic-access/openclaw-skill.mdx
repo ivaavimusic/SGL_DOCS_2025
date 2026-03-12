@@ -206,14 +206,6 @@ python scripts/update_agent.py \
 #   --network polygon
 #   --network bsc
 #   --network monad
-
-# Legacy fallback only when needed
-python scripts/register_agent.py \
-  "My Agent" \
-  "Autonomous service agent" \
-  "https://api.example.com/agent" \
-  --network baseSepolia \
-  --legacy
 ```
 
 Wallet-first registration flow:
@@ -254,7 +246,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 |-------|-------|
 | **Slug** | `x402-layer` |
 | **Version** | 1.4.0 |
-| **Networks** | Base (EVM), Solana |
+| **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
 ## Resources
@@ -271,7 +263,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 - Added signed challenge + short-lived agent session flow for API-only wallet auth
 - Added `list_my_endpoints.py`, `list_agents.py`, and `update_agent.py` for full post-registration lifecycle management
 - Registration now supports version, tags, platform endpoint bindings, and custom endpoint URLs
-- Legacy x402-paid worker registration remains available as an explicit fallback only
+- Removed the legacy x402-paid worker registration path; wallet-first registration is now the only supported agent flow
 
 ### v1.0.1
 - **New Script:** `consume_product.py` - Purchase and download digital products

@@ -2,12 +2,9 @@
 """
 x402 ERC-8004 Agent Registration.
 
-Default mode:
+Registration mode:
 - wallet-first registration through worker challenge/session APIs
 - the same wallet signs the challenge and sends the on-chain transaction
-
-Legacy mode:
-- x402-paid worker-managed registration via POST /agent/erc8004/register
 """
 
 import argparse
@@ -16,13 +13,8 @@ import os
 import sys
 from typing import Any, Dict, List, Optional
 
-import requests
-
-from awal_bridge import awal_pay_url
 from erc8004_wallet_client import API_BASE, create_wallet_session, is_solana_network, post_json
-from network_selection import pick_payment_option
 from solana_signing import (
-    create_solana_xpayment_from_accept,
     generate_solana_asset_keypair,
     load_solana_wallet_address,
     send_prepared_solana_transaction,
@@ -332,82 +324,6 @@ def _wallet_first_register_solana(
         },
         "finalize": finalize,
     }
-
-
-def _legacy_register_agent(
-    name: str,
-    description: str,
-    endpoint: Optional[str],
-    network: str,
-    owner_address: Optional[str] = None,
-    image: Optional[str] = None,
-    version: Optional[str] = None,
-    tags: Optional[List[str]] = None,
-) -> Dict[str, Any]:
-    owner = _resolve_owner_address(network, owner_address)
-    url = f"{API_BASE}/agent/erc8004/register"
-
-    body = _build_registration_body(
-        name=name,
-        description=description,
-        endpoint=endpoint,
-        network=network,
-        owner_address=owner,
-        image=image,
-        version=version,
-        tags=tags,
-    )
-
-    challenge_resp = requests.post(url, json=body, timeout=30)
-    if challenge_resp.status_code not in (402, 200, 201):
-        return {
-            "error": f"Unexpected status: {challenge_resp.status_code}",
-            "response": challenge_resp.text,
-        }
-
-    if challenge_resp.status_code in (200, 201):
-        return challenge_resp.json()
-
-    challenge = challenge_resp.json()
-
-    if is_awal_mode():
-        wallet = load_wallet_address(required=False)
-        headers = {"x-wallet-address": wallet} if wallet else None
-        result = awal_pay_url(url, method="POST", data=body, headers=headers)
-        return result if isinstance(result, dict) else {"result": result}
-
-    try:
-        selected_network, selected_option, signer = pick_payment_option(challenge, context="agent registration")
-    except Exception as exc:
-        return {"error": str(exc)}
-
-    if selected_network == "base":
-        if signer is None:
-            return {"error": "Internal error: missing Base signer"}
-        x_payment = signer.create_x402_payment_header(
-            pay_to=selected_option["payTo"],
-            amount=int(selected_option["maxAmountRequired"]),
-        )
-        payer_wallet = signer.wallet
-    else:
-        x_payment = create_solana_xpayment_from_accept(selected_option)
-        payer_wallet = load_solana_wallet_address() or owner
-
-    paid_resp = requests.post(
-        url,
-        json=body,
-        headers={
-            "X-Payment": x_payment,
-            "x-wallet-address": payer_wallet,
-        },
-        timeout=60,
-    )
-
-    if paid_resp.status_code in (200, 201):
-        return paid_resp.json()
-    return {"error": paid_resp.text}
-
-
 def register_agent(
     name: str,
     description: str,
@@ -419,7 +335,6 @@ def register_agent(
     tags: Optional[List[str]] = None,
     endpoint_ids: Optional[List[str]] = None,
     custom_endpoints: Optional[List[str]] = None,
-    legacy: bool = False,
 ) -> Dict[str, Any]:
     owner = _resolve_owner_address(network, owner_address)
     normalized_custom_endpoints = _normalize_string_list(custom_endpoints)
@@ -430,13 +345,8 @@ def register_agent(
     if not normalized_endpoint and not normalized_endpoint_ids and not normalized_custom_endpoints:
         raise ValueError("Provide a primary endpoint, one or more --endpoint-id values, or one or more --custom-endpoint URLs")
 
-    if legacy:
-        if normalized_endpoint_ids or normalized_custom_endpoints:
-            raise ValueError("Legacy registration does not support endpointIds/customEndpoints. Use wallet-first mode.")
-        return _legacy_register_agent(name, description, normalized_endpoint, network, owner, image, version, normalized_tags)
-
     if is_awal_mode():
-        raise ValueError("Wallet-first registration does not currently support AWAL mode. Use private keys or pass --legacy.")
+        raise ValueError("Wallet-first registration requires direct wallet signing keys. Disable AWAL mode and set PRIVATE_KEY/WALLET_ADDRESS or SOLANA_SECRET_KEY.")
 
     _assert_local_signer_matches_owner(network, owner)
 
@@ -499,11 +409,6 @@ def main() -> None:
     parser.add_argument("--tag", action="append", default=[], help="Repeatable agent tag")
     parser.add_argument("--endpoint-id", action="append", default=[], help="Repeatable platform endpoint UUID to bind")
     parser.add_argument("--custom-endpoint", action="append", default=[], help="Repeatable custom endpoint URL to bind")
-    parser.add_argument(
-        "--legacy",
-        action="store_true",
-        help="Use the deprecated x402-paid worker registration flow instead of the wallet-first flow",
-    )
     args = parser.parse_args()
 
     result = register_agent(
@@ -517,7 +422,6 @@ def main() -> None:
         tags=args.tag,
         endpoint_ids=args.endpoint_id,
         custom_endpoints=args.custom_endpoint,
-        legacy=args.legacy or (os.getenv("X402_ERC8004_LEGACY") or "").strip() == "1",
     )
     print(json.dumps(result, indent=2))
 

@@ -38,17 +38,6 @@ Default behavior:
   - one or more `--endpoint-id`
   - one or more `--custom-endpoint`
 
-Legacy fallback:
-
-```bash
-python {baseDir}/scripts/register_agent.py \
-  "Agent Name" \
-  "Agent description" \
-  "https://api.example.com/agent" \
-  --network baseSepolia \
-  --legacy
-```
-
 Supported networks:
 
 - `base`, `baseSepolia`
@@ -63,7 +52,6 @@ Registration variables:
 - `PRIVATE_KEY` + `WALLET_ADDRESS` for EVM wallet-first registration
 - `SOLANA_SECRET_KEY` (+ optional `SOLANA_WALLET_ADDRESS`) for Solana wallet-first registration
 - `X402_API_BASE` (optional override)
-- `X402_ERC8004_LEGACY=1` or `--legacy` only for the deprecated x402-paid worker path
 
 ## Discovery And Management
 

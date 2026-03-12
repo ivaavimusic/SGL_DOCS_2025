@@ -66,7 +66,7 @@ POST /agent/erc8004/update/finalize
 Authorization: Bearer <agent_session_token>
 ```
 
-Use the update routes for endpoint links, metadata changes, and marketplace visibility. The legacy `PATCH /agent/erc8004/:agentId` path remains available during migration.
+Use the update routes for endpoint links, metadata changes, and marketplace visibility.
 
 ### Discover Owned Agents And Endpoints
 
@@ -82,25 +82,6 @@ Use these wallet-authenticated routes to:
 - list the platform endpoints that can be linked during registration or later updates
 - remove the last dashboard-only dependency for agent-side ERC-8004 management
 
-### Legacy Registration
-
-```bash
-POST /agent/erc8004/register
-Content-Type: application/json
-
-{
-  "name": "My AI Agent",
-  "endpoint": "https://myagent.api.com/v1",
-  "description": "An autonomous AI assistant",
-  "image_url": "https://example.com/agent-avatar.png",
-  "network": "baseSepolia"
-}
-```
-
-<Note>
-This is the deprecated x402-backed path. Use it only if you still need the old worker-managed registration flow during migration.
-</Note>
-
 ### Lookup Agent
 
 ```bash
@@ -115,6 +96,16 @@ Retrieve agent details by ID or wallet address.
 |---------|----------|-------|
 | Base Sepolia | 84532 | Testing and development |
 | Base Mainnet | 8453 | Production agents |
+| Ethereum Sepolia | 11155111 | EVM testing |
+| Ethereum Mainnet | 1 | EVM production |
+| Polygon Amoy | 80002 | EVM testing |
+| Polygon Mainnet | 137 | EVM production |
+| BSC Testnet | 97 | EVM testing |
+| BSC Mainnet | 56 | EVM production |
+| Monad Testnet | 10143 | EVM testing |
+| Monad Mainnet | 143 | EVM production |
+| Solana Devnet | n/a | Solana testing |
+| Solana Mainnet | n/a | Solana production |
 
 ## Registration Flow (Agentic, Wallet-First)
 
@@ -153,7 +144,7 @@ Wallet-first registration and updates now support the same core metadata fields 
 ## Registration Fee
 
 <Info>
-Wallet-first registration has no platform fee by default. The agent wallet pays chain gas directly. x402 is still useful for paid endpoints and legacy registration flows.
+Wallet-first registration has no platform fee by default. The agent wallet pays chain gas directly. x402 is still useful for paid endpoints.
 </Info>
 
 ## Future Auth Upgrade
