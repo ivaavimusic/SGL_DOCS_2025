@@ -3,7 +3,7 @@
 Shared Solana signing helpers for x402 scripts.
 
 Builds x402-compatible X-Payment headers for Solana accepts options.
-Private-key mode only (SOLANA_SECRET_KEY).
+Private-key mode only (SOLANA_SECRET_KEY as base58 or JSON bytes).
 """
 
 import base64
@@ -61,12 +61,50 @@ def has_solana_credentials() -> bool:
     return bool(os.getenv("SOLANA_SECRET_KEY"))
 
 
+def _decode_secret_key_bytes(raw_secret: str) -> bytes:
+    value = raw_secret.strip()
+    if not value:
+        raise ValueError("Empty Solana private key")
+
+    if value.startswith("[") and value.endswith("]"):
+        parsed = json.loads(value)
+        if not isinstance(parsed, list):
+            raise ValueError("Invalid Solana private key JSON format")
+        return bytes(parsed)
+
+    if "," in value:
+        parsed = [int(part.strip()) for part in value.split(",")]
+        return bytes(parsed)
+
+    if all(ch in "0123456789abcdefABCDEF" for ch in value) and len(value) % 2 == 0:
+        return bytes.fromhex(value)
+
+    return b""
+
+
 def _load_keypair(keypair_cls: Any) -> Any:
-    secret_key_json = os.getenv("SOLANA_SECRET_KEY")
-    if not secret_key_json:
+    raw_secret = os.getenv("SOLANA_SECRET_KEY")
+    if not raw_secret:
         raise ValueError("Set SOLANA_SECRET_KEY for Solana private-key signing")
-    secret_bytes = bytes(json.loads(secret_key_json))
-    return keypair_cls.from_bytes(secret_bytes)
+
+    try:
+        secret_bytes = _decode_secret_key_bytes(raw_secret)
+        if secret_bytes:
+            return keypair_cls.from_bytes(secret_bytes)
+    except Exception as exc:
+        raise ValueError(f"Invalid SOLANA_SECRET_KEY: {exc}") from exc
+
+    try:
+        return keypair_cls.from_base58_string(raw_secret.strip())
+    except Exception:
+        pass
+
+    try:
+        return keypair_cls.from_bytes(base64.b64decode(raw_secret.strip()))
+    except Exception as exc:
+        raise ValueError(
+            "Unsupported SOLANA_SECRET_KEY format. Use a base58 secret string or JSON byte array."
+        ) from exc
 
 
 def _derive_local_solana_wallet_address() -> Optional[str]:

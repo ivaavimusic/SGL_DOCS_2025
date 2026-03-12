@@ -83,7 +83,7 @@ Option A: private keys
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
 # Solana optional
-export SOLANA_SECRET_KEY="[1,2,3,...]"
+export SOLANA_SECRET_KEY="base58-or-[1,2,3,...]"
 ```
 
 Option B: Coinbase AWAL
@@ -271,7 +271,7 @@ Load only what is needed for the user task:
 |---|---|---|
 | `PRIVATE_KEY` | Base private-key mode | EVM signing key |
 | `WALLET_ADDRESS` | Most operations | Primary wallet |
-| `SOLANA_SECRET_KEY` | Solana private-key mode | JSON array bytes |
+| `SOLANA_SECRET_KEY` | Solana private-key mode | base58 secret or JSON array bytes |
 | `SOLANA_WALLET_ADDRESS` | Solana override | optional |
 | `WALLET_ADDRESS_SECONDARY` | dual-chain endpoint mode | optional |
 | `X402_USE_AWAL` | AWAL mode | set `1` |

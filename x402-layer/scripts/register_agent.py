@@ -17,7 +17,6 @@ import sys
 from typing import Any, Dict, List, Optional
 
 import requests
-from web3 import Web3
 
 from awal_bridge import awal_pay_url
 from erc8004_wallet_client import API_BASE, create_wallet_session, is_solana_network, post_json
@@ -131,6 +130,8 @@ def _send_evm_contract_tx(
     function_name: str,
     args: list[Any],
 ) -> str:
+    from web3 import Web3
+
     private_key = os.getenv("PRIVATE_KEY")
     wallet_address = load_wallet_address(required=True, allow_awal_fallback=False)
     if not private_key or not wallet_address:
