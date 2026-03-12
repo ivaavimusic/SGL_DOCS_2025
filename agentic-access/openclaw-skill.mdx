@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.4.0**. Agent registration now uses a wallet-first ERC-8004 flow by default: signed wallet challenge, short-lived session token, on-chain prepare/finalize, and wallet-owned agent identity from day one.
+  Current release: **v1.4.0**. ERC-8004 is now wallet-first by default and the skill includes agent-side discovery + management scripts for listing bindable endpoints, listing owned agents, registering with rich metadata, and updating agents after mint.
 </Note>
 
 ## Script Source Code
@@ -44,11 +44,14 @@ The full Python source code for all scripts is available in this repository: [Vi
     | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_on_marketplace.py) |
   </Tab>
   <Tab title="Agent Registry">
-    Scripts for **wallet-first ERC-8004 / Solana-8004** registration and reputation:
+    Scripts for **wallet-first ERC-8004 / Solana-8004** registration, discovery, management, and reputation:
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `register_agent.py` | Register agent with signed wallet challenge + prepare/finalize flow | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/register_agent.py) |
+    | `register_agent.py` | Register an agent with image/version/tags and endpoint bindings | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/register_agent.py) |
+    | `list_my_endpoints.py` | List platform endpoints the wallet can bind to an agent | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_my_endpoints.py) |
+    | `list_agents.py` | List ERC-8004 agents owned by the wallet or linked dashboard user | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_agents.py) |
+    | `update_agent.py` | Update metadata, visibility, and endpoint bindings for an existing agent | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/update_agent.py) |
     | `submit_feedback.py` | Submit on-chain reputation feedback | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/submit_feedback.py) |
   </Tab>
 </Tabs>
@@ -171,12 +174,32 @@ python scripts/discover_marketplace.py featured
 ### Register an Agent (Wallet-First)
 
 ```bash
-# Default wallet-first registration
+# Discover bindable endpoints first
+python scripts/list_my_endpoints.py
+
+# Default wallet-first registration with rich metadata
 python scripts/register_agent.py \
   "My Agent" \
   "Autonomous service agent" \
-  "https://api.example.com/agent" \
-  --network baseSepolia
+  --network baseSepolia \
+  --image https://example.com/agent.png \
+  --version 1.4.0 \
+  --tag finance \
+  --tag automation \
+  --endpoint-id <ENDPOINT_UUID> \
+  --custom-endpoint https://api.example.com/agent
+
+# List owned agents
+python scripts/list_agents.py --network baseSepolia
+
+# Update an existing agent
+python scripts/update_agent.py \
+  --network baseSepolia \
+  --agent-id 123 \
+  --version 1.4.1 \
+  --tag finance \
+  --endpoint-id <ENDPOINT_UUID> \
+  --public
 
 # Legacy fallback only when needed
 python scripts/register_agent.py \
@@ -193,7 +216,9 @@ Wallet-first registration flow:
 2. Your wallet signs the challenge locally
 3. The script exchanges that signature at `POST /agent/auth/verify`
 4. The worker returns a short-lived session token
-5. The same wallet sends the real on-chain transaction via prepare/finalize routes
+5. `list_my_endpoints.py` and `list_agents.py` use wallet-authenticated `GET /agent/erc8004/endpoints/mine` and `GET /agent/erc8004/mine`
+6. The same wallet sends the real on-chain transaction via prepare/finalize routes
+7. `update_agent.py` uses `update/prepare` plus `update/finalize`, and automatically sends the on-chain URI update transaction when metadata changes
 
 ## Technical Details
 
@@ -238,6 +263,8 @@ Uses `VersionedTransaction` with `MessageV0`:
 ### v1.4.0
 - Wallet-first ERC-8004 / Solana-8004 registration is now the default for `register_agent.py`
 - Added signed challenge + short-lived agent session flow for API-only wallet auth
+- Added `list_my_endpoints.py`, `list_agents.py`, and `update_agent.py` for full post-registration lifecycle management
+- Registration now supports version, tags, platform endpoint bindings, and custom endpoint URLs
 - Legacy x402-paid worker registration remains available as an explicit fallback only
 
 ### v1.0.1

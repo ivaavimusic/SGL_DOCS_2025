@@ -14,28 +14,25 @@ import argparse
 import json
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from web3 import Web3
 
 from awal_bridge import awal_pay_url
+from erc8004_wallet_client import API_BASE, create_wallet_session, is_solana_network, post_json
 from network_selection import pick_payment_option
 from solana_signing import (
     create_solana_xpayment_from_accept,
     generate_solana_asset_keypair,
     load_solana_wallet_address,
     send_prepared_solana_transaction,
-    sign_solana_message_base64,
     wait_for_solana_confirmation,
 )
 from wallet_signing import (
     is_awal_mode,
     load_wallet_address,
-    sign_evm_message,
 )
-
-API_BASE = (os.getenv("X402_API_BASE") or "https://api.x402layer.cc").rstrip("/")
 
 EVM_RPC_URLS = {
     "base": os.getenv("BASE_RPC_URL") or "https://mainnet.base.org",
@@ -51,14 +48,10 @@ EVM_RPC_URLS = {
 }
 
 
-def _is_solana_network(network: str) -> bool:
-    return network in ("solanaMainnet", "solanaDevnet")
-
-
 def _resolve_owner_address(network: str, owner_address: Optional[str]) -> str:
     if owner_address:
         return owner_address
-    if _is_solana_network(network):
+    if is_solana_network(network):
         sol_wallet = load_solana_wallet_address()
         if not sol_wallet:
             raise ValueError(
@@ -72,7 +65,7 @@ def _resolve_owner_address(network: str, owner_address: Optional[str]) -> str:
 
 
 def _assert_local_signer_matches_owner(network: str, owner: str) -> None:
-    if _is_solana_network(network):
+    if is_solana_network(network):
         local_wallet = load_solana_wallet_address()
         if local_wallet and local_wallet != owner:
             raise ValueError("ownerAddress must match the configured Solana signing wallet")
@@ -83,57 +76,52 @@ def _assert_local_signer_matches_owner(network: str, owner: str) -> None:
         raise ValueError("ownerAddress must match WALLET_ADDRESS for wallet-first EVM registration")
 
 
-def _post_json(url: str, body: Dict[str, Any], headers: Optional[Dict[str, str]] = None, timeout: int = 60) -> Dict[str, Any]:
-    response = requests.post(url, json=body, headers=headers or {}, timeout=timeout)
-    try:
-        data = response.json()
-    except Exception:
-        data = {"error": response.text}
-    if not response.ok:
-        message = data.get("error") or response.text
-        details = data.get("details")
-        if details:
-            raise ValueError(f"{message}: {details}")
-        raise ValueError(str(message))
-    return data
+def _normalize_string_list(values: Optional[List[str]]) -> List[str]:
+    return [value.strip() for value in (values or []) if value and value.strip()]
 
 
-def _create_wallet_session(chain: str, wallet_address: str, action: str) -> str:
-    challenge = _post_json(
-        f"{API_BASE}/agent/auth/challenge",
-        {
-            "chain": chain,
-            "walletAddress": wallet_address,
-            "action": action,
-        },
-        timeout=30,
-    )
-    message = str(challenge["message"])
-    nonce = str(challenge["nonce"])
+def _build_registration_body(
+    name: str,
+    description: str,
+    endpoint: Optional[str],
+    network: str,
+    owner_address: str,
+    image: Optional[str] = None,
+    version: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    endpoint_ids: Optional[List[str]] = None,
+    custom_endpoints: Optional[List[str]] = None,
+    asset_address: Optional[str] = None,
+) -> Dict[str, Any]:
+    body: Dict[str, Any] = {
+        "name": name,
+        "description": description,
+        "network": network,
+        "ownerAddress": owner_address,
+    }
+    if endpoint and endpoint.strip():
+        body["endpoint"] = endpoint.strip()
+    if image:
+        body["image"] = image
+    if version and version.strip():
+        body["version"] = version.strip()
 
-    if chain == "solana":
-        signature = sign_solana_message_base64(message)
-        signature_encoding = "base64"
-    else:
-        signature = sign_evm_message(message)
-        signature_encoding = "hex"
+    normalized_tags = _normalize_string_list(tags)
+    if normalized_tags:
+        body["tags"] = normalized_tags
 
-    verified = _post_json(
-        f"{API_BASE}/agent/auth/verify",
-        {
-            "chain": chain,
-            "walletAddress": wallet_address,
-            "action": action,
-            "nonce": nonce,
-            "signature": signature,
-            "signatureEncoding": signature_encoding,
-        },
-        timeout=30,
-    )
-    session_token = verified.get("sessionToken")
-    if not session_token:
-        raise ValueError("Worker did not return a session token")
-    return str(session_token)
+    normalized_endpoint_ids = _normalize_string_list(endpoint_ids)
+    if normalized_endpoint_ids:
+        body["endpointIds"] = normalized_endpoint_ids
+
+    normalized_custom_endpoints = _normalize_string_list(custom_endpoints)
+    if normalized_custom_endpoints:
+        body["customEndpoints"] = normalized_custom_endpoints
+
+    if asset_address:
+        body["assetAddress"] = asset_address
+
+    return body
 
 
 def _send_evm_contract_tx(
@@ -195,25 +183,31 @@ def _send_evm_contract_tx(
 def _wallet_first_register_evm(
     name: str,
     description: str,
-    endpoint: str,
+    endpoint: Optional[str],
     network: str,
     owner_address: str,
     image: Optional[str] = None,
+    version: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    endpoint_ids: Optional[List[str]] = None,
+    custom_endpoints: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    session_token = _create_wallet_session("base", owner_address, "erc8004_register")
+    session_token = create_wallet_session("base", owner_address, "erc8004_register")
     headers = {"Authorization": f"Bearer {session_token}"}
+    prepare_body = _build_registration_body(
+        name=name,
+        description=description,
+        endpoint=endpoint,
+        network=network,
+        owner_address=owner_address,
+        image=image,
+        version=version,
+        tags=tags,
+        endpoint_ids=endpoint_ids,
+        custom_endpoints=custom_endpoints,
+    )
 
-    prepare_body: Dict[str, Any] = {
-        "name": name,
-        "description": description,
-        "endpoint": endpoint,
-        "network": network,
-        "ownerAddress": owner_address,
-    }
-    if image:
-        prepare_body["image"] = image
-
-    prepare = _post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
+    prepare = post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
     register_tx_hash = _send_evm_contract_tx(
         network=network,
         contract_address=str(prepare["contractAddress"]),
@@ -222,7 +216,7 @@ def _wallet_first_register_evm(
         args=list(prepare.get("args") or []),
     )
 
-    finalize_register = _post_json(
+    finalize_register = post_json(
         f"{API_BASE}/agent/erc8004/finalize",
         {
             **prepare_body,
@@ -241,7 +235,7 @@ def _wallet_first_register_evm(
         args=list(onchain_action.get("args") or []),
     )
 
-    finalize_set_uri = _post_json(
+    finalize_set_uri = post_json(
         f"{API_BASE}/agent/erc8004/finalize",
         {
             "network": network,
@@ -271,27 +265,34 @@ def _wallet_first_register_evm(
 def _wallet_first_register_solana(
     name: str,
     description: str,
-    endpoint: str,
+    endpoint: Optional[str],
     network: str,
     owner_address: str,
     image: Optional[str] = None,
+    version: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    endpoint_ids: Optional[List[str]] = None,
+    custom_endpoints: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    session_token = _create_wallet_session("solana", owner_address, "erc8004_register")
+    session_token = create_wallet_session("solana", owner_address, "erc8004_register")
     headers = {"Authorization": f"Bearer {session_token}"}
 
     asset = generate_solana_asset_keypair()
-    prepare_body: Dict[str, Any] = {
-        "name": name,
-        "description": description,
-        "endpoint": endpoint,
-        "network": network,
-        "ownerAddress": owner_address,
-        "assetAddress": asset["address"],
-    }
-    if image:
-        prepare_body["image"] = image
+    prepare_body = _build_registration_body(
+        name=name,
+        description=description,
+        endpoint=endpoint,
+        network=network,
+        owner_address=owner_address,
+        image=image,
+        version=version,
+        tags=tags,
+        endpoint_ids=endpoint_ids,
+        custom_endpoints=custom_endpoints,
+        asset_address=asset["address"],
+    )
 
-    prepare = _post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
+    prepare = post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
     prepared_tx = (((prepare.get("tx") or {}).get("prepared") or {}).get("transaction"))
     rpc_url = ((prepare.get("tx") or {}).get("rpcUrl")) or (
         "https://api.devnet.solana.com" if network == "solanaDevnet" else "https://api.mainnet-beta.solana.com"
@@ -306,7 +307,7 @@ def _wallet_first_register_solana(
     )
     wait_for_solana_confirmation(signature, str(rpc_url))
 
-    finalize = _post_json(
+    finalize = post_json(
         f"{API_BASE}/agent/erc8004/finalize",
         {
             **prepare_body,
@@ -334,23 +335,26 @@ def _wallet_first_register_solana(
 def _legacy_register_agent(
     name: str,
     description: str,
-    endpoint: str,
+    endpoint: Optional[str],
     network: str,
     owner_address: Optional[str] = None,
     image: Optional[str] = None,
+    version: Optional[str] = None,
+    tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     owner = _resolve_owner_address(network, owner_address)
     url = f"{API_BASE}/agent/erc8004/register"
 
-    body: Dict[str, Any] = {
-        "name": name,
-        "description": description,
-        "endpoint": endpoint,
-        "network": network,
-        "ownerAddress": owner,
-    }
-    if image:
-        body["image"] = image
+    body = _build_registration_body(
+        name=name,
+        description=description,
+        endpoint=endpoint,
+        network=network,
+        owner_address=owner,
+        image=image,
+        version=version,
+        tags=tags,
+    )
 
     challenge_resp = requests.post(url, json=body, timeout=30)
     if challenge_resp.status_code not in (402, 200, 201):
@@ -405,24 +409,60 @@ def _legacy_register_agent(
 def register_agent(
     name: str,
     description: str,
-    endpoint: str,
+    endpoint: Optional[str],
     network: str,
     owner_address: Optional[str] = None,
     image: Optional[str] = None,
+    version: Optional[str] = None,
+    tags: Optional[List[str]] = None,
+    endpoint_ids: Optional[List[str]] = None,
+    custom_endpoints: Optional[List[str]] = None,
     legacy: bool = False,
 ) -> Dict[str, Any]:
     owner = _resolve_owner_address(network, owner_address)
+    normalized_custom_endpoints = _normalize_string_list(custom_endpoints)
+    normalized_endpoint_ids = _normalize_string_list(endpoint_ids)
+    normalized_tags = _normalize_string_list(tags)
+    normalized_endpoint = endpoint.strip() if endpoint else ""
+
+    if not normalized_endpoint and not normalized_endpoint_ids and not normalized_custom_endpoints:
+        raise ValueError("Provide a primary endpoint, one or more --endpoint-id values, or one or more --custom-endpoint URLs")
+
     if legacy:
-        return _legacy_register_agent(name, description, endpoint, network, owner, image)
+        if normalized_endpoint_ids or normalized_custom_endpoints:
+            raise ValueError("Legacy registration does not support endpointIds/customEndpoints. Use wallet-first mode.")
+        return _legacy_register_agent(name, description, normalized_endpoint, network, owner, image, version, normalized_tags)
 
     if is_awal_mode():
         raise ValueError("Wallet-first registration does not currently support AWAL mode. Use private keys or pass --legacy.")
 
     _assert_local_signer_matches_owner(network, owner)
 
-    if _is_solana_network(network):
-        return _wallet_first_register_solana(name, description, endpoint, network, owner, image)
-    return _wallet_first_register_evm(name, description, endpoint, network, owner, image)
+    if is_solana_network(network):
+        return _wallet_first_register_solana(
+            name,
+            description,
+            normalized_endpoint or None,
+            network,
+            owner,
+            image,
+            version,
+            normalized_tags,
+            normalized_endpoint_ids,
+            normalized_custom_endpoints,
+        )
+    return _wallet_first_register_evm(
+        name,
+        description,
+        normalized_endpoint or None,
+        network,
+        owner,
+        image,
+        version,
+        normalized_tags,
+        normalized_endpoint_ids,
+        normalized_custom_endpoints,
+    )
 
 
 def main() -> None:
@@ -431,7 +471,7 @@ def main() -> None:
     )
     parser.add_argument("name", help="Agent display name")
     parser.add_argument("description", help="Agent description")
-    parser.add_argument("endpoint", help="Primary service endpoint URL")
+    parser.add_argument("endpoint", nargs="?", help="Primary service endpoint URL or fallback URL")
     parser.add_argument(
         "--network",
         default="baseSepolia",
@@ -453,6 +493,10 @@ def main() -> None:
     )
     parser.add_argument("--owner-address", help="Owner wallet address (auto-resolved if omitted)")
     parser.add_argument("--image", help="Optional image URL")
+    parser.add_argument("--version", help="Optional agent version string")
+    parser.add_argument("--tag", action="append", default=[], help="Repeatable agent tag")
+    parser.add_argument("--endpoint-id", action="append", default=[], help="Repeatable platform endpoint UUID to bind")
+    parser.add_argument("--custom-endpoint", action="append", default=[], help="Repeatable custom endpoint URL to bind")
     parser.add_argument(
         "--legacy",
         action="store_true",
@@ -467,6 +511,10 @@ def main() -> None:
         network=args.network,
         owner_address=args.owner_address,
         image=args.image,
+        version=args.version,
+        tags=args.tag,
+        endpoint_ids=args.endpoint_id,
+        custom_endpoints=args.custom_endpoint,
         legacy=args.legacy or (os.getenv("X402_ERC8004_LEGACY") or "").strip() == "1",
     )
     print(json.dumps(result, indent=2))
