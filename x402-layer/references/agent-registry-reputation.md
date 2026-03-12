@@ -14,6 +14,24 @@ python {baseDir}/scripts/register_agent.py \
   --network baseSepolia
 ```
 
+Default behavior:
+
+- wallet-first registration
+- the agent wallet signs a challenge
+- the same wallet sends the on-chain transaction
+- worker finalize routes verify the transaction and index the agent
+
+Legacy fallback:
+
+```bash
+python {baseDir}/scripts/register_agent.py \
+  "Agent Name" \
+  "Agent description" \
+  "https://api.example.com/agent" \
+  --network baseSepolia \
+  --legacy
+```
+
 Supported networks:
 
 - `base`, `baseSepolia`
@@ -23,10 +41,12 @@ Supported networks:
 - `monad`, `monadTestnet`
 - `solanaMainnet`, `solanaDevnet`
 
-Auth variables used by worker-backed routes:
+Registration variables:
 
-- `WORKER_REGISTRATION_API_KEY`
+- `PRIVATE_KEY` + `WALLET_ADDRESS` for EVM wallet-first registration
+- `SOLANA_SECRET_KEY` (+ optional `SOLANA_WALLET_ADDRESS`) for Solana wallet-first registration
 - `X402_API_BASE` (optional override)
+- `X402_ERC8004_LEGACY=1` or `--legacy` only for the deprecated x402-paid worker path
 
 ## Reputation Feedback
 
@@ -60,3 +80,4 @@ Auth variables:
 - Use the same network domain for registration and feedback whenever possible.
 - Handle duplicate/exists responses gracefully for idempotent registration flows.
 - Preserve on-chain identifiers (`agent_id` or `asset_address`) in your agent metadata store for future feedback calls.
+- AWAL is supported for x402 payments, but wallet-first ERC-8004 registration currently expects local signing keys.

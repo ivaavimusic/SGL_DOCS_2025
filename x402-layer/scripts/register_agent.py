@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
-x402 ERC-8004 Agent Registration (Worker API)
+x402 ERC-8004 Agent Registration.
 
-Registers an ERC-8004 / Solana-8004 agent through the worker endpoint:
-POST /agent/erc8004/register
+Default mode:
+- wallet-first registration through worker challenge/session APIs
+- the same wallet signs the challenge and sends the on-chain transaction
 
-This flow is x402-payment protected. The script handles:
-1) 402 challenge fetch
-2) payment signing (Base private key or Solana signer)
-3) final paid registration request
+Legacy mode:
+- x402-paid worker-managed registration via POST /agent/erc8004/register
 """
 
 import argparse
@@ -18,13 +17,38 @@ import sys
 from typing import Any, Dict, Optional
 
 import requests
+from web3 import Web3
 
 from awal_bridge import awal_pay_url
 from network_selection import pick_payment_option
-from solana_signing import create_solana_xpayment_from_accept, load_solana_wallet_address
-from wallet_signing import is_awal_mode, load_wallet_address
+from solana_signing import (
+    create_solana_xpayment_from_accept,
+    generate_solana_asset_keypair,
+    load_solana_wallet_address,
+    send_prepared_solana_transaction,
+    sign_solana_message_base64,
+    wait_for_solana_confirmation,
+)
+from wallet_signing import (
+    is_awal_mode,
+    load_wallet_address,
+    sign_evm_message,
+)
 
 API_BASE = (os.getenv("X402_API_BASE") or "https://api.x402layer.cc").rstrip("/")
+
+EVM_RPC_URLS = {
+    "base": os.getenv("BASE_RPC_URL") or "https://mainnet.base.org",
+    "baseSepolia": os.getenv("BASE_SEPOLIA_RPC_URL") or "https://sepolia.base.org",
+    "ethereum": os.getenv("ETHEREUM_RPC_URL") or "https://cloudflare-eth.com",
+    "ethereumSepolia": os.getenv("ETHEREUM_SEPOLIA_RPC_URL") or "https://ethereum-sepolia-rpc.publicnode.com",
+    "polygon": os.getenv("POLYGON_RPC_URL") or "https://polygon-rpc.com",
+    "polygonAmoy": os.getenv("POLYGON_AMOY_RPC_URL") or "https://rpc-amoy.polygon.technology",
+    "bsc": os.getenv("BSC_RPC_URL") or "https://bsc-dataseed.binance.org",
+    "bscTestnet": os.getenv("BSC_TESTNET_RPC_URL") or "https://data-seed-prebsc-1-s1.binance.org:8545",
+    "monad": os.getenv("MONAD_RPC_URL") or "https://rpc.monad.xyz",
+    "monadTestnet": os.getenv("MONAD_TESTNET_RPC_URL") or "https://testnet-rpc.monad.xyz",
+}
 
 
 def _is_solana_network(network: str) -> bool:
@@ -47,7 +71,267 @@ def _resolve_owner_address(network: str, owner_address: Optional[str]) -> str:
     return wallet
 
 
-def register_agent(
+def _assert_local_signer_matches_owner(network: str, owner: str) -> None:
+    if _is_solana_network(network):
+        local_wallet = load_solana_wallet_address()
+        if local_wallet and local_wallet != owner:
+            raise ValueError("ownerAddress must match the configured Solana signing wallet")
+        return
+
+    local_wallet = load_wallet_address(required=True)
+    if local_wallet.lower() != owner.lower():
+        raise ValueError("ownerAddress must match WALLET_ADDRESS for wallet-first EVM registration")
+
+
+def _post_json(url: str, body: Dict[str, Any], headers: Optional[Dict[str, str]] = None, timeout: int = 60) -> Dict[str, Any]:
+    response = requests.post(url, json=body, headers=headers or {}, timeout=timeout)
+    try:
+        data = response.json()
+    except Exception:
+        data = {"error": response.text}
+    if not response.ok:
+        message = data.get("error") or response.text
+        details = data.get("details")
+        if details:
+            raise ValueError(f"{message}: {details}")
+        raise ValueError(str(message))
+    return data
+
+
+def _create_wallet_session(chain: str, wallet_address: str, action: str) -> str:
+    challenge = _post_json(
+        f"{API_BASE}/agent/auth/challenge",
+        {
+            "chain": chain,
+            "walletAddress": wallet_address,
+            "action": action,
+        },
+        timeout=30,
+    )
+    message = str(challenge["message"])
+    nonce = str(challenge["nonce"])
+
+    if chain == "solana":
+        signature = sign_solana_message_base64(message)
+        signature_encoding = "base64"
+    else:
+        signature = sign_evm_message(message)
+        signature_encoding = "hex"
+
+    verified = _post_json(
+        f"{API_BASE}/agent/auth/verify",
+        {
+            "chain": chain,
+            "walletAddress": wallet_address,
+            "action": action,
+            "nonce": nonce,
+            "signature": signature,
+            "signatureEncoding": signature_encoding,
+        },
+        timeout=30,
+    )
+    session_token = verified.get("sessionToken")
+    if not session_token:
+        raise ValueError("Worker did not return a session token")
+    return str(session_token)
+
+
+def _send_evm_contract_tx(
+    network: str,
+    contract_address: str,
+    abi: list[Dict[str, Any]],
+    function_name: str,
+    args: list[Any],
+) -> str:
+    private_key = os.getenv("PRIVATE_KEY")
+    wallet_address = load_wallet_address(required=True, allow_awal_fallback=False)
+    if not private_key or not wallet_address:
+        raise ValueError("Set PRIVATE_KEY and WALLET_ADDRESS for wallet-first EVM registration")
+
+    rpc_url = EVM_RPC_URLS.get(network)
+    if not rpc_url:
+        raise ValueError(f"Unsupported EVM network for wallet-first registration: {network}")
+
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    if not w3.is_connected():
+        raise ValueError(f"Failed to connect to EVM RPC for {network}")
+
+    checksum_wallet = Web3.to_checksum_address(wallet_address)
+    checksum_contract = Web3.to_checksum_address(contract_address)
+    contract = w3.eth.contract(address=checksum_contract, abi=abi)
+    contract_fn = getattr(contract.functions, function_name)(*args)
+
+    nonce = w3.eth.get_transaction_count(checksum_wallet)
+    tx: Dict[str, Any] = {
+        "from": checksum_wallet,
+        "nonce": nonce,
+        "chainId": int(w3.eth.chain_id),
+    }
+
+    latest_block = w3.eth.get_block("latest")
+    base_fee = latest_block.get("baseFeePerGas")
+    if base_fee is not None:
+        priority_fee = w3.to_wei(1, "gwei")
+        tx["maxPriorityFeePerGas"] = priority_fee
+        tx["maxFeePerGas"] = int(base_fee * 2 + priority_fee)
+    else:
+        tx["gasPrice"] = int(w3.eth.gas_price)
+
+    try:
+        gas_estimate = contract_fn.estimate_gas({"from": checksum_wallet})
+        tx["gas"] = int(gas_estimate * 1.2)
+    except Exception:
+        tx["gas"] = 500000
+
+    built_tx = contract_fn.build_transaction(tx)
+    signed = w3.eth.account.sign_transaction(built_tx, private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
+    if receipt.status != 1:
+        raise ValueError(f"{function_name} transaction failed on-chain")
+    return tx_hash.hex()
+
+
+def _wallet_first_register_evm(
+    name: str,
+    description: str,
+    endpoint: str,
+    network: str,
+    owner_address: str,
+    image: Optional[str] = None,
+) -> Dict[str, Any]:
+    session_token = _create_wallet_session("base", owner_address, "erc8004_register")
+    headers = {"Authorization": f"Bearer {session_token}"}
+
+    prepare_body: Dict[str, Any] = {
+        "name": name,
+        "description": description,
+        "endpoint": endpoint,
+        "network": network,
+        "ownerAddress": owner_address,
+    }
+    if image:
+        prepare_body["image"] = image
+
+    prepare = _post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
+    register_tx_hash = _send_evm_contract_tx(
+        network=network,
+        contract_address=str(prepare["contractAddress"]),
+        abi=prepare["abi"],
+        function_name=str(prepare["functionName"]),
+        args=list(prepare.get("args") or []),
+    )
+
+    finalize_register = _post_json(
+        f"{API_BASE}/agent/erc8004/finalize",
+        {
+            **prepare_body,
+            "stage": "register",
+            "registerTxHash": register_tx_hash,
+        },
+        headers=headers,
+    )
+
+    onchain_action = finalize_register.get("onChainAction") or {}
+    set_uri_tx_hash = _send_evm_contract_tx(
+        network=network,
+        contract_address=str(onchain_action["contractAddress"]),
+        abi=onchain_action["abi"],
+        function_name=str(onchain_action["functionName"]),
+        args=list(onchain_action.get("args") or []),
+    )
+
+    finalize_set_uri = _post_json(
+        f"{API_BASE}/agent/erc8004/finalize",
+        {
+            "network": network,
+            "agentId": finalize_register["agentId"],
+            "stage": "set-uri",
+            "setUriTxHash": set_uri_tx_hash,
+        },
+        headers=headers,
+    )
+
+    return {
+        "success": True,
+        "mode": "wallet-first",
+        "chainType": "evm",
+        "network": network,
+        "agentId": finalize_register.get("agentId"),
+        "tokenUri": finalize_set_uri.get("tokenUri") or finalize_register.get("tokenUri"),
+        "ownerAddress": owner_address,
+        "transactions": {
+            "register": register_tx_hash,
+            "setUri": set_uri_tx_hash,
+        },
+        "finalize": finalize_set_uri,
+    }
+
+
+def _wallet_first_register_solana(
+    name: str,
+    description: str,
+    endpoint: str,
+    network: str,
+    owner_address: str,
+    image: Optional[str] = None,
+) -> Dict[str, Any]:
+    session_token = _create_wallet_session("solana", owner_address, "erc8004_register")
+    headers = {"Authorization": f"Bearer {session_token}"}
+
+    asset = generate_solana_asset_keypair()
+    prepare_body: Dict[str, Any] = {
+        "name": name,
+        "description": description,
+        "endpoint": endpoint,
+        "network": network,
+        "ownerAddress": owner_address,
+        "assetAddress": asset["address"],
+    }
+    if image:
+        prepare_body["image"] = image
+
+    prepare = _post_json(f"{API_BASE}/agent/erc8004/prepare", prepare_body, headers=headers)
+    prepared_tx = (((prepare.get("tx") or {}).get("prepared") or {}).get("transaction"))
+    rpc_url = ((prepare.get("tx") or {}).get("rpcUrl")) or (
+        "https://api.devnet.solana.com" if network == "solanaDevnet" else "https://api.mainnet-beta.solana.com"
+    )
+    if not prepared_tx:
+        raise ValueError("Prepare response is missing the Solana transaction payload")
+
+    signature = send_prepared_solana_transaction(
+        prepared_transaction_base64=str(prepared_tx),
+        rpc_url=str(rpc_url),
+        extra_signers=[asset["keypair"]],
+    )
+    wait_for_solana_confirmation(signature, str(rpc_url))
+
+    finalize = _post_json(
+        f"{API_BASE}/agent/erc8004/finalize",
+        {
+            **prepare_body,
+            "metadataUri": prepare["metadataUri"],
+            "registerTxSignature": signature,
+        },
+        headers=headers,
+    )
+
+    return {
+        "success": True,
+        "mode": "wallet-first",
+        "chainType": "solana",
+        "network": network,
+        "assetAddress": prepare.get("assetAddress") or asset["address"],
+        "tokenUri": finalize.get("tokenUri") or prepare.get("metadataUri"),
+        "ownerAddress": owner_address,
+        "transactions": {
+            "register": signature,
+        },
+        "finalize": finalize,
+    }
+
+
+def _legacy_register_agent(
     name: str,
     description: str,
     endpoint: str,
@@ -68,11 +352,6 @@ def register_agent(
     if image:
         body["image"] = image
 
-    print(f"Registering agent: {name}")
-    print(f"Network: {network}")
-    print(f"Endpoint: {endpoint}")
-    print("Requesting payment challenge...")
-
     challenge_resp = requests.post(url, json=body, timeout=30)
     if challenge_resp.status_code not in (402, 200, 201):
         return {
@@ -81,7 +360,6 @@ def register_agent(
         }
 
     if challenge_resp.status_code in (200, 201):
-        # Endpoint may return direct success in trusted environments.
         return challenge_resp.json()
 
     challenge = challenge_resp.json()
@@ -89,7 +367,6 @@ def register_agent(
     if is_awal_mode():
         wallet = load_wallet_address(required=False)
         headers = {"x-wallet-address": wallet} if wallet else None
-        print("Payment mode: AWAL")
         result = awal_pay_url(url, method="POST", data=body, headers=headers)
         return result if isinstance(result, dict) else {"result": result}
 
@@ -120,17 +397,37 @@ def register_agent(
         timeout=60,
     )
 
-    print(f"Payment network used: {selected_network}")
-    print(f"Response: {paid_resp.status_code}")
-
     if paid_resp.status_code in (200, 201):
         return paid_resp.json()
     return {"error": paid_resp.text}
 
 
+def register_agent(
+    name: str,
+    description: str,
+    endpoint: str,
+    network: str,
+    owner_address: Optional[str] = None,
+    image: Optional[str] = None,
+    legacy: bool = False,
+) -> Dict[str, Any]:
+    owner = _resolve_owner_address(network, owner_address)
+    if legacy:
+        return _legacy_register_agent(name, description, endpoint, network, owner, image)
+
+    if is_awal_mode():
+        raise ValueError("Wallet-first registration does not currently support AWAL mode. Use private keys or pass --legacy.")
+
+    _assert_local_signer_matches_owner(network, owner)
+
+    if _is_solana_network(network):
+        return _wallet_first_register_solana(name, description, endpoint, network, owner, image)
+    return _wallet_first_register_evm(name, description, endpoint, network, owner, image)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Register an ERC-8004/Solana-8004 agent via worker API",
+        description="Register an ERC-8004/Solana-8004 agent",
     )
     parser.add_argument("name", help="Agent display name")
     parser.add_argument("description", help="Agent description")
@@ -156,6 +453,11 @@ def main() -> None:
     )
     parser.add_argument("--owner-address", help="Owner wallet address (auto-resolved if omitted)")
     parser.add_argument("--image", help="Optional image URL")
+    parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="Use the deprecated x402-paid worker registration flow instead of the wallet-first flow",
+    )
     args = parser.parse_args()
 
     result = register_agent(
@@ -165,6 +467,7 @@ def main() -> None:
         network=args.network,
         owner_address=args.owner_address,
         image=args.image,
+        legacy=args.legacy or (os.getenv("X402_ERC8004_LEGACY") or "").strip() == "1",
     )
     print(json.dumps(result, indent=2))
 

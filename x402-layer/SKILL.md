@@ -1,9 +1,9 @@
 ---
 name: x402-layer
-version: 1.3.3
+version: 1.4.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
-  manage credits/webhooks/marketplace listings, and handle ERC-8004 registration/reputation on Base/Solana.
+  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/reputation on Base/Solana.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -93,6 +93,8 @@ npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
 ```
 
+Use private-key mode for ERC-8004 wallet-first registration. AWAL remains useful for x402 payment flows.
+
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
 
 ---
@@ -124,7 +126,7 @@ Security note: scripts read only explicit process environment variables. `.env` 
 ### Agent Registry + Reputation
 | Script | Purpose |
 |---|---|
-| `register_agent.py` | Register ERC-8004/Solana-8004 agent |
+| `register_agent.py` | Register ERC-8004/Solana-8004 agent (wallet-first by default, legacy fallback available) |
 | `submit_feedback.py` | Submit on-chain reputation feedback |
 
 ---
@@ -204,6 +206,14 @@ python {baseDir}/scripts/register_agent.py \
   "https://api.example.com/agent" \
   --network baseSepolia
 
+# Legacy fallback only when needed
+python {baseDir}/scripts/register_agent.py \
+  "My Agent" \
+  "Autonomous service agent" \
+  "https://api.example.com/agent" \
+  --network baseSepolia \
+  --legacy
+
 python {baseDir}/scripts/submit_feedback.py \
   --network base \
   --agent-id 123 \
@@ -248,7 +258,8 @@ Load only what is needed for the user task:
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
 | `X_API_KEY` / `API_KEY` | provider endpoint/webhook management | endpoint key |
-| `WORKER_REGISTRATION_API_KEY` | agent registration | worker auth key |
+| `X402_ERC8004_LEGACY` | legacy registration fallback | set `1` to force old x402-paid registration path |
+| `WORKER_REGISTRATION_API_KEY` | legacy registration only | worker auth key for deprecated x402 registration |
 | `WORKER_FEEDBACK_API_KEY` | reputation feedback | worker auth key |
 
 ---

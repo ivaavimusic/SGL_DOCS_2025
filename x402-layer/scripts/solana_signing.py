@@ -50,6 +50,10 @@ def _import_solders() -> Dict[str, Any]:
     }
 
 
+def load_solders() -> Dict[str, Any]:
+    return _import_solders()
+
+
 def has_solana_credentials() -> bool:
     mode = _load_auth_mode()
     if mode == "awal":
@@ -77,6 +81,93 @@ def load_solana_wallet_address() -> Optional[str]:
     explicit = os.getenv("SOLANA_WALLET_ADDRESS") or os.getenv("WALLET_ADDRESS_SECONDARY")
     local_derived = _derive_local_solana_wallet_address()
     return explicit or local_derived
+
+
+def load_solana_keypair() -> Any:
+    solders = _import_solders()
+    return _load_keypair(solders["Keypair"])
+
+
+def sign_solana_message_base64(message: str) -> str:
+    keypair = load_solana_keypair()
+    signature = keypair.sign_message(message.encode("utf-8"))
+    return base64.b64encode(bytes(signature)).decode()
+
+
+def generate_solana_asset_keypair() -> Dict[str, Any]:
+    solders = _import_solders()
+    keypair = solders["Keypair"]()
+    return {
+        "keypair": keypair,
+        "address": str(keypair.pubkey()),
+    }
+
+
+def send_prepared_solana_transaction(
+    prepared_transaction_base64: str,
+    rpc_url: str,
+    extra_signers: Optional[list[Any]] = None,
+) -> str:
+    solders = _import_solders()
+    VersionedTransaction = solders["VersionedTransaction"]
+    keypair = _load_keypair(solders["Keypair"])
+    raw_tx = VersionedTransaction.from_bytes(base64.b64decode(prepared_transaction_base64))
+    signed_tx = VersionedTransaction(raw_tx.message, [keypair, *(extra_signers or [])])
+    signed_tx_base64 = base64.b64encode(bytes(signed_tx)).decode()
+
+    response = requests.post(
+        rpc_url,
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "sendTransaction",
+            "params": [
+                signed_tx_base64,
+                {
+                    "encoding": "base64",
+                    "preflightCommitment": "confirmed",
+                    "maxRetries": 3,
+                },
+            ],
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if payload.get("error"):
+        raise ValueError(payload["error"])
+    signature = payload.get("result")
+    if not signature:
+        raise ValueError("Failed to send Solana transaction")
+    return str(signature)
+
+
+def wait_for_solana_confirmation(signature: str, rpc_url: str, timeout_seconds: int = 120) -> None:
+    import time
+
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        response = requests.post(
+            rpc_url,
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "getSignatureStatuses",
+                "params": [[signature], {"searchTransactionHistory": True}],
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        value = ((payload.get("result") or {}).get("value") or [None])[0]
+        if value:
+            if value.get("err"):
+                raise ValueError(f"Solana transaction failed: {value['err']}")
+            confirmation_status = value.get("confirmationStatus")
+            if confirmation_status in ("confirmed", "finalized"):
+                return
+        time.sleep(2)
+    raise TimeoutError("Timed out waiting for Solana transaction confirmation")
 
 
 def _get_recent_blockhash(hash_cls: Any) -> Any:

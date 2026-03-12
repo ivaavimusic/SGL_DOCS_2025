@@ -11,6 +11,10 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
   This skill is production-ready and has been tested with real payments on **Base (EVM)** and **Solana** networks.
 </Note>
 
+<Note>
+  Current release: **v1.4.0**. Agent registration now uses a wallet-first ERC-8004 flow by default: signed wallet challenge, short-lived session token, on-chain prepare/finalize, and wallet-owned agent identity from day one.
+</Note>
+
 ## Script Source Code
 
 The full Python source code for all scripts is available in this repository: [View Scripts Folder](./scripts/)
@@ -34,10 +38,18 @@ The full Python source code for all scripts is available in this repository: [Vi
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `create_endpoint.py` | Deploy new monetized endpoint ($5 fee) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/create_endpoint.py) |
+    | `create_endpoint.py` | Deploy new monetized endpoint ($1 fee) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/create_endpoint.py) |
     | `manage_endpoint.py` | View/update your endpoints | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/manage_endpoint.py) |
     | `topup_endpoint.py` | Add credits to YOUR endpoint | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/topup_endpoint.py) |
     | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_on_marketplace.py) |
+  </Tab>
+  <Tab title="Agent Registry">
+    Scripts for **wallet-first ERC-8004 / Solana-8004** registration and reputation:
+
+    | Script | Purpose | Source |
+    |--------|---------|--------|
+    | `register_agent.py` | Register agent with signed wallet challenge + prepare/finalize flow | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/register_agent.py) |
+    | `submit_feedback.py` | Submit on-chain reputation feedback | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/submit_feedback.py) |
   </Tab>
 </Tabs>
 
@@ -74,6 +86,15 @@ export WALLET_ADDRESS="0x..."
 export SOLANA_SECRET_KEY="[1,2,3,...]"  # JSON array
 ```
 
+For Base payment flows without exposing a private key, AWAL is still supported:
+
+```bash
+npx skills add coinbase/agentic-wallet-skills
+export X402_USE_AWAL=1
+```
+
+Use private-key mode for wallet-first ERC-8004 registration.
+
 ## Usage Examples
 
 ### Pay for an Endpoint (Consumer)
@@ -102,9 +123,11 @@ python scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
 ### Create Your Own Endpoint (Provider)
 
 ```bash
-# Deploy a monetized endpoint ($5 one-time fee, includes 20K test credits)
+# Deploy a monetized endpoint ($1 one-time fee, includes 4,000 starting credits)
 python scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01
 ```
+
+This now costs **$1 one-time** and includes **4,000 starting credits**.
 
 > **Note**: Save the `API Key` from the output and use it to secure your origin server.
 
@@ -145,6 +168,33 @@ python scripts/discover_marketplace.py search weather
 python scripts/discover_marketplace.py featured
 ```
 
+### Register an Agent (Wallet-First)
+
+```bash
+# Default wallet-first registration
+python scripts/register_agent.py \
+  "My Agent" \
+  "Autonomous service agent" \
+  "https://api.example.com/agent" \
+  --network baseSepolia
+
+# Legacy fallback only when needed
+python scripts/register_agent.py \
+  "My Agent" \
+  "Autonomous service agent" \
+  "https://api.example.com/agent" \
+  --network baseSepolia \
+  --legacy
+```
+
+Wallet-first registration flow:
+
+1. `register_agent.py` requests a one-time challenge from `POST /agent/auth/challenge`
+2. Your wallet signs the challenge locally
+3. The script exchanges that signature at `POST /agent/auth/verify`
+4. The worker returns a short-lived session token
+5. The same wallet sends the real on-chain transaction via prepare/finalize routes
+
 ## Technical Details
 
 ### Base (EVM) Payments
@@ -172,7 +222,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.0.0 |
+| **Version** | 1.4.0 |
 | **Networks** | Base (EVM), Solana |
 | **Currency** | USDC |
 
@@ -181,9 +231,14 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [OpenClaw on X](https://x.com/openclaw)
 - [x402 Studio Dashboard](https://studio.x402layer.cc)
 - [Marketplace](https://studio.x402layer.cc/marketplace)
-- [GitHub Repository](https://github.com/ivaavimusic/x402-layer-skill)
+- [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.4.0
+- Wallet-first ERC-8004 / Solana-8004 registration is now the default for `register_agent.py`
+- Added signed challenge + short-lived agent session flow for API-only wallet auth
+- Legacy x402-paid worker registration remains available as an explicit fallback only
 
 ### v1.0.1
 - **New Script:** `consume_product.py` - Purchase and download digital products

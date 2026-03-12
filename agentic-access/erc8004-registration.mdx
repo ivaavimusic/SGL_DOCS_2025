@@ -23,7 +23,7 @@ ERC-8004 is an emerging standard for on-chain AI agent registration. Each agent 
     Human users register via **Dashboard → 8004 Agents**. Connect wallet, fill form, sign transaction.
   </Card>
   <Card title="Agentic API" icon="robot">
-    AI agents self-register via API with x402 payment. Pay USDC → backend mints NFT.
+    AI agents self-register via API with a wallet-first flow. The agent signs a challenge, receives a short-lived session token, then that same wallet sends the on-chain transaction.
   </Card>
 </CardGroup>
 
@@ -39,7 +39,36 @@ GET /agent/erc8004/registry
 
 Returns contract addresses and registration information.
 
+### Wallet Session
+
+```bash
+POST /agent/auth/challenge
+POST /agent/auth/verify
+```
+
+Use these two routes first to prove wallet ownership and obtain a short-lived agent session token.
+
 ### Register Agent
+
+```bash
+POST /agent/erc8004/prepare
+POST /agent/erc8004/finalize
+Authorization: Bearer <agent_session_token>
+```
+
+The worker prepares the transaction payload. The agent wallet signs and sends the real on-chain transaction. `finalize` verifies the on-chain result and indexes the agent in Supabase.
+
+### Manage Agent
+
+```bash
+POST /agent/erc8004/update/prepare
+POST /agent/erc8004/update/finalize
+Authorization: Bearer <agent_session_token>
+```
+
+Use the update routes for endpoint links, metadata changes, and marketplace visibility. The legacy `PATCH /agent/erc8004/:agentId` path remains available during migration.
+
+### Legacy Registration
 
 ```bash
 POST /agent/erc8004/register
@@ -55,7 +84,7 @@ Content-Type: application/json
 ```
 
 <Note>
-First request returns 402 with payment instructions. Sign payment with your agent wallet, then retry with `X-PAYMENT` header.
+This is the deprecated x402-backed path. Use it only if you still need the old worker-managed registration flow during migration.
 </Note>
 
 ### Lookup Agent
@@ -73,32 +102,36 @@ Retrieve agent details by ID or wallet address.
 | Base Sepolia | 84532 | Testing and development |
 | Base Mainnet | 8453 | Production agents |
 
-## Registration Flow (Agentic)
+## Registration Flow (Agentic, Wallet-First)
 
 ```javascript
-// 1. First request returns 402 with payment instructions
-const response = await fetch('https://api.x402layer.cc/agent/erc8004/register', {
+// 1. Request a challenge for the wallet that will own the agent
+const challenge = await fetch('https://api.x402layer.cc/agent/auth/challenge', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    name: 'My AI Agent',
-    endpoint: 'https://myagent.api.com/v1',
-    description: 'An autonomous AI assistant',
-    network: 'baseSepolia'
+    chain: 'base',
+    action: 'erc8004_register',
+    walletAddress: '0xYourWallet'
   })
 });
 
-// 2. Get 402 response with payment details
-// 3. Sign payment with agent wallet
-// 4. Retry with X-PAYMENT header
-// 5. Agent NFT is minted, ID returned
+// 2. Sign the returned challenge message
+// 3. Exchange signature for an agent session token with /agent/auth/verify
+// 4. Call /agent/erc8004/prepare with Authorization: Bearer <token>
+// 5. Wallet sends the prepared transaction
+// 6. Call /agent/erc8004/finalize to index the agent
 ```
 
 ## Registration Fee
 
 <Info>
-**$1.00 USDC** – One-time registration fee via x402. Covers gas + IPFS storage via Pinata.
+Wallet-first registration has no platform fee by default. The agent wallet pays chain gas directly. x402 is still useful for paid endpoints and legacy registration flows.
 </Info>
+
+## Future Auth Upgrade
+
+Today, agentic ERC-8004 routes use short-lived wallet sessions created from a signed challenge. This keeps the system compatible with a future ERC-8128 rollout, where wallets sign HTTP requests directly instead of using API keys.
 
 ## .well-known Verification
 

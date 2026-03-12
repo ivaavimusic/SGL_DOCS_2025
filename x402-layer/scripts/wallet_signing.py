@@ -15,6 +15,7 @@ import time
 from typing import Any, Dict, Optional
 
 from eth_account import Account
+from eth_account.messages import encode_defunct
 
 USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 USDC_NAME = "USD Coin"
@@ -166,3 +167,14 @@ def load_payment_signer() -> PaymentSigner:
         raise ValueError("Set PRIVATE_KEY and WALLET_ADDRESS for private-key mode")
 
     return PaymentSigner(wallet=wallet, private_key=private_key)
+
+
+def sign_evm_message(message: str) -> str:
+    private_key = os.getenv("PRIVATE_KEY")
+    if not private_key:
+        raise ValueError("Set PRIVATE_KEY for EVM wallet challenge signing")
+    signed = Account.from_key(private_key).sign_message(encode_defunct(text=message))
+    signature = signed.signature.hex()
+    if not signature.startswith("0x"):
+        signature = "0x" + signature
+    return signature

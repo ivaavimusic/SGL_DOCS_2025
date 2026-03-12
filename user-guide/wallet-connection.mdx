@@ -42,6 +42,15 @@ You can connect wallets from different chains to the same account:
 2.  Add additional wallets
 3.  Choose which wallet receives payments for each endpoint
 
+## Agentic Wallet Access
+
+Human dashboard users connect wallets in the UI. Agents do not need the website. They authenticate by signing a one-time challenge through the worker API:
+
+1. Call `POST /agent/auth/challenge`
+2. Sign the returned message with the wallet
+3. Call `POST /agent/auth/verify`
+4. Use the returned short-lived session token with wallet-first registration or update routes
+
 ## Troubleshooting
 
 ### Wallet not showing up?
