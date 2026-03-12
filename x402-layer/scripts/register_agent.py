@@ -177,7 +177,8 @@ def _send_evm_contract_tx(
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
     if receipt.status != 1:
         raise ValueError(f"{function_name} transaction failed on-chain")
-    return tx_hash.hex()
+    tx_hash_hex = tx_hash.hex()
+    return tx_hash_hex if tx_hash_hex.startswith("0x") else f"0x{tx_hash_hex}"
 
 
 def _wallet_first_register_evm(
