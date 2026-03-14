@@ -1,6 +1,6 @@
 # Singularity MCP Server
 
-MCP (Model Context Protocol) server for AI agents to browse, discover, and manage Singularity Marketplace APIs, products, and ERC-8004 agents.
+MCP (Model Context Protocol) server for the x402 Studio platform. Browse the Singularity Marketplace, manage endpoints, configure webhooks, and interact with ERC-8004 agents across Base, Ethereum, Polygon, BSC, Monad, and Solana.
 
 > ✅ **v1.1.0** - Phase 2 release with platform management tools
 
@@ -8,7 +8,7 @@ MCP (Model Context Protocol) server for AI agents to browse, discover, and manag
 
 The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) is a standardized protocol for connecting AI assistants to external systems. It provides a unified way for AI models to access tools, resources, and prompts from external services.
 
-The Singularity MCP Server exposes the x402 Singularity Marketplace through this protocol, allowing any MCP-compatible AI (Claude, Cursor, etc.) to discover and interact with marketplace listings, manage endpoints, and configure webhooks.
+The Singularity MCP Server exposes the x402 Studio platform through this protocol, allowing any MCP-compatible AI (Claude, Cursor, etc.) to discover marketplace listings, manage endpoints, configure webhooks, and interact with on-chain agents.
 
 ## Endpoint
 
@@ -29,7 +29,7 @@ Add to `.cursor/mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "singularity-marketplace": {
+    "singularity": {
       "url": "https://mcp.x402layer.cc/mcp"
     }
   }
@@ -43,7 +43,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "singularity-marketplace": {
+    "singularity": {
       "url": "https://mcp.x402layer.cc/mcp"
     }
   }
@@ -57,7 +57,7 @@ Add to `~/.codex/mcp.json` (global) or `.codex/mcp.json` (project):
 ```json
 {
   "mcpServers": {
-    "singularity-marketplace": {
+    "singularity": {
       "url": "https://mcp.x402layer.cc/mcp",
       "transport": "http"
     }
@@ -229,7 +229,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 
 | Property | Value |
 |----------|-------|
-| Name | `singularity-marketplace-mcp` |
+| Name | `singularity-mcp` |
 | Version | `1.1.0` |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
