@@ -2,7 +2,7 @@
 
 MCP server for Singularity Marketplace. Browse and discover APIs, products, and ERC-8004 agents, then manage endpoint operations through authenticated MCP tools.
 
-> ✅ **v1.1.0** shipped on March 14, 2026. Phase 2 is complete, the launch was announced on X, and the MCP Registry listing is active.
+> ✅ **v1.2.0** shipped on March 15, 2026. Phase 2.5 is live in production runtime with owner-scoped endpoint and product management.
 
 ## What is MCP?
 
@@ -17,7 +17,8 @@ The Singularity Marketplace MCP server exposes the marketplace through this prot
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Marketplace MCP` |
 | Status | `active` |
-| Version | `1.1.0` |
+| Runtime Version | `1.2.0` |
+| Registry Package Version | `1.1.0` |
 | Published | `March 14, 2026` |
 | Repository | `https://github.com/ivaavimusic/SGL-MCP` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
@@ -104,19 +105,23 @@ Browse and discover marketplace listings, agents, and categories. No authenticat
 | `list_networks` | List supported blockchain networks | none |
 | `list_agents` | List all registered ERC-8004 agents | network, limit, offset |
 
-## Management Tools (Phase 2 - API Key Auth)
+## Management Tools (Phase 2 + 2.5 - API Key Auth)
 
-Manage your x402 endpoints: view details, check stats, configure webhooks, and delete endpoints. Requires your endpoint API key (`sk_live_*` or `sk_test_*`).
+Manage your x402 endpoints and products through authenticated MCP tools. Production endpoint keys use the `x402_*` format.
 
 | Tool | Description | Parameters | Auth |
 |------|-------------|------------|------|
 | `get_endpoint_details` | Full endpoint info including credit balance | slug, apiKey | Required |
 | `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | slug, apiKey (optional) | Optional |
+| `list_my_endpoints` | List endpoints in owner scope, with safe fallback to endpoint-only scope | apiKey | Required |
+| `update_endpoint` | Update allowlisted endpoint fields, pricing, listing flags, and webhook settings | slug, apiKey, allowlisted fields | Required |
+| `list_my_products` | List products in owner scope | apiKey | Required |
+| `update_product` | Update allowlisted product metadata, pricing, branding, and listing state | id or slug, apiKey, allowlisted fields | Required |
 | `set_webhook` | Set/update webhook URL, returns signing secret | slug, webhookUrl, apiKey | Required |
 | `remove_webhook` | Remove webhook from endpoint | slug, apiKey | Required |
 | `delete_endpoint` | Permanently delete endpoint | slug, apiKey, confirm | Required |
 
-> Security note: API keys are passed per-request and never stored or logged by the MCP server. Keys are validated to match the `sk_live_*` / `sk_test_*` format before forwarding upstream.
+> Security note: API keys are passed per-request and never stored or logged by the MCP server. Production keys use `x402_*`, legacy `sk_*` keys remain accepted, and older agent-created endpoints without a linked dashboard user stay intentionally constrained to endpoint-only scope.
 
 ## Available Resources
 
@@ -149,10 +154,10 @@ Manage your x402 endpoints: view details, check stats, configure webhooks, and d
 
 ```json
 {
-  "name": "get_endpoint_details",
+    "name": "get_endpoint_details",
   "arguments": {
     "slug": "my-api-endpoint",
-    "apiKey": "sk_live_your_api_key_here"
+    "apiKey": "x402_your_api_key_here"
   }
 }
 ```
@@ -161,11 +166,11 @@ Manage your x402 endpoints: view details, check stats, configure webhooks, and d
 
 ```json
 {
-  "name": "set_webhook",
+    "name": "set_webhook",
   "arguments": {
     "slug": "my-api-endpoint",
     "webhookUrl": "https://my-server.com/webhook",
-    "apiKey": "sk_live_your_api_key_here"
+    "apiKey": "x402_your_api_key_here"
   }
 }
 ```
@@ -190,7 +195,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'
 
-# List all tools (should return 13)
+# List all tools (should return 17)
 curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
@@ -220,11 +225,11 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Marketplace MCP` |
 | Registry Status | `active` |
-| Version | `1.1.0` |
+| Version | `1.2.0` runtime / `1.1.0` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
-| Total Tools | 13 (8 discovery + 5 management) |
+| Total Tools | 17 (8 discovery + 9 management) |
 
 ## Roadmap
 
@@ -235,7 +240,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 5 authenticated tools for endpoint details, stats, webhooks, and deletion.
 
 ### Phase 2.5 - Extended Management
-Endpoint field updates, product management, and owner-wide listing tools.
+Owner-scoped endpoint and product inventory, plus allowlisted endpoint and product updates.
 
 ### Phase 3 - Consumer Tools
 Wallet-authenticated tools for payments, credit consumption, and product purchases.
