@@ -18,8 +18,8 @@ The Singularity Marketplace MCP server exposes the marketplace through this prot
 | Registry Title | `Singularity Marketplace MCP` |
 | Status | `active` |
 | Runtime Version | `1.2.0` |
-| Registry Package Version | `1.1.0` |
-| Published | `March 14, 2026` |
+| Registry Package Version | `1.2.0` |
+| Published | `March 15, 2026` |
 | Repository | `https://github.com/ivaavimusic/SGL-MCP` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -225,7 +225,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Marketplace MCP` |
 | Registry Status | `active` |
-| Version | `1.2.0` runtime / `1.1.0` registry package |
+| Version | `1.2.0` runtime / `1.2.0` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
