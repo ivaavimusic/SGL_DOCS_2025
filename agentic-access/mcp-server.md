@@ -1,4 +1,4 @@
-# Singularity Marketplace MCP
+# Singularity Layer MCP
 
 MCP server for Singularity Marketplace. Browse and discover APIs, products, and ERC-8004 agents, then manage endpoint operations through authenticated MCP tools.
 
@@ -8,14 +8,14 @@ MCP server for Singularity Marketplace. Browse and discover APIs, products, and 
 
 The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) is a standardized protocol for connecting AI assistants to external systems. It provides a unified way for AI models to access tools, resources, and prompts from external services.
 
-The Singularity Marketplace MCP server exposes the marketplace through this protocol, allowing MCP-compatible AI clients to discover listings, inspect agents, and manage endpoint operations from a single MCP surface.
+The Singularity Layer MCP server exposes the marketplace through this protocol, allowing MCP-compatible AI clients to discover listings, inspect agents, and manage endpoint operations from a single MCP surface.
 
 ## Release & Registry Status
 
 | Field | Value |
 |-------|-------|
 | Registry Package | `io.github.ivaavimusic/singularity` |
-| Registry Title | `Singularity Marketplace MCP` |
+| Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
 | Runtime Version | `1.2.0` |
 | Registry Package Version | `1.2.0` |
@@ -222,7 +222,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 |----------|-------|
 | Runtime Name | `singularity-mcp` |
 | Registry Package | `io.github.ivaavimusic/singularity` |
-| Registry Title | `Singularity Marketplace MCP` |
+| Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
 | Version | `1.2.0` runtime / `1.2.0` registry package |
 | Protocol Version | `2024-11-05` |
