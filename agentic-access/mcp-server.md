@@ -20,7 +20,6 @@ The Singularity Marketplace MCP server exposes the marketplace through this prot
 | Runtime Version | `1.2.0` |
 | Registry Package Version | `1.2.0` |
 | Published | `March 15, 2026` |
-| Repository | `https://github.com/ivaavimusic/SGL-MCP` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
 The runtime server name remains `singularity-mcp`, while the official registry package is `io.github.ivaavimusic/singularity`.
@@ -252,6 +251,5 @@ ERC-8004 and Solana-8004 agent registration and on-chain reputation.
 
 - [MCP Endpoint](https://mcp.x402layer.cc)
 - [MCP Registry](https://registry.modelcontextprotocol.io/?q=singularity)
-- [GitHub Repository](https://github.com/ivaavimusic/SGL-MCP)
 - [MCP Protocol](https://modelcontextprotocol.io)
 - [x402 Studio](https://studio.x402layer.cc)
