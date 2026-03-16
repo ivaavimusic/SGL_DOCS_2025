@@ -1,14 +1,14 @@
 # Singularity Layer MCP
 
-MCP server for Singularity Marketplace. Browse and discover APIs, products, and ERC-8004 agents, then manage endpoint operations through authenticated MCP tools.
+MCP server for the Singularity Layer platform. Discover marketplace listings, manage endpoints and products, and interact with ERC-8004 agents through authenticated MCP tools.
 
-> ✅ **v1.2.1** metadata refresh shipped on March 16, 2026. Phase 2.5 remains live in production runtime with owner-scoped endpoint and product management.
+> ✅ **v1.2.2** metadata alignment shipped on March 16, 2026. Phase 2.5 remains live in production runtime with owner-scoped endpoint and product management.
 
 ## What is MCP?
 
 The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) is a standardized protocol for connecting AI assistants to external systems. It provides a unified way for AI models to access tools, resources, and prompts from external services.
 
-The Singularity Layer MCP server exposes the marketplace through this protocol, allowing MCP-compatible AI clients to discover listings, inspect agents, and manage endpoint operations from a single MCP surface.
+The Singularity Layer MCP server exposes the broader platform through this protocol, combining marketplace discovery, endpoint and product management, and ERC-8004 agent access in a single MCP surface.
 
 ## Release & Registry Status
 
@@ -17,8 +17,8 @@ The Singularity Layer MCP server exposes the marketplace through this protocol, 
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.2.1` |
-| Registry Package Version | `1.2.1` |
+| Runtime Version | `1.2.2` |
+| Registry Package Version | `1.2.2` |
 | Published | `March 15, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -224,7 +224,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
-| Version | `1.2.1` runtime / `1.2.1` registry package |
+| Version | `1.2.2` runtime / `1.2.2` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
