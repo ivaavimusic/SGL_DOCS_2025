@@ -2,7 +2,7 @@
 
 MCP server for Singularity Marketplace. Browse and discover APIs, products, and ERC-8004 agents, then manage endpoint operations through authenticated MCP tools.
 
-> ✅ **v1.2.0** shipped on March 15, 2026. Phase 2.5 is live in production runtime with owner-scoped endpoint and product management.
+> ✅ **v1.2.1** metadata refresh shipped on March 16, 2026. Phase 2.5 remains live in production runtime with owner-scoped endpoint and product management.
 
 ## What is MCP?
 
@@ -17,8 +17,8 @@ The Singularity Layer MCP server exposes the marketplace through this protocol, 
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.2.0` |
-| Registry Package Version | `1.2.0` |
+| Runtime Version | `1.2.1` |
+| Registry Package Version | `1.2.1` |
 | Published | `March 15, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -224,7 +224,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
-| Version | `1.2.0` runtime / `1.2.0` registry package |
+| Version | `1.2.1` runtime / `1.2.1` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
