@@ -1,6 +1,6 @@
 # Singularity Layer MCP
 
-MCP server for the Singularity Layer platform. Discover marketplace listings, manage endpoints and products, and interact with ERC-8004 agents through authenticated MCP tools.
+MCP for Singularity Layer. Discover listings, manage endpoints and products, and use ERC-8004 agents through authenticated MCP tools.
 
 > ✅ **v1.2.2** metadata alignment shipped on March 16, 2026. Phase 2.5 remains live in production runtime with owner-scoped endpoint and product management.
 
