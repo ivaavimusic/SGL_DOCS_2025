@@ -18,8 +18,8 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
 | Runtime Version | `1.3.0` |
-| Registry Package Version | `1.2.2` pending `1.3.0` |
-| Published | `March 15, 2026` (runtime `1.3.0` shipped March 22, 2026) |
+| Registry Package Version | `1.3.0` |
+| Published | `March 22, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
 The runtime server name remains `singularity-mcp`, while the official registry package is `io.github.ivaavimusic/singularity`.
