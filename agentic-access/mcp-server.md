@@ -1,8 +1,8 @@
 # Singularity Layer MCP
 
-MCP for Singularity Layer. Discover listings, manage endpoints and products, and use ERC-8004 agents through authenticated MCP tools.
+MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, and use ERC-8004 agents through authenticated MCP tools.
 
-> ✅ **v1.3.0** PAT-first auth alignment shipped on March 22, 2026. Phase 2.5 remains live, and scoped PAT validation now backs the owner-scoped MCP management flow.
+> ✅ **v1.4.0** Phase 3A endpoint payment tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes endpoint creation and top-up payment flows.
 
 ## What is MCP?
 
@@ -17,9 +17,9 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.3.0` |
-| Registry Package Version | `1.3.0` |
-| Published | `March 22, 2026` |
+| Runtime Version | `1.4.0` |
+| Registry Package Version | `1.3.0` pending `1.4.0` |
+| Published | `March 22, 2026` (runtime `1.4.0` live; registry `1.4.0` pending auth refresh) |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
 The runtime server name remains `singularity-mcp`, while the official registry package is `io.github.ivaavimusic/singularity`.
@@ -100,7 +100,7 @@ Personal access tokens are now the default account-level credential for MCP. Cre
 | `mcp:products:write` | Product updates |
 | `mcp:*` | Full MCP access |
 
-> Live validation on March 22, 2026 confirmed that read-only PATs cannot perform writes, endpoint-write PATs cannot mutate products, product-write PATs cannot mutate endpoints, and revoked or expired PATs are rejected cleanly.
+> Live validation on March 22, 2026 confirmed that read-only PATs cannot perform writes, endpoint-write PATs cannot mutate products, product-write PATs cannot mutate endpoints, revoked or expired PATs are rejected cleanly, and PAT-backed endpoint top-up challenges now return a valid `402`.
 
 ## Discovery Tools (Phase 1 - No Auth)
 
@@ -132,6 +132,17 @@ Manage your x402 endpoints and products through authenticated MCP tools. Use `ac
 | `set_webhook` | Set/update webhook URL, returns signing secret | slug, webhookUrl, accessToken or apiKey | `mcp:endpoints:write` |
 | `remove_webhook` | Remove webhook from endpoint | slug, accessToken or apiKey | `mcp:endpoints:write` |
 | `delete_endpoint` | Permanently delete endpoint | slug, accessToken or apiKey, confirm | `mcp:endpoints:write` |
+
+## Phase 3A Payment Tools
+
+MCP can now request payment challenges and complete payment-backed endpoint creation and top-up flows. Creation is PAT-only. Top-ups accept either a scoped PAT or a legacy endpoint API key.
+
+| Tool | Description | Parameters | Auth |
+|------|-------------|------------|------|
+| `request_endpoint_creation_payment` | Request the x402 challenge needed to create a new agent endpoint | accessToken, slug, name, originUrl, walletAddress, chain, endpoint config | `mcp:endpoints:write` |
+| `create_endpoint_with_payment` | Create the endpoint after a paying client returns an `X-Payment` payload | accessToken, endpoint config, paymentPayload | `mcp:endpoints:write` |
+| `request_endpoint_topup_payment` | Request the x402 challenge to add credits to an existing agent endpoint | slug, topupAmount, accessToken or apiKey | `mcp:endpoints:write` or legacy `X-API-Key` |
+| `topup_endpoint_with_payment` | Complete an endpoint top-up after the paying client returns an `X-Payment` payload | slug, topupAmount, paymentPayload, accessToken or apiKey | `mcp:endpoints:write` or legacy `X-API-Key` |
 
 > Security note: PATs and legacy endpoint keys are passed per-request and never stored by the MCP server. Production PATs use `sgl_pat_*`, production keys use `x402_*`, legacy `sk_*` keys remain accepted, and older agent-created endpoints without a linked dashboard user stay intentionally constrained to endpoint-only scope.
 
@@ -207,7 +218,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'
 
-# List all tools (should return 17)
+# List all tools (should return 21)
 curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
