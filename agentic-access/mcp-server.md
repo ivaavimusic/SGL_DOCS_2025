@@ -1,8 +1,8 @@
 # Singularity Layer MCP
 
-MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, consume public product and credit-pack purchase flows, and use ERC-8004 agents through authenticated MCP tools.
+MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, consume public product and credit-pack purchase flows, and use wallet-session agent registry tools through authenticated MCP actions.
 
-> ✅ **v1.5.0** Phase 3B consumer payment tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes product purchases, endpoint credit-pack purchases, endpoint creation, and top-up payment flows.
+> ✅ **v1.6.0** Phase 4 agent registry tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes wallet-session agent registration and management in addition to payment flows.
 
 ## What is MCP?
 
@@ -17,8 +17,8 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.5.0` |
-| Registry Package Version | `1.5.0` |
+| Runtime Version | `1.6.0` |
+| Registry Package Version | `1.6.0` |
 | Published | `March 22, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -152,6 +152,27 @@ MCP can now request payment challenges and complete endpoint creation, endpoint 
 >
 > Contract note: product tools only wrap `/p/:slug-or-id` and credit purchase tools only wrap `/e/:slug?action=purchase`. Some current credit endpoints still include `purchase_url` and `credit_package` with an informational `Missing x-wallet-address header` field because that is the current upstream worker contract.
 
+## Phase 4 Agent Registry Tools
+
+MCP now exposes the worker wallet-session flows for ERC-8004 and Solana-8004 agent registration and management.
+
+| Tool | Description | Parameters | Auth |
+|------|-------------|------------|------|
+| `get_agent_registry_info` | Get public registry info, supported networks, and worker route notes | none | none |
+| `request_agent_wallet_challenge` | Request a wallet-auth challenge for registration or management | chain, walletAddress, action, payload | none |
+| `verify_agent_wallet_challenge` | Verify the wallet-signed challenge and receive a short-lived session token | chain, walletAddress, nonce, signature, action, signatureEncoding, payload | none |
+| `list_my_agent_bindable_endpoints` | List endpoints owned by the authenticated wallet or linked dashboard user | sessionToken, listedOnly | wallet session token |
+| `list_my_registered_agents` | List ERC-8004 or Solana-8004 agents owned by the wallet or linked dashboard user | sessionToken, network | wallet session token |
+| `prepare_agent_registration` | Prepare a wallet-first registration flow | sessionToken, registration payload | wallet session token |
+| `finalize_agent_registration` | Finalize registration after the same wallet sends the on-chain transaction | sessionToken, finalize payload | wallet session token |
+| `prepare_agent_update` | Prepare a wallet-first update flow | sessionToken, update payload | wallet session token |
+| `finalize_agent_update` | Finalize the update after any required on-chain transaction | sessionToken, finalize payload | wallet session token |
+| `submit_agent_feedback` | Submit reputation feedback via the worker feedback route | apiKey, feedback payload | worker feedback API key |
+
+> Wallet auth note: MCP does not hold the wallet private key. The wallet signs locally, then MCP exchanges that signature for a short-lived session token. On-chain registration and URI updates still require normal chain gas from the same wallet.
+>
+> Validation note: production validation on March 22, 2026 covered wallet challenge creation, wallet verification, owned endpoint discovery, owned agent discovery, and EVM registration prepare. Full on-chain finalize still depends on the validation wallet having gas on the target chain.
+
 ## Available Resources
 
 | URI | Description |
@@ -224,7 +245,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'
 
-# List all tools (should return 25)
+# List all tools (should return 35)
 curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
@@ -254,11 +275,11 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
-| Version | `1.5.0` runtime / `1.5.0` registry package |
+| Version | `1.6.0` runtime / `1.6.0` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
-| Total Tools | 25 (8 discovery + 9 management + 8 payment) |
+| Total Tools | 35 (8 discovery + 9 management + 8 payment + 10 agent registry) |
 
 ## Roadmap
 
@@ -278,7 +299,7 @@ PAT-first docs, scoped PAT validation, and explicit scope guidance for owner-lev
 Endpoint creation and top-ups, plus public product purchases and endpoint credit-pack purchases.
 
 ### Phase 4 - Agent Registry
-ERC-8004 and Solana-8004 agent registration and on-chain reputation.
+Wallet-session ERC-8004 and Solana-8004 registration, management, and feedback tooling are now live.
 
 ## Resources
 
