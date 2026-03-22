@@ -2,7 +2,7 @@
 
 MCP for Singularity Layer. Discover listings, manage endpoints and products, and use ERC-8004 agents through authenticated MCP tools.
 
-> ✅ **v1.2.2** metadata alignment shipped on March 16, 2026. Phase 2.5 remains live in production runtime with owner-scoped endpoint and product management.
+> ✅ **v1.3.0** PAT-first auth alignment shipped on March 22, 2026. Phase 2.5 remains live, and scoped PAT validation now backs the owner-scoped MCP management flow.
 
 ## What is MCP?
 
@@ -17,9 +17,9 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.2.2` |
-| Registry Package Version | `1.2.2` |
-| Published | `March 15, 2026` |
+| Runtime Version | `1.3.0` |
+| Registry Package Version | `1.2.2` pending `1.3.0` |
+| Published | `March 15, 2026` (runtime `1.3.0` shipped March 22, 2026) |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
 The runtime server name remains `singularity-mcp`, while the official registry package is `io.github.ivaavimusic/singularity`.
@@ -89,6 +89,19 @@ https://mcp.x402layer.cc/mcp
 # Transport: Streamable HTTP
 ```
 
+## PAT Authentication
+
+Personal access tokens are now the default account-level credential for MCP. Create them in `Dashboard -> Settings -> PAT` and use `accessToken` for owner-wide MCP automation. Legacy endpoint keys remain supported for endpoint-scoped flows.
+
+| Scope | Use For |
+|-------|---------|
+| `mcp:read` | Owner inventory, endpoint details, and stats |
+| `mcp:endpoints:write` | Endpoint updates and webhook management |
+| `mcp:products:write` | Product updates |
+| `mcp:*` | Full MCP access |
+
+> Live validation on March 22, 2026 confirmed that read-only PATs cannot perform writes, endpoint-write PATs cannot mutate products, product-write PATs cannot mutate endpoints, and revoked or expired PATs are rejected cleanly.
+
 ## Discovery Tools (Phase 1 - No Auth)
 
 Browse and discover marketplace listings, agents, and categories. No authentication required.
@@ -104,23 +117,23 @@ Browse and discover marketplace listings, agents, and categories. No authenticat
 | `list_networks` | List supported blockchain networks | none |
 | `list_agents` | List all registered ERC-8004 agents | network, limit, offset |
 
-## Management Tools (Phase 2 + 2.5 - API Key Auth)
+## Management Tools (Phase 2 + 2.5 - PAT First)
 
-Manage your x402 endpoints and products through authenticated MCP tools. Production endpoint keys use the `x402_*` format.
+Manage your x402 endpoints and products through authenticated MCP tools. Use `accessToken` with a scoped `sgl_pat_*` token for owner-wide automation. Legacy endpoint keys in the `x402_*` format remain supported where noted.
 
 | Tool | Description | Parameters | Auth |
 |------|-------------|------------|------|
-| `get_endpoint_details` | Full endpoint info including credit balance | slug, apiKey | Required |
-| `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | slug, apiKey (optional) | Optional |
-| `list_my_endpoints` | List endpoints in owner scope, with safe fallback to endpoint-only scope | apiKey | Required |
-| `update_endpoint` | Update allowlisted endpoint fields, pricing, listing flags, and webhook settings | slug, apiKey, allowlisted fields | Required |
-| `list_my_products` | List products in owner scope | apiKey | Required |
-| `update_product` | Update allowlisted product metadata, pricing, branding, and listing state | id or slug, apiKey, allowlisted fields | Required |
-| `set_webhook` | Set/update webhook URL, returns signing secret | slug, webhookUrl, apiKey | Required |
-| `remove_webhook` | Remove webhook from endpoint | slug, apiKey | Required |
-| `delete_endpoint` | Permanently delete endpoint | slug, apiKey, confirm | Required |
+| `get_endpoint_details` | Full endpoint info including credit balance | slug, accessToken or apiKey | `mcp:read` |
+| `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | slug, accessToken or apiKey (optional) | `mcp:read` if PAT is used |
+| `list_my_endpoints` | List endpoints in owner scope, with safe fallback to endpoint-only scope | accessToken or apiKey | `mcp:read` |
+| `update_endpoint` | Update allowlisted endpoint fields, pricing, listing flags, and webhook settings | slug, accessToken or apiKey, allowlisted fields | `mcp:endpoints:write` |
+| `list_my_products` | List products in owner scope | accessToken or apiKey | `mcp:read` |
+| `update_product` | Update allowlisted product metadata, pricing, branding, and listing state | id or slug, accessToken or apiKey, allowlisted fields | `mcp:products:write` |
+| `set_webhook` | Set/update webhook URL, returns signing secret | slug, webhookUrl, accessToken or apiKey | `mcp:endpoints:write` |
+| `remove_webhook` | Remove webhook from endpoint | slug, accessToken or apiKey | `mcp:endpoints:write` |
+| `delete_endpoint` | Permanently delete endpoint | slug, accessToken or apiKey, confirm | `mcp:endpoints:write` |
 
-> Security note: API keys are passed per-request and never stored or logged by the MCP server. Production keys use `x402_*`, legacy `sk_*` keys remain accepted, and older agent-created endpoints without a linked dashboard user stay intentionally constrained to endpoint-only scope.
+> Security note: PATs and legacy endpoint keys are passed per-request and never stored by the MCP server. Production PATs use `sgl_pat_*`, production keys use `x402_*`, legacy `sk_*` keys remain accepted, and older agent-created endpoints without a linked dashboard user stay intentionally constrained to endpoint-only scope.
 
 ## Available Resources
 
@@ -156,7 +169,7 @@ Manage your x402 endpoints and products through authenticated MCP tools. Product
     "name": "get_endpoint_details",
   "arguments": {
     "slug": "my-api-endpoint",
-    "apiKey": "x402_your_api_key_here"
+    "accessToken": "sgl_pat_your_token_here"
   }
 }
 ```
@@ -169,7 +182,7 @@ Manage your x402 endpoints and products through authenticated MCP tools. Product
   "arguments": {
     "slug": "my-api-endpoint",
     "webhookUrl": "https://my-server.com/webhook",
-    "apiKey": "x402_your_api_key_here"
+    "accessToken": "sgl_pat_your_token_here"
   }
 }
 ```
@@ -240,6 +253,9 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 
 ### Phase 2.5 - Extended Management
 Owner-scoped endpoint and product inventory, plus allowlisted endpoint and product updates.
+
+### Phase 2.6 - PAT-First Alignment
+PAT-first docs, scoped PAT validation, and explicit scope guidance for owner-level MCP automation.
 
 ### Phase 3 - Consumer Tools
 Wallet-authenticated tools for payments, credit consumption, and product purchases.
