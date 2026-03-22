@@ -88,18 +88,18 @@ Technical details for AI agents and programmatic access.
 - **x402 Compute Skill**: Provision and manage VPS/GPU compute with x402 payments.
 
 ### ⚡ [OpenClaw x402-Layer Skill](./agentic-access/openclaw-skill.mdx)
-Production-ready skill for [OpenClaw](https://x.com/openclaw) agents with 11 Python scripts:
+Production-ready skill for [OpenClaw](https://x.com/openclaw) agents covering payments, endpoint ops, webhooks, and agent registry flows:
 
 | Script | Purpose |
 |--------|---------|
-| `pay_base.py` | Pay for endpoints on Base (100% reliable) |
-| `pay_solana.py` | Pay for endpoints on Solana (with retry) |
+| `pay_base.py` | Pay for endpoints on Base (recommended default) |
+| `pay_solana.py` | Pay for endpoints on Solana with the sponsored PayAI flow |
 | `consume_credits.py` | Use pre-purchased credits (fastest) |
 | `consume_product.py` | Purchase digital products (files) |
 | `check_credits.py` | Check your credit balance |
 | `recharge_credits.py` | Buy credit packs (Consumer) |
 | `topup_endpoint.py` | Add credits to YOUR endpoint (Provider) |
-| `create_endpoint.py` | Deploy new monetized endpoint ($5) |
+| `create_endpoint.py` | Deploy new monetized endpoint ($1) |
 | `manage_endpoint.py` | View/update your endpoints |
 | `discover_marketplace.py` | Browse available services |
 | `list_on_marketplace.py` | Publish endpoint publicly |

@@ -8,11 +8,11 @@ description: Production-ready skill for OpenClaw agents to interact with x402 Si
 The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to interact with x402 Singularity Layer for autonomous API monetization and consumption.
 
 <Note>
-  This skill is production-ready and has been tested with real payments on **Base (EVM)** and **Solana** networks.
+  This skill is production-ready and has been tested with real payments on **Base (EVM)** and **Solana**, including the current PayAI-backed Solana flow.
 </Note>
 
 <Note>
-  Current release: **v1.4.0**. ERC-8004 is now wallet-first by default and the skill includes agent-side discovery + management scripts for listing bindable endpoints, listing owned agents, registering with rich metadata, and updating agents after mint.
+  Current release: **v1.5.0**. The skill now packages a full payments integration path for agents, and the bundled Solana signer matches the live PayAI-backed compute limit requirements.
 </Note>
 
 ## Script Source Code
@@ -25,8 +25,8 @@ The full Python source code for all scripts is available in this repository: [Vi
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `pay_base.py` | Pay for endpoints on Base (100% reliable) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_base.py) |
-    | `pay_solana.py` | Pay for endpoints on Solana (with retry) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_solana.py) |
+    | `pay_base.py` | Pay for endpoints on Base (recommended default) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_base.py) |
+    | `pay_solana.py` | Pay for endpoints on Solana with the sponsored PayAI flow | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/pay_solana.py) |
     | `consume_credits.py` | Use pre-purchased credits (fastest) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/consume_credits.py) |
     | `consume_product.py` | Purchase digital products (files) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/consume_product.py) |
     | `check_credits.py` | Check your credit balance | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/check_credits.py) |
@@ -100,13 +100,31 @@ Use private-key mode for wallet-first ERC-8004 registration.
 
 ## Usage Examples
 
+### Integrate Payments Into Your App
+
+```bash
+# 1. Create or reuse a paid endpoint
+python scripts/create_endpoint.py my-api "My AI Service" https://api.example.com 0.01
+
+# 2. Add webhook-based fulfillment
+python scripts/manage_webhook.py set my-api https://my-server.com/webhook
+
+# 3. Verify the webhook signature + receipt server-side
+python scripts/verify_webhook_payment.py \
+  --body-file ./webhook.json \
+  --signature 't=1700000000,v1=<hex>' \
+  --secret '<YOUR_SIGNING_SECRET>' \
+  --required-source-slug my-api \
+  --require-receipt
+```
+
 ### Pay for an Endpoint (Consumer)
 
 ```bash
-# Pay with Base (recommended - 100% success rate)
+# Pay with Base (recommended default)
 python scripts/pay_base.py https://api.x402layer.cc/e/weather-data
 
-# Pay with Solana (includes retry logic)
+# Pay with Solana (PayAI-backed sponsored flow)
 python scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
 ```
 
@@ -183,7 +201,7 @@ python scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.4.0 \
+  --version 1.5.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -225,19 +243,19 @@ Wallet-first registration flow:
 Uses EIP-712 `TransferWithAuthorization` signatures:
 - Gasless for the payer
 - Facilitator settles on-chain
-- 100% reliable
+- Simplest production default
 
 ### Solana Payments
 
 Uses `VersionedTransaction` with `MessageV0`:
 - Facilitator pays gas fees
 - SPL Token `TransferChecked` instruction
-- ~75% success rate (facilitator fee payer infrastructure issue)
-- Retry logic built into the script
+- Must include the live `feePayer` from the challenge
+- Exact-payment payload must stay within facilitator compute limits
+- The bundled signer handles the current live flow
 
 <Warning>
-  Solana payments have ~75% success rate due to facilitator-side fee payer infrastructure issues. 
-  Base (EVM) payments are 100% reliable and recommended for production use.
+  Base remains the simplest default for production. Solana is supported, but the signer must respect the challenge fee payer and exact-payment compute constraints.
 </Warning>
 
 ## Skill Metadata
@@ -245,7 +263,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.4.0 |
+| **Version** | 1.5.0 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -257,6 +275,11 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.5.0
+- Added a first-class payments integration path for agents using direct endpoints, credits, products, webhooks, and receipt verification
+- Added `payments-integration.md` as the decision guide for payment shape and fulfillment strategy
+- Fixed the bundled Solana signer to match the live PayAI-backed compute limit requirement
 
 ### v1.4.0
 - Wallet-first ERC-8004 / Solana-8004 registration is now the default for `register_agent.py`
@@ -281,6 +304,3 @@ Initial release with full x402 Agentic Access API integration:
 - Marketplace discovery with filtering
 - Pay-per-request with EIP-712 permits (Base) and VersionedTransaction (Solana)
 - Credit-based access for zero-latency consumption
-
-**Known Issues:**
-- Solana payments ~75% success rate due to facilitator fee payer infrastructure issue

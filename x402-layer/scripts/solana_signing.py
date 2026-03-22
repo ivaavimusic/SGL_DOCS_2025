@@ -270,8 +270,9 @@ def _build_transaction_base64(accept_option: Dict[str, Any], payer_wallet_addres
     source_ata = get_ata(payer_pubkey, mint)
     dest_ata = get_ata(pay_to, mint)
 
+    # PayAI-backed exact payments reject oversized compute limits.
     instructions = [
-        set_compute_unit_limit(200000),
+        set_compute_unit_limit(40000),
         set_compute_unit_price(1000),
         create_transfer_checked_ix(source_ata, mint, dest_ata, payer_pubkey, amount, 6),
     ]

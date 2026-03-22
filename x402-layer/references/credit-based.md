@@ -1,12 +1,13 @@
 # Credit-Based Access
 
-For high-frequency or latency-sensitive API calls. Pre-purchase credits, consume instantly.
+For high-frequency or latency-sensitive API calls. Pre-purchase credits once, then consume instantly without a blockchain signature on every request.
 
 ## Why Use Credits?
 
 - Zero latency (no blockchain wait)
 - Zero gas fees per request
 - Simple header-based access
+- Better fit for repeated calls than a per-request paywall
 
 ## Usage
 
@@ -39,13 +40,19 @@ When out of credits, you get a 402 with purchase options:
 
 ## Purchasing Credits
 
-Use the standard 402 flow on the `purchase_url`:
+Use the standard 402 flow on the `purchase_url` or the hosted credits page:
 
 1. GET the purchase URL
 2. Parse 402 challenge  
 3. Sign EIP-712 payment
 4. Send with X-Payment header
 5. Credits added to wallet
+
+Hosted path pattern:
+
+```text
+https://studio.x402layer.cc/pay/credits/<slug>
+```
 
 ## Example Python
 
@@ -67,6 +74,5 @@ def call_with_credits(url, wallet, data):
 ## Scripts
 
 - `check_credits.py` - Query balance
-- `consume_with_credits.py` - Use credits
+- `consume_credits.py` - Use credits
 - `recharge_credits.py` - Top up via payment
-

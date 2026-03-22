@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.4.0
+version: 1.5.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -10,6 +10,8 @@ description: |
   "topup endpoint", "browse x402 marketplace", "set up webhook",
   "receive payment notifications", "manage endpoint webhook",
   "verify webhook payment", "verify payment genuineness",
+  "integrate crypto payments into my app", "add USDC payments to my platform",
+  "sell with x402", "build a paywall with webhooks",
   "register ERC-8004 agent", "register Solana 8004 agent",
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
@@ -42,10 +44,11 @@ allowed-tools:
 
 # x402 Singularity Layer
 
-x402 is a Web3 payment layer where humans and agents can sell/consume APIs and products.
+x402 is a Web3 payment layer where humans and agents can sell and consume APIs, products, and credits.
 This skill covers the full Singularity Layer lifecycle:
 - pay/consume services
 - create/manage/list endpoints
+- integrate custom payment flows into an app or platform
 - receive and verify webhook payment events
 - register agents and submit on-chain reputation feedback
 
@@ -61,6 +64,7 @@ Use this routing first, then load the relevant reference doc.
 
 | User intent | Primary scripts | Reference |
 |---|---|---|
+| Integrate crypto payments into an app/platform | `create_endpoint.py`, `manage_webhook.py`, `verify_webhook_payment.py`, `consume_product.py`, `recharge_credits.py` | `references/payments-integration.md`, `references/webhooks-verification.md`, `references/agentic-endpoints.md` |
 | Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md` |
@@ -154,20 +158,37 @@ Reject requests when missing/invalid.
 
 ## Fast Runbooks
 
-### A) Pay and Consume
+### A) Integrate Payments Into Your App
+```bash
+# 1. Create or reuse a paid endpoint
+python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01
+
+# 2. Add server-side fulfillment
+python {baseDir}/scripts/manage_webhook.py set my-api https://my-server.com/webhook
+
+# 3. Verify webhook signatures and payment receipts server-side
+python {baseDir}/scripts/verify_webhook_payment.py \
+  --body-file ./webhook.json \
+  --signature 't=1700000000,v1=<hex>' \
+  --secret '<YOUR_SIGNING_SECRET>' \
+  --required-source-slug my-api \
+  --require-receipt
+```
+
+### B) Pay and Consume
 ```bash
 python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data
 python {baseDir}/scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
 python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
 ```
 
-### B) Discover/Search Marketplace
+### C) Discover/Search Marketplace
 ```bash
 python {baseDir}/scripts/discover_marketplace.py
 python {baseDir}/scripts/discover_marketplace.py search weather
 ```
 
-### C) Create and Manage Endpoint
+### D) Create and Manage Endpoint
 ```bash
 python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01
 python {baseDir}/scripts/manage_endpoint.py list
@@ -175,7 +196,7 @@ python {baseDir}/scripts/manage_endpoint.py update my-api --price 0.02
 python {baseDir}/scripts/topup_endpoint.py my-api 10
 ```
 
-### D) List/Update in Marketplace
+### E) List/Update in Marketplace
 ```bash
 python {baseDir}/scripts/list_on_marketplace.py my-api \
   --category ai \
@@ -184,7 +205,7 @@ python {baseDir}/scripts/list_on_marketplace.py my-api \
   --banner https://example.com/banner.jpg
 ```
 
-### E) Webhook Setup and Genuineness Verification
+### F) Webhook Setup and Genuineness Verification
 ```bash
 python {baseDir}/scripts/manage_webhook.py set my-api https://my-server.com/webhook
 python {baseDir}/scripts/manage_webhook.py info my-api
@@ -201,7 +222,7 @@ python {baseDir}/scripts/verify_webhook_payment.py \
   --require-receipt
 ```
 
-### F) Agent Registration + Reputation
+### G) Agent Registration + Reputation
 ```bash
 python {baseDir}/scripts/list_my_endpoints.py
 
@@ -210,7 +231,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.4.0 \
+  --version 1.5.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -246,6 +267,8 @@ python {baseDir}/scripts/submit_feedback.py \
 
 Load only what is needed for the user task:
 
+- `references/payments-integration.md`:
+  product-vs-endpoint-vs-credits decision guide plus webhook/receipt fulfillment patterns.
 - `references/pay-per-request.md`:
   EIP-712/Solana payment flow and low-level signing details.
 - `references/credit-based.md`:
@@ -301,4 +324,4 @@ Load only what is needed for the user task:
 
 ## Known Issue
 
-Solana payments currently have lower reliability than Base due to facilitator-side fee payer infra. Use retry logic in `pay_solana.py`, and prefer Base for production-critical flows.
+Solana exact-payment flows must use the `feePayer` returned by the challenge and keep the transaction compute-unit limit within facilitator requirements. `pay_solana.py` and `solana_signing.py` handle this for the current PayAI-backed flow; prefer Base when you need the simplest production path.

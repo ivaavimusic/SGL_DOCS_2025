@@ -52,7 +52,7 @@ curl https://api.x402layer.cc/e/my-endpoint
       "payTo": "3rcdSzTam4h5e6UN2USv5L2t9R4Ah466B4mHgxRVEqCx",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       "extra": {
-        "feePayer": "BENrLoUbndxoNMUS5JXApGMtNykLjFXXixMtpDwDR9SP"
+        "feePayer": "<fee payer returned by the live challenge>"
       }
     }
   ]
@@ -153,6 +153,7 @@ Even if amount is 0, you MUST still send a signed payload. This authenticates th
 ## Solana Payments
 
 Solana uses SPL Token transfers (not EIP-712). The transaction must include the `feePayer` from challenge.
+For PayAI-backed exact payments, keep the compute-unit limit within facilitator limits. The bundled `solana_signing.py` uses the safe limit for current live flows.
 
 ```python
 from solders.keypair import Keypair
