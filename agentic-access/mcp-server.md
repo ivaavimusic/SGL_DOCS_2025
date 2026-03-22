@@ -1,8 +1,8 @@
 # Singularity Layer MCP
 
-MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, and use ERC-8004 agents through authenticated MCP tools.
+MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, consume public product and credit-pack purchase flows, and use ERC-8004 agents through authenticated MCP tools.
 
-> ✅ **v1.4.0** Phase 3A endpoint payment tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes endpoint creation and top-up payment flows.
+> ✅ **v1.5.0** Phase 3B consumer payment tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes product purchases, endpoint credit-pack purchases, endpoint creation, and top-up payment flows.
 
 ## What is MCP?
 
@@ -17,8 +17,8 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.4.0` |
-| Registry Package Version | `1.4.0` |
+| Runtime Version | `1.5.0` |
+| Registry Package Version | `1.5.0` |
 | Published | `March 22, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -133,9 +133,9 @@ Manage your x402 endpoints and products through authenticated MCP tools. Use `ac
 | `remove_webhook` | Remove webhook from endpoint | slug, accessToken or apiKey | `mcp:endpoints:write` |
 | `delete_endpoint` | Permanently delete endpoint | slug, accessToken or apiKey, confirm | `mcp:endpoints:write` |
 
-## Phase 3A Payment Tools
+## Phase 3 Payment Tools
 
-MCP can now request payment challenges and complete payment-backed endpoint creation and top-up flows. Creation is PAT-only. Top-ups accept either a scoped PAT or a legacy endpoint API key.
+MCP can now request payment challenges and complete endpoint creation, endpoint top-up, public product purchase, and public credit-pack purchase flows. Consumer purchase tools wrap the existing public purchase contracts only and do not act as a generic paid endpoint proxy.
 
 | Tool | Description | Parameters | Auth |
 |------|-------------|------------|------|
@@ -143,8 +143,14 @@ MCP can now request payment challenges and complete payment-backed endpoint crea
 | `create_endpoint_with_payment` | Create the endpoint after a paying client returns an `X-Payment` payload | accessToken, endpoint config, paymentPayload | `mcp:endpoints:write` |
 | `request_endpoint_topup_payment` | Request the x402 challenge to add credits to an existing agent endpoint | slug, topupAmount, accessToken or apiKey | `mcp:endpoints:write` or legacy `X-API-Key` |
 | `topup_endpoint_with_payment` | Complete an endpoint top-up after the paying client returns an `X-Payment` payload | slug, topupAmount, paymentPayload, accessToken or apiKey | `mcp:endpoints:write` or legacy `X-API-Key` |
+| `request_product_purchase_payment` | Request the x402 challenge for a public product purchase | productIdOrSlug, clientReferenceId, metadata | none |
+| `purchase_product_with_payment` | Complete a public product purchase after the paying client returns an `X-Payment` payload | productIdOrSlug, paymentPayload, clientReferenceId, metadata | none |
+| `request_endpoint_credit_purchase_payment` | Request the x402 challenge for a public endpoint credit-pack purchase | slug, walletAddress, clientReferenceId, metadata | none |
+| `purchase_endpoint_credits_with_payment` | Complete a public endpoint credit-pack purchase after the paying client returns an `X-Payment` payload | slug, paymentPayload, walletAddress, clientReferenceId, metadata | none |
 
 > Security note: PATs and legacy endpoint keys are passed per-request and never stored by the MCP server. Production PATs use `sgl_pat_*`, production keys use `x402_*`, legacy `sk_*` keys remain accepted, and older agent-created endpoints without a linked dashboard user stay intentionally constrained to endpoint-only scope.
+>
+> Contract note: product tools only wrap `/p/:slug-or-id` and credit purchase tools only wrap `/e/:slug?action=purchase`. Some current credit endpoints still include `purchase_url` and `credit_package` with an informational `Missing x-wallet-address header` field because that is the current upstream worker contract.
 
 ## Available Resources
 
@@ -218,7 +224,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'
 
-# List all tools (should return 21)
+# List all tools (should return 25)
 curl -X POST https://mcp.x402layer.cc/mcp \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":2}'
@@ -248,11 +254,11 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
-| Version | `1.2.2` runtime / `1.2.2` registry package |
+| Version | `1.5.0` runtime / `1.5.0` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
-| Total Tools | 17 (8 discovery + 9 management) |
+| Total Tools | 25 (8 discovery + 9 management + 8 payment) |
 
 ## Roadmap
 
@@ -268,8 +274,8 @@ Owner-scoped endpoint and product inventory, plus allowlisted endpoint and produ
 ### Phase 2.6 - PAT-First Alignment
 PAT-first docs, scoped PAT validation, and explicit scope guidance for owner-level MCP automation.
 
-### Phase 3 - Consumer Tools
-Wallet-authenticated tools for payments, credit consumption, and product purchases.
+### Phase 3 - Payment Flows
+Endpoint creation and top-ups, plus public product purchases and endpoint credit-pack purchases.
 
 ### Phase 4 - Agent Registry
 ERC-8004 and Solana-8004 agent registration and on-chain reputation.
