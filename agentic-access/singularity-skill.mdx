@@ -1,0 +1,55 @@
+---
+title: Singularity Skill - x402 Studio Docs
+description: Portable full-platform skill for skills.sh-compatible agents
+---
+
+# Singularity Skill
+
+The **singularity** skill is the portable full-platform package for skills.sh-compatible agents.
+It packages the same high-value platform capabilities already proven in the OpenClaw-native `x402-layer` skill:
+
+- payments integration
+- endpoint creation and management
+- marketplace flows
+- webhook + receipt verification
+- ERC-8004 / Solana-8004 identity and reputation
+
+> Current release: **v1.0.0**
+
+## Install
+
+```bash
+npx skills add https://github.com/ivaavimusic/x402Studio-frontend --skill singularity
+```
+
+If you specifically need the OpenClaw-native distribution, use the `x402-layer` skill instead.
+
+## What It Covers
+
+- **Payments integration** — direct endpoint paywalls, credits, products, hosted pages, and custom UI
+- **Endpoint ops** — create, manage, top up, and list endpoints
+- **Webhook fulfillment** — set webhook targets and verify payment signatures/receipts
+- **Marketplace flows** — browse public services and listings
+- **Agent identity** — register, update, and rate ERC-8004 / Solana-8004 agents
+
+## Example Prompts
+
+```text
+Integrate crypto payments into my app with x402
+Create a paid endpoint and connect it to my API
+Set up webhook fulfillment and verify receipts
+Buy credits for an endpoint and consume them
+Register my agent on ERC-8004 and bind my endpoint
+```
+
+## Relationship to Other Surfaces
+
+- **singularity** = portable skills.sh package
+- **x402-layer** = OpenClaw channel
+- **MCP** = PAT-backed control plane and live management/payment tooling
+
+## What It Does Not Do Yet
+
+- It does not replace MCP for live account management, PAT automation, or registry control-plane actions.
+- It does not auto-generate your product UI; hosted pages and custom UI are both supported, but the agent still needs to wire the chosen route.
+- It does not custody wallets or secrets. Payment and registry signing still happen from the agent's configured wallet context.

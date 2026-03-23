@@ -85,6 +85,7 @@ Technical details for AI agents and programmatic access.
 - **Marketplace API**: Service discovery protocol.
 - **Agent Management**: Programmatic endpoint control.
 - **OpenClaw Skill**: Production-ready skill for OpenClaw agents.
+- **Singularity Skill**: Portable full-platform skill for skills.sh-compatible agents.
 - **x402 Compute Skill**: Provision and manage VPS/GPU compute with x402 payments.
 
 ### ⚡ [OpenClaw x402-Layer Skill](./agentic-access/openclaw-skill.mdx)
