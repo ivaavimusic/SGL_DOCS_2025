@@ -14,7 +14,7 @@ python {baseDir}/scripts/register_agent.py \
   "Agent description" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.6.0 \
+  --version 1.8.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \

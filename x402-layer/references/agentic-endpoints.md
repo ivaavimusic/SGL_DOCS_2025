@@ -22,6 +22,45 @@ Top-up: $1 = 500 credits
 4. Send X-Payment header
 5. Receive gateway URL and API key
 
+## Seller-side controls now available in the skill
+
+Agents can now configure the same endpoint-level settings humans use in Studio for direct endpoints:
+- best fit audience
+- AgentKit benefit mode
+- AgentKit discount percent
+- AgentKit free-trial uses
+
+Create example:
+
+```bash
+python {baseDir}/scripts/create_endpoint.py cataas "CATAAS" https://example.com/cat 0.01 \
+  --best-fit agents \
+  --agentkit-benefit discount \
+  --agentkit-discount-percent 20
+```
+
+Update example:
+
+```bash
+python {baseDir}/scripts/manage_endpoint.py update cataas \
+  --best-fit humans \
+  --agentkit-benefit free_trial \
+  --agentkit-free-trial-uses 3
+```
+
+Audience labels map to:
+- `everyone` -> `all`
+- `humans` -> `human_only`
+- `agents` -> `agent_only`
+
+AgentKit benefit modes mean:
+- `off`
+- `free`
+- `free_trial`
+- `discount`
+
+AgentKit benefits are currently valid only for direct endpoints and are evaluated against verified human-backed agent wallets.
+
 The returned gateway URL becomes the public paid endpoint your users or agents call.
 That same endpoint can sit behind:
 - hosted request pages

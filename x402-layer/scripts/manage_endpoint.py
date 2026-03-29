@@ -12,8 +12,7 @@ Usage:
     python manage_endpoint.py delete <slug>
 
 Notes:
-- Public worker API supports info/stats/topup/delete for agent endpoints.
-- Price/name/origin updates are not exposed on /agent/endpoints today.
+- Worker API supports info/stats/topup/delete and PATCH updates for agent endpoints.
 """
 
 import argparse
@@ -115,10 +114,24 @@ def get_endpoint_stats(slug: str, api_key: Optional[str] = None) -> dict:
     return {"error": f"Status {response.status_code}", "response": response.text}
 
 
-def update_endpoint(slug: str, price: float = None, name: str = None, origin_url: str = None) -> dict:
-    """
-    Keep command backward compatible, but current worker API does not expose PATCH updates.
-    """
+def update_endpoint(
+    slug: str,
+    price: float = None,
+    name: str = None,
+    origin_url: str = None,
+    best_fit: Optional[str] = None,
+    agentkit_benefit: Optional[str] = None,
+    agentkit_discount_percent: Optional[float] = None,
+    agentkit_free_trial_uses: Optional[int] = None,
+) -> dict:
+    if agentkit_benefit == "discount":
+        if agentkit_discount_percent is None or agentkit_discount_percent <= 0 or agentkit_discount_percent >= 100:
+            return {"error": "Set --agentkit-discount-percent to a value greater than 0 and less than 100"}
+
+    if agentkit_benefit == "free_trial":
+        if agentkit_free_trial_uses is None or agentkit_free_trial_uses < 1:
+            return {"error": "Set --agentkit-free-trial-uses to an integer of at least 1"}
+
     updates = {}
     if price is not None:
         updates["price"] = price
@@ -126,18 +139,36 @@ def update_endpoint(slug: str, price: float = None, name: str = None, origin_url
         updates["name"] = name
     if origin_url is not None:
         updates["origin_url"] = origin_url
+    if best_fit is not None:
+        updates["audience_mode"] = {
+            "everyone": "all",
+            "humans": "human_only",
+            "agents": "agent_only",
+        }[best_fit]
+    if agentkit_benefit is not None:
+        updates["agentkit_benefit_mode"] = agentkit_benefit
+    if agentkit_discount_percent is not None:
+        updates["agentkit_discount_percent"] = agentkit_discount_percent
+    if agentkit_free_trial_uses is not None:
+        updates["agentkit_free_trial_uses"] = agentkit_free_trial_uses
 
     if not updates:
         return {"error": "No updates specified"}
 
-    return {
-        "error": (
-            "Update is not available on current /agent/endpoints API. "
-            "Use Studio dashboard for endpoint edits, then use this script for info/stats/topup/listing."
-        ),
-        "requested_updates": updates,
-        "slug": slug,
-    }
+    api_key = _load_api_key(optional=True)
+    if not api_key:
+        return {"error": "Update requires X_API_KEY or API_KEY"}
+
+    response = requests.patch(
+        f"{API_BASE}/agent/endpoints",
+        params={"slug": slug},
+        headers={**_build_headers(api_key), "Content-Type": "application/json"},
+        json=updates,
+        timeout=30,
+    )
+    if response.status_code == 200:
+        return response.json()
+    return {"error": f"Status {response.status_code}", "response": response.text, "requested_updates": updates}
 
 
 def delete_endpoint(slug: str, api_key: Optional[str] = None) -> dict:
@@ -174,11 +205,15 @@ def main() -> None:
     stats_parser = subparsers.add_parser("stats", help="Get endpoint statistics")
     stats_parser.add_argument("slug", help="Endpoint slug")
 
-    update_parser = subparsers.add_parser("update", help="Update endpoint (not supported on current worker API)")
+    update_parser = subparsers.add_parser("update", help="Update endpoint settings")
     update_parser.add_argument("slug", help="Endpoint slug")
     update_parser.add_argument("--price", type=float, help="New price in USD")
     update_parser.add_argument("--name", help="New name")
     update_parser.add_argument("--origin-url", help="New origin URL")
+    update_parser.add_argument("--best-fit", choices=["everyone", "humans", "agents"], help="Best fit audience for marketplace")
+    update_parser.add_argument("--agentkit-benefit", choices=["off", "free", "free_trial", "discount"], help="Benefit for verified human-backed agent wallets")
+    update_parser.add_argument("--agentkit-discount-percent", type=float, help="Discount percent when benefit mode is discount")
+    update_parser.add_argument("--agentkit-free-trial-uses", type=int, help="Free requests when benefit mode is free_trial")
 
     delete_parser = subparsers.add_parser("delete", help="Delete endpoint (requires API key)")
     delete_parser.add_argument("slug", help="Endpoint slug")
@@ -193,7 +228,16 @@ def main() -> None:
     elif args.command == "stats":
         result = get_endpoint_stats(args.slug, api_key)
     elif args.command == "update":
-        result = update_endpoint(args.slug, args.price, args.name, getattr(args, "origin_url", None))
+        result = update_endpoint(
+            args.slug,
+            args.price,
+            args.name,
+            getattr(args, "origin_url", None),
+            getattr(args, "best_fit", None),
+            getattr(args, "agentkit_benefit", None),
+            getattr(args, "agentkit_discount_percent", None),
+            getattr(args, "agentkit_free_trial_uses", None),
+        )
     elif args.command == "delete":
         result = delete_endpoint(args.slug, api_key)
     else:
