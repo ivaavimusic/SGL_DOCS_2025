@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.8.1**. This patch fixes direct Base skill payments by rejecting self-payment clearly and aligning the payment URL shape with the hosted pay flow.
+  Current release: **v1.8.2**. This patch removes globally-required secret env declarations from the skill metadata and switches the docs to capability-specific environment guidance.
 </Note>
 
 ## Script Source Code
@@ -81,6 +81,9 @@ pip install -r ../requirements.txt
 ### Environment Setup
 
 ```bash
+# Read-only discovery needs no secrets
+python scripts/discover_marketplace.py
+
 # For Base (EVM) - Recommended
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
@@ -201,7 +204,7 @@ python scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.8.1 \
+  --version 1.8.2 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -263,7 +266,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.8.1 |
+| **Version** | 1.8.2 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -275,6 +278,11 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.8.2
+- removed globally-required secret env declarations from skill metadata
+- documented capability-specific environment requirements so users expose only the vars needed for the current task
+- synced the safer environment guidance across the hosted skill and public docs
 
 ### v1.8.1
 - fixed direct Base endpoint payments for skill usage by rejecting self-payment early

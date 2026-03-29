@@ -125,7 +125,7 @@ async function createXmtpClient() {
   const client = await Client.create(signer, {
     env: XMTP_ENV,
     dbPath: getDbPath(wallet),
-    appVersion: "x402-layer-agent/1.8.1",
+    appVersion: "x402-layer-agent/1.8.2",
   });
 
   if (!(await client.isRegistered())) {

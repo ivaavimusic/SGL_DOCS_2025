@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.8.1
+version: 1.8.2
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -30,13 +30,6 @@ metadata:
       bins:
         - python3
         - node
-      env:
-        - WALLET_ADDRESS
-        - PRIVATE_KEY
-        - SOLANA_SECRET_KEY
-        - X_API_KEY
-        - API_KEY
-        - WORKER_FEEDBACK_API_KEY
 allowed-tools:
   - Read
   - Write
@@ -105,6 +98,7 @@ export X402_USE_AWAL=1
 Use private-key mode for ERC-8004 wallet-first registration. AWAL remains useful for x402 payment flows.
 
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
+Install note: no secret environment variable is globally required for installation. Set only the subset needed for the runbook you are using.
 
 ---
 
@@ -241,7 +235,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.8.1 \
+  --version 1.8.2 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -302,20 +296,51 @@ Load only what is needed for the user task:
 
 ## Environment Reference
 
-| Variable | Required for | Notes |
+No single task needs every variable below. Use least privilege and set only what the current script requires.
+
+### Common
+
+| Variable | Used by | Notes |
 |---|---|---|
-| `PRIVATE_KEY` | Base private-key mode | EVM signing key |
-| `WALLET_ADDRESS` | Most operations | Primary wallet |
-| `SOLANA_SECRET_KEY` | Solana private-key mode | base58 secret or JSON array bytes |
-| `SOLANA_WALLET_ADDRESS` | Solana override | optional |
-| `WALLET_ADDRESS_SECONDARY` | dual-chain endpoint mode | optional |
+| `WALLET_ADDRESS` | most Base/EVM flows | primary wallet address |
+| `PRIVATE_KEY` | Base private-key mode, support auth, XMTP helper | EVM signing key |
 | `X402_USE_AWAL` | AWAL mode | set `1` |
 | `X402_AUTH_MODE` | auth selection | `auto`, `private-key`, `awal` |
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
 | `X402_AGENTKIT_MODE` | optional AgentKit behavior | `off`, `auto`, `required` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
-| `X_API_KEY` / `API_KEY` | provider endpoint/webhook management | endpoint key |
-| `WORKER_FEEDBACK_API_KEY` | reputation feedback | worker auth key |
+
+### Provider and Marketplace Management
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `X_API_KEY` | endpoint/webhook/listing management | endpoint API key |
+| `API_KEY` | fallback for management scripts | interchangeable fallback with `X_API_KEY` |
+
+### Solana
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `SOLANA_SECRET_KEY` | Solana private-key mode | base58 secret or JSON array bytes |
+| `SOLANA_WALLET_ADDRESS` | Solana override and listing helpers | optional |
+| `WALLET_ADDRESS_SECONDARY` | dual-chain endpoint mode | optional |
+
+### Support and XMTP
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `SUPPORT_AGENT_TOKEN` | support thread scripts | optional reuse of prior login |
+| `X402_STUDIO_BASE_URL` | support auth/XMTP helpers | default `https://studio.x402layer.cc` |
+| `X402_API_BASE_URL` | support thread scripts | default `https://api.x402layer.cc` |
+| `XMTP_ENV` | `xmtp_support.mjs` | default `production` |
+| `XMTP_DB_PATH` | `xmtp_support.mjs` | optional persistent DB path override |
+
+### Agent Registry and Feedback
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `WORKER_FEEDBACK_API_KEY` | `submit_feedback.py` | only needed for reputation feedback writes |
+| `BASE_RPC_URL` and other chain RPC URLs | `register_agent.py` | optional RPC overrides for agent registration |
 
 ---
 
