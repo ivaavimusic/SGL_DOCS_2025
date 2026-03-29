@@ -36,3 +36,13 @@ python pay_base.py https://api.x402layer.cc/e/weather-api
 
 - `discover_marketplace.py` - Browse/search marketplace
 - `list_on_marketplace.py` - List/unlist your endpoint
+
+## AgentKit-aware discovery
+
+If an endpoint offers a benefit for verified human-backed agent wallets, the `details` command surfaces that when public endpoint metadata is available.
+
+Example:
+
+```bash
+python discover_marketplace.py details my-endpoint
+```

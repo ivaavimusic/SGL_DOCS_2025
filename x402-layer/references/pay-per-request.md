@@ -18,6 +18,26 @@ python {baseDir}/scripts/awal_cli.py run auth verify <flow_id> <otp>
 python {baseDir}/scripts/awal_cli.py pay-url https://api.x402layer.cc/e/my-endpoint
 ```
 
+## World AgentKit benefits
+
+Some direct endpoints advertise extra benefits for **verified human-backed agent wallets**.
+
+If present, use:
+
+```bash
+python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/my-endpoint --agentkit auto
+```
+
+That flow:
+- reads the AgentKit challenge extension
+- signs the AgentKit message locally
+- retries with the `agentkit` header
+- continues normal x402 payment if payment is still required
+
+Human-in-the-loop note:
+- qualifying the wallet may require AgentBook registration
+- that registration requires a human to complete the World App flow
+
 ---
 
 ## Interaction Cycle

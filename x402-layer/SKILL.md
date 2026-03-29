@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.5.0
+version: 1.6.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -14,6 +14,8 @@ description: |
   "sell with x402", "build a paywall with webhooks",
   "register ERC-8004 agent", "register Solana 8004 agent",
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
+  "use World AgentKit", "unlock human-backed agent wallet discount",
+  "check if an endpoint has an AgentKit benefit", "open support chat",
   use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
   operations on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
 homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
@@ -65,11 +67,13 @@ Use this routing first, then load the relevant reference doc.
 | User intent | Primary scripts | Reference |
 |---|---|---|
 | Integrate crypto payments into an app/platform | `create_endpoint.py`, `manage_webhook.py`, `verify_webhook_payment.py`, `consume_product.py`, `recharge_credits.py` | `references/payments-integration.md`, `references/webhooks-verification.md`, `references/agentic-endpoints.md` |
-| Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md` |
-| Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md` |
+| Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md` |
+| Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md` |
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
+| Human-backed agent wallet benefits (World AgentKit) | `pay_base.py`, `discover_marketplace.py` | `references/agentkit-benefits.md` |
+| Support and buyer/seller messaging guidance | none yet | `references/xmtp-support.md` |
 
 ---
 
@@ -108,13 +112,13 @@ Security note: scripts read only explicit process environment variables. `.env` 
 ### Consumer
 | Script | Purpose |
 |---|---|
-| `pay_base.py` | Pay endpoint on Base |
+| `pay_base.py` | Pay endpoint on Base, with optional AgentKit benefit flow |
 | `pay_solana.py` | Pay endpoint on Solana |
 | `consume_credits.py` | Consume using credits |
 | `consume_product.py` | Purchase digital products/files |
 | `check_credits.py` | Check credit balance |
 | `recharge_credits.py` | Buy endpoint credit packs |
-| `discover_marketplace.py` | Browse/search marketplace |
+| `discover_marketplace.py` | Browse/search marketplace and inspect AgentKit benefits |
 | `awal_cli.py` | Run AWAL auth/pay/discover commands |
 
 ### Provider
@@ -178,6 +182,7 @@ python {baseDir}/scripts/verify_webhook_payment.py \
 ### B) Pay and Consume
 ```bash
 python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data
+python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit auto
 python {baseDir}/scripts/pay_solana.py https://api.x402layer.cc/e/weather-data
 python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-data
 ```
@@ -186,6 +191,7 @@ python {baseDir}/scripts/consume_credits.py https://api.x402layer.cc/e/weather-d
 ```bash
 python {baseDir}/scripts/discover_marketplace.py
 python {baseDir}/scripts/discover_marketplace.py search weather
+python {baseDir}/scripts/discover_marketplace.py details weather-api
 ```
 
 ### D) Create and Manage Endpoint
@@ -231,7 +237,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.5.0 \
+  --version 1.6.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -275,12 +281,16 @@ Load only what is needed for the user task:
   credit purchase + consumption behavior and examples.
 - `references/marketplace.md`:
   search/list/unlist marketplace endpoints.
+- `references/agentkit-benefits.md`:
+  discover, qualify for, and pay with World AgentKit human-backed agent wallet benefits.
 - `references/agentic-endpoints.md`:
   endpoint creation/top-up/status API behavior.
 - `references/webhooks-verification.md`:
   webhook events, signature verification, and receipt cross-checks.
 - `references/agent-registry-reputation.md`:
   ERC-8004/Solana-8004 registration, discovery, management, and feedback rules.
+- `references/xmtp-support.md`:
+  how support chat works in Studio, what needs human setup, and how agents should coordinate with users.
 - `references/payment-signing.md`:
   exact signing domains/types/header payload details.
 
@@ -298,6 +308,7 @@ Load only what is needed for the user task:
 | `X402_USE_AWAL` | AWAL mode | set `1` |
 | `X402_AUTH_MODE` | auth selection | `auto`, `private-key`, `awal` |
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
+| `X402_AGENTKIT_MODE` | optional AgentKit behavior | `off`, `auto`, `required` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
 | `X_API_KEY` / `API_KEY` | provider endpoint/webhook management | endpoint key |
 | `WORKER_FEEDBACK_API_KEY` | reputation feedback | worker auth key |
