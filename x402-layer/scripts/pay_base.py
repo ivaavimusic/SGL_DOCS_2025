@@ -17,6 +17,7 @@ import argparse
 import json
 import os
 from typing import Any, Dict, Optional, Tuple
+from urllib.parse import urlencode, urlparse, parse_qsl, urlunparse
 
 import requests
 
@@ -50,6 +51,17 @@ def _request(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 
     if headers:
         merged_headers.update(headers)
     return requests.get(url, headers=merged_headers, timeout=timeout)
+
+
+def _normalize_address(value: str) -> str:
+    return value.strip().lower()
+
+
+def _purchase_url(endpoint_url: str) -> str:
+    parsed = urlparse(endpoint_url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.setdefault("action", "purchase")
+    return urlunparse(parsed._replace(query=urlencode(query)))
 
 
 def _agentkit_mode_default() -> str:
@@ -117,6 +129,8 @@ def _preflight_agentkit(
 
 def pay_for_access(endpoint_url: str, agentkit_mode: str = "auto") -> Dict[str, Any]:
     """Execute paid request to an x402 endpoint."""
+    endpoint_url = _purchase_url(endpoint_url)
+
     if is_awal_mode():
         wallet = load_wallet_address(required=False)
         headers = {"x-wallet-address": wallet} if wallet else None
@@ -156,6 +170,16 @@ def pay_for_access(endpoint_url: str, agentkit_mode: str = "auto") -> Dict[str, 
     base_option = _find_base_accept_option(challenge)
     pay_to = base_option["payTo"]
     amount = int(base_option["maxAmountRequired"])
+
+    if _normalize_address(pay_to) == _normalize_address(signer.wallet):
+        return {
+            "error": (
+                "Self-payment is not allowed for this endpoint. "
+                "The connected wallet matches the endpoint payout wallet. "
+                "Use a different buyer wallet to test purchases."
+            )
+        }
+
     print(f"Payment required: {amount} atomic USDC units")
 
     x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)

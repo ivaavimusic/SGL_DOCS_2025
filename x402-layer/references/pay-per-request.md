@@ -197,3 +197,4 @@ import base64
 | "Nonce already used" | Replay attack | Generate fresh random nonce |
 | "validBefore expired" | Timeout | Set validBefore = now + 3600 |
 | "Wrong domain" | Bad name/version | Use "USD Coin" v2 for Base USDC |
+| "Failed to verify payment: Bad Request" on your own endpoint | Buyer wallet matches seller payout wallet | Use a different buyer wallet; self-payment is rejected |
