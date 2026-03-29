@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.6.0
+version: 1.7.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -29,6 +29,7 @@ metadata:
     requires:
       bins:
         - python3
+        - node
       env:
         - WALLET_ADDRESS
         - PRIVATE_KEY
@@ -73,7 +74,7 @@ Use this routing first, then load the relevant reference doc.
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 | Human-backed agent wallet benefits (World AgentKit) | `pay_base.py`, `discover_marketplace.py` | `references/agentkit-benefits.md` |
-| Support and buyer/seller messaging guidance | none yet | `references/xmtp-support.md` |
+| Support and buyer/seller messaging | `support_auth.py`, `support_threads.py`, `xmtp_support.mjs` | `references/xmtp-support.md` |
 
 ---
 
@@ -119,6 +120,9 @@ Security note: scripts read only explicit process environment variables. `.env` 
 | `check_credits.py` | Check credit balance |
 | `recharge_credits.py` | Buy endpoint credit packs |
 | `discover_marketplace.py` | Browse/search marketplace and inspect AgentKit benefits |
+| `support_auth.py` | Authenticate a wallet for support APIs |
+| `support_threads.py` | Check support eligibility, open/list/show/close/reopen support threads |
+| `xmtp_support.mjs` | Send and read XMTP support messages for a support thread |
 | `awal_cli.py` | Run AWAL auth/pay/discover commands |
 
 ### Provider
@@ -237,7 +241,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.6.0 \
+  --version 1.7.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \

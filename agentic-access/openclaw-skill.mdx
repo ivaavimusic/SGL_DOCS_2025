@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.6.0**. The skill now includes AgentKit-aware discovery, optional Base payment benefits for verified human-backed agent wallets, and modular XMTP support guidance.
+  Current release: **v1.7.0**. The skill now includes wallet-signed support APIs, support thread commands, XMTP helper flows, and AgentKit-aware discovery and payment.
 </Note>
 
 ## Script Source Code
@@ -201,7 +201,7 @@ python scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.6.0 \
+  --version 1.7.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -263,7 +263,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.6.0 |
+| **Version** | 1.7.0 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -276,10 +276,10 @@ Uses `VersionedTransaction` with `MessageV0`:
 
 ## Changelog
 
-### v1.6.0
-- Added AgentKit-aware discovery and optional Base payment flow for verified human-backed agent wallets
-- Added clear human-in-the-loop registration guidance for AgentBook and World App verification
-- Added modular XMTP support guidance so agents can explain Studio support chat correctly
+### v1.7.0
+- Added wallet-signed support APIs for agent wallets
+- Added support thread commands and XMTP helper flows for agent-side support operations
+- Preserved AgentKit-aware discovery and optional Base payment flow for verified human-backed agent wallets
 
 ### v1.5.0
 - Added a first-class payments integration path for agents using direct endpoints, credits, products, webhooks, and receipt verification
