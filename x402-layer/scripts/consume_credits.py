@@ -21,6 +21,11 @@ import json
 import requests
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
+
+def _print_usage() -> None:
+    print("Usage: python consume_credits.py <endpoint_url>")
+    print("Example: python consume_credits.py https://api.x402layer.cc/e/weather-data")
+
 def load_wallet():
     """Load wallet address from environment."""
     wallet = os.getenv("WALLET_ADDRESS")
@@ -63,9 +68,13 @@ def consume_with_credits(endpoint_url: str) -> dict:
         return {"error": response.text}
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 2 and sys.argv[1] in {"-h", "--help"}:
+        _print_usage()
+        sys.exit(0)
+
     if len(sys.argv) < 2:
-        print("Usage: python consume_credits.py <endpoint_url>")
+        _print_usage()
         sys.exit(1)
-    
+
     result = consume_with_credits(sys.argv[1])
     print(json.dumps(result, indent=2)[:500])

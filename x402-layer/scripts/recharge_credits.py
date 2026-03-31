@@ -27,6 +27,11 @@ from wallet_signing import is_awal_mode, load_wallet_address
 API_BASE = "https://api.x402layer.cc"
 
 
+def _print_usage() -> None:
+    print("Usage: python recharge_credits.py <endpoint_slug> [pack_id]")
+    print("       python recharge_credits.py --list <endpoint_slug>")
+
+
 def get_available_packs(endpoint_slug: str) -> list:
     """Return synthetic pack info from worker challenge (single-package model)."""
     url = f"{API_BASE}/e/{endpoint_slug}"
@@ -128,9 +133,12 @@ def recharge_credits(endpoint_slug: str, pack_id: Optional[str] = None) -> dict:
 
 
 def main() -> None:
+    if len(sys.argv) >= 2 and sys.argv[1] in {"-h", "--help"}:
+        _print_usage()
+        sys.exit(0)
+
     if len(sys.argv) < 2:
-        print("Usage: python recharge_credits.py <endpoint_slug> [pack_id]")
-        print("       python recharge_credits.py --list <endpoint_slug>")
+        _print_usage()
         sys.exit(1)
 
     if sys.argv[1] == "--list":

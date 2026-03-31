@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.8.2**. This patch removes globally-required secret env declarations from the skill metadata and switches the docs to capability-specific environment guidance.
+  Current release: **v1.9.0**. This release adds optional Singularity MCP control-plane guidance so agents can use a dashboard PAT for owner-scoped management without making PAT setup globally required.
 </Note>
 
 ## Script Source Code
@@ -100,6 +100,14 @@ export X402_USE_AWAL=1
 ```
 
 Use private-key mode for wallet-first ERC-8004 registration.
+
+Optional owner-scoped MCP management:
+
+```bash
+export SINGULARITY_PAT="sgl_pat_..."
+```
+
+Use that only when the agent needs dashboard-level endpoint, product, or webhook management through Singularity MCP.
 
 ## Usage Examples
 

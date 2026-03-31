@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.8.2
+version: 1.9.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -16,8 +16,9 @@ description: |
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   "use World AgentKit", "unlock human-backed agent wallet discount",
   "check if an endpoint has an AgentKit benefit", "open support chat",
-  use "Coinbase Agentic Wallet (AWAL)", or manage x402 Singularity Layer
-  operations on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
+  use "Coinbase Agentic Wallet (AWAL)", or use optional Singularity MCP
+  access with a dashboard PAT to manage x402 Singularity Layer operations
+  on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
 homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
 metadata:
   clawdbot:
@@ -47,6 +48,7 @@ This skill covers the full Singularity Layer lifecycle:
 - integrate custom payment flows into an app or platform
 - receive and verify webhook payment events
 - register agents and submit on-chain reputation feedback
+- optionally use Singularity MCP for owner-scoped dashboard and control-plane actions
 
 Networks: Base, Ethereum, Polygon, BSC, Monad, Solana  
 Currency: USDC  
@@ -58,12 +60,13 @@ Protocol: HTTP 402 Payment Required
 
 Use this routing first, then load the relevant reference doc.
 
-| User intent | Primary scripts | Reference |
+| User intent | Primary path | Reference |
 |---|---|---|
 | Integrate crypto payments into an app/platform | `create_endpoint.py`, `manage_webhook.py`, `verify_webhook_payment.py`, `consume_product.py`, `recharge_credits.py` | `references/payments-integration.md`, `references/webhooks-verification.md`, `references/agentic-endpoints.md` |
 | Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md`, `references/agentkit-benefits.md` |
+| Manage dashboard/platform control plane with PAT-backed access | `Singularity MCP` tools such as `list_my_endpoints`, `update_endpoint`, `list_my_products`, `update_product`, `set_webhook`, `remove_webhook`, `request_endpoint_creation_payment` | `references/mcp-control-plane.md`, `references/agentic-endpoints.md`, `references/marketplace.md` |
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 | Human-backed agent wallet benefits (World AgentKit) | `pay_base.py`, `discover_marketplace.py` | `references/agentkit-benefits.md` |
@@ -96,6 +99,26 @@ export X402_USE_AWAL=1
 ```
 
 Use private-key mode for ERC-8004 wallet-first registration. AWAL remains useful for x402 payment flows.
+
+### 3) Optional Dashboard / MCP Mode
+
+If the user provides a dashboard PAT, the agent can also use Singularity MCP for owner-scoped account actions:
+
+```bash
+export SINGULARITY_PAT="sgl_pat_..."
+```
+
+Use MCP when the task is about:
+- listing all endpoints or products owned by the dashboard user
+- updating endpoint or product settings
+- setting or removing webhooks
+- requesting endpoint creation or top-up payment challenges in an owner-scoped way
+
+Keep the direct scripts for:
+- actual request payments and local signing
+- AWAL-driven pay/discover flows
+- support and XMTP flows
+- wallet-first ERC-8004 / Solana-8004 registration and updates
 
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
 Install note: no secret environment variable is globally required for installation. Set only the subset needed for the runbook you are using.
@@ -289,6 +312,8 @@ Load only what is needed for the user task:
   ERC-8004/Solana-8004 registration, discovery, management, and feedback rules.
 - `references/xmtp-support.md`:
   how support chat works in Studio, what needs human setup, and how agents should coordinate with users.
+- `references/mcp-control-plane.md`:
+  when to use Singularity MCP, what PAT scopes are needed, and which owner-scoped actions should prefer MCP over direct scripts.
 - `references/payment-signing.md`:
   exact signing domains/types/header payload details.
 
@@ -309,6 +334,12 @@ No single task needs every variable below. Use least privilege and set only what
 | `X402_PREFER_NETWORK` | network selection | `base`, `solana` |
 | `X402_AGENTKIT_MODE` | optional AgentKit behavior | `off`, `auto`, `required` |
 | `X402_API_BASE` | API override | default `https://api.x402layer.cc` |
+
+### Optional MCP Control Plane
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `SINGULARITY_PAT` | Singularity MCP owner-scoped management flows | optional PAT in `sgl_pat_*` format; not required for install or normal script usage |
 
 ### Provider and Marketplace Management
 
@@ -350,12 +381,14 @@ No single task needs every variable below. Use least privilege and set only what
 - Marketplace: `https://api.x402layer.cc/api/marketplace`
 - Credits: `https://api.x402layer.cc/api/credits/*`
 - Agent routes: `https://api.x402layer.cc/agent/*`
+- MCP: `https://mcp.x402layer.cc/mcp`
 
 ---
 
 ## Resources
 
 - Docs: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+- MCP docs: https://studio.x402layer.cc/docs/agentic-access/mcp-server
 - SDK docs: https://studio.x402layer.cc/docs/developer/sdk-receipts
 - GitHub docs repo: https://github.com/ivaavimusic/SGL_DOCS_2025
 - x402 Studio: https://studio.x402layer.cc
