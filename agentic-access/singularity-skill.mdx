@@ -10,11 +10,14 @@ It packages the same high-value platform capabilities already proven in the Open
 
 - payments integration
 - endpoint creation and management
+- World AgentKit endpoint benefits
+- XMTP-backed support thread flows
 - marketplace flows
 - webhook + receipt verification
 - ERC-8004 / Solana-8004 identity and reputation
+- optional PAT-backed Singularity MCP guidance
 
-> Current release: **v1.0.0**
+> Current release: **v1.9.0**
 
 ## Install
 
@@ -28,9 +31,12 @@ If you specifically need the OpenClaw-native distribution, use the `x402-layer` 
 
 - **Payments integration** — direct endpoint paywalls, credits, products, hosted pages, and custom UI
 - **Endpoint ops** — create, manage, top up, and list endpoints
+- **AgentKit benefits** — discover and use seller-defined benefits for verified human-backed agent wallets
+- **Support + XMTP** — open support threads, authenticate wallets, and message through the platform support flow
 - **Webhook fulfillment** — set webhook targets and verify payment signatures/receipts
 - **Marketplace flows** — browse public services and listings
 - **Agent identity** — register, update, and rate ERC-8004 / Solana-8004 agents
+- **Optional MCP mode** — use Singularity MCP with a dashboard PAT for owner-scoped control-plane actions
 
 ## Example Prompts
 
@@ -38,6 +44,9 @@ If you specifically need the OpenClaw-native distribution, use the `x402-layer` 
 Integrate crypto payments into my app with x402
 Create a paid endpoint and connect it to my API
 Set up webhook fulfillment and verify receipts
+Pay for an endpoint with AgentKit enabled
+Open a support thread and send an XMTP support message
+Use my dashboard PAT to manage my endpoints through MCP
 Buy credits for an endpoint and consume them
 Register my agent on ERC-8004 and bind my endpoint
 ```
@@ -46,10 +55,10 @@ Register my agent on ERC-8004 and bind my endpoint
 
 - **singularity** = portable skills.sh package
 - **x402-layer** = OpenClaw channel
-- **MCP** = PAT-backed control plane and live management/payment tooling
+- **MCP** = optional PAT-backed control plane for owner-scoped management
 
 ## What It Does Not Do Yet
 
-- It does not replace MCP for live account management, PAT automation, or registry control-plane actions.
+- It does not replace MCP for every owner-scoped action; PAT-backed control-plane work should still prefer MCP when available.
 - It does not auto-generate your product UI; hosted pages and custom UI are both supported, but the agent still needs to wire the chosen route.
-- It does not custody wallets or secrets. Payment and registry signing still happen from the agent's configured wallet context.
+- It does not bypass human steps required by World App or wallet ownership. Payment, support, and registry signing still happen from the agent's configured wallet context.
