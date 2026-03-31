@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.9.0
+version: 1.9.1
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -249,7 +249,50 @@ python {baseDir}/scripts/verify_webhook_payment.py \
   --require-receipt
 ```
 
-### G) Agent Registration + Reputation
+### G) World AgentKit Benefits
+```bash
+# Inspect whether a listing advertises a verified human-backed agent wallet benefit
+python {baseDir}/scripts/discover_marketplace.py details weather-data
+
+# Attempt Base payment with AgentKit if the endpoint advertises a benefit
+python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit auto
+
+# Require AgentKit qualification instead of silently falling back
+python {baseDir}/scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit required
+```
+
+### H) XMTP Support Threads
+```bash
+# Authenticate the current wallet for support APIs
+python {baseDir}/scripts/support_auth.py login
+
+# Check whether support is available for a listing
+python {baseDir}/scripts/support_threads.py eligibility endpoint weather-data
+
+# Open or reuse the support thread
+python {baseDir}/scripts/support_threads.py open endpoint weather-data
+
+# Read and send XMTP messages for a support thread
+node {baseDir}/scripts/xmtp_support.mjs messages <thread_id>
+node {baseDir}/scripts/xmtp_support.mjs send <thread_id> "Need help with this endpoint"
+```
+
+### I) MCP Owner-Scoped Control Plane
+```bash
+# Set a dashboard PAT only for owner-scoped control-plane actions
+export SINGULARITY_PAT="sgl_pat_..."
+
+# Then use Singularity MCP for owner inventory/config operations such as:
+# - list_my_endpoints
+# - update_endpoint
+# - list_my_products
+# - update_product
+# - set_webhook
+# - remove_webhook
+# - request_endpoint_creation_payment
+```
+
+### J) Agent Registration + Reputation
 ```bash
 python {baseDir}/scripts/list_my_endpoints.py
 
@@ -258,7 +301,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.8.2 \
+  --version 1.9.1 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -361,7 +404,7 @@ No single task needs every variable below. Use least privilege and set only what
 | Variable | Used by | Notes |
 |---|---|---|
 | `SUPPORT_AGENT_TOKEN` | support thread scripts | optional reuse of prior login |
-| `X402_STUDIO_BASE_URL` | support auth/XMTP helpers | default `https://studio.x402layer.cc` |
+| `X402_STUDIO_BASE_URL` | `support_auth.py`, `support_threads.py` | optional Studio API base override |
 | `X402_API_BASE_URL` | support thread scripts | default `https://api.x402layer.cc` |
 | `XMTP_ENV` | `xmtp_support.mjs` | default `production` |
 | `XMTP_DB_PATH` | `xmtp_support.mjs` | optional persistent DB path override |

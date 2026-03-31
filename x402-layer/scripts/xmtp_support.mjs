@@ -7,7 +7,7 @@ import process from "node:process";
 import { privateKeyToAccount } from "viem/accounts";
 import { toBytes } from "viem";
 
-const STUDIO_BASE = (process.env.X402_STUDIO_BASE_URL || "https://studio.x402layer.cc").replace(/\/$/, "");
+const STUDIO_BASE = "https://studio.x402layer.cc";
 const XMTP_ENV = process.env.XMTP_ENV || "production";
 
 function usage() {
@@ -125,7 +125,7 @@ async function createXmtpClient() {
   const client = await Client.create(signer, {
     env: XMTP_ENV,
     dbPath: getDbPath(wallet),
-    appVersion: "x402-layer-agent/1.8.2",
+    appVersion: "x402-layer-agent/1.9.1",
   });
 
   if (!(await client.isRegistered())) {

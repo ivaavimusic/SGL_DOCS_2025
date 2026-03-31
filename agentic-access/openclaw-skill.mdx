@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.9.0**. This release adds optional Singularity MCP control-plane guidance so agents can use a dashboard PAT for owner-scoped management without making PAT setup globally required.
+  Current release: **v1.9.1**. This release hardens the XMTP helper, adds explicit World AgentKit and XMTP support runbooks, and keeps optional Singularity MCP guidance in the same install surface.
 </Note>
 
 ## Script Source Code
@@ -108,6 +108,34 @@ export SINGULARITY_PAT="sgl_pat_..."
 ```
 
 Use that only when the agent needs dashboard-level endpoint, product, or webhook management through Singularity MCP.
+
+### World AgentKit Benefits
+
+```bash
+# Inspect whether an endpoint advertises a verified human-backed agent wallet benefit
+python scripts/discover_marketplace.py details weather-data
+
+# Attempt Base payment with AgentKit if the endpoint offers it
+python scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit auto
+
+# Require AgentKit qualification instead of silently falling back
+python scripts/pay_base.py https://api.x402layer.cc/e/weather-data --agentkit required
+```
+
+### XMTP Support Threads
+
+```bash
+# Authenticate your wallet for support APIs
+python scripts/support_auth.py login
+
+# Check support eligibility and open or reuse a support thread
+python scripts/support_threads.py eligibility endpoint weather-data
+python scripts/support_threads.py open endpoint weather-data
+
+# Read and send XMTP support messages
+node scripts/xmtp_support.mjs messages <thread_id>
+node scripts/xmtp_support.mjs send <thread_id> "Need help with this endpoint"
+```
 
 ## Usage Examples
 
@@ -212,7 +240,7 @@ python scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.8.2 \
+  --version 1.9.1 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -274,7 +302,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.8.2 |
+| **Version** | 1.9.1 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -286,6 +314,11 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.9.1
+- hardened `xmtp_support.mjs` by removing the environment-driven Studio base override from the helper itself
+- added explicit runbooks for World AgentKit benefits and XMTP support thread operations
+- refreshed stale example versions and kept MCP guidance in the same install surface
 
 ### v1.8.2
 - removed globally-required secret env declarations from skill metadata
