@@ -12,47 +12,49 @@
     "dark": "/assets/logo-icon.png"
   },
   "favicon": "/assets/logo-icon.png",
-  "navigation": [
-    {
-      "group": "Home",
-      "pages": [
-        "index"
-      ]
-    },
-    {
-      "group": "User Guide",
-      "pages": [
-        "user-guide/getting-started",
-        "user-guide/dashboard",
-        "user-guide/wallet-connection",
-        "user-guide/creating-endpoints",
-        "user-guide/managing-credits",
-        "user-guide/products-payment-links",
-        "user-guide/components",
-        "user-guide/webhooks",
-        "user-guide/marketplace"
-      ]
-    },
-    {
-      "group": "Agentic Access",
-      "pages": [
-        "agentic-access/introduction",
-        "agentic-access/pay-per-request",
-        "agentic-access/credit-based",
-        "agentic-access/marketplace",
-        "agentic-access/agent-management",
-        "agentic-access/mcp-server",
-        "agentic-access/erc8004-registration",
-        "agentic-access/openclaw-skill",
-        "agentic-access/singularity-skill",
-        "agentic-access/x402-compute"
-      ]
-    },
-    {
-      "group": "Developer",
-      "pages": [
-        "developer/sdk-receipts"
-      ]
-    }
-  ]
+  "navigation": {
+    "groups": [
+      {
+        "group": "Home",
+        "pages": [
+          "index"
+        ]
+      },
+      {
+        "group": "User Guide",
+        "pages": [
+          "user-guide/getting-started",
+          "user-guide/dashboard",
+          "user-guide/wallet-connection",
+          "user-guide/creating-endpoints",
+          "user-guide/managing-credits",
+          "user-guide/products-payment-links",
+          "user-guide/components",
+          "user-guide/webhooks",
+          "user-guide/marketplace"
+        ]
+      },
+      {
+        "group": "Agentic Access",
+        "pages": [
+          "agentic-access/introduction",
+          "agentic-access/pay-per-request",
+          "agentic-access/credit-based",
+          "agentic-access/marketplace",
+          "agentic-access/agent-management",
+          "agentic-access/mcp-server",
+          "agentic-access/erc8004-registration",
+          "agentic-access/openclaw-skill",
+          "agentic-access/singularity-skill",
+          "agentic-access/x402-compute"
+        ]
+      },
+      {
+        "group": "Developer",
+        "pages": [
+          "developer/sdk-receipts"
+        ]
+      }
+    ]
+  }
 }
