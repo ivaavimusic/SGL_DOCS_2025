@@ -8,8 +8,8 @@
     "dark": "#0A0A0A"
   },
   "logo": {
-    "light": "/assets/logo-icon.png",
-    "dark": "/assets/logo-icon.png"
+    "light": "/assets/SGL_logo.webp",
+    "dark": "/assets/SGL_logo.webp"
   },
   "favicon": "/assets/logo-icon.png",
   "navigation": {
@@ -30,7 +30,6 @@
           "user-guide/managing-credits",
           "user-guide/products-payment-links",
           "user-guide/components",
-          "user-guide/webhooks",
           "user-guide/marketplace"
         ]
       },
@@ -50,8 +49,9 @@
         ]
       },
       {
-        "group": "Developer",
+        "group": "Singularity Payments",
         "pages": [
+          "user-guide/webhooks",
           "developer/sdk-receipts"
         ]
       }
