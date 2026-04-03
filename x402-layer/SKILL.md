@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.10.1
+version: 1.10.2
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -32,29 +32,6 @@ metadata:
       bins:
         - python3
         - node
-      env:
-        - PRIVATE_KEY
-        - WALLET_ADDRESS
-        - SOLANA_SECRET_KEY
-        - SOLANA_WALLET_ADDRESS
-        - X_API_KEY
-        - API_KEY
-        - WORKER_FEEDBACK_API_KEY
-        - SINGULARITY_PAT
-        - SUPPORT_AGENT_TOKEN
-        - OWS_WALLET
-        - OWS_BIN
-    credentials:
-      primary: PRIVATE_KEY
-      additional:
-        - SOLANA_SECRET_KEY
-        - X_API_KEY
-        - API_KEY
-        - WORKER_FEEDBACK_API_KEY
-        - SINGULARITY_PAT
-        - SUPPORT_AGENT_TOKEN
-        - OWS_WALLET
-        - OWS_BIN
 allowed-tools:
   - Read
   - Write
@@ -79,7 +56,7 @@ Networks: Base, Ethereum, Polygon, BSC, Monad, Solana
 Currency: USDC  
 Protocol: HTTP 402 Payment Required
 
-> **Security-first usage:** Set only the minimum environment variables required for the exact runbook you are using. Prefer AWAL, OWS, API keys, or ephemeral wallets over long-lived mainnet private keys whenever possible.
+> **Security-first usage:** No secret environment variable is universally required for installation. Set only the minimum variables needed for the exact runbook you are using. Prefer AWAL, OWS, API keys, or ephemeral wallets over long-lived mainnet private keys whenever possible.
 
 ---
 
@@ -156,7 +133,7 @@ Keep the direct scripts for:
 - wallet-first ERC-8004 / Solana-8004 registration and updates
 
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
-Least-privilege note: the skill supports multiple credential types, but no single runbook needs all of them. Set only the smallest subset required for the task in front of you.
+Least-privilege note: the skill supports multiple credential types, but no single runbook needs all of them. Read-only discovery needs no secrets. PAT, API-key, AWAL, OWS, EVM, and Solana signing flows should be treated as separate capability paths, and users should set only the smallest subset required for the task in front of them.
 Risk note: this skill can sign messages, submit transactions, and call x402/studio APIs. Prefer AWAL, OWS, PATs, endpoint API keys, or throwaway wallets over long-lived private keys when possible.
 
 ---
