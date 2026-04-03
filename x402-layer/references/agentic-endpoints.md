@@ -68,10 +68,10 @@ That same endpoint can sit behind:
 - another agent workflow
 
 ## Top-Up
-`PUT /agent/endpoints/<slug>` with `topup_amount`
+PUT /agent/endpoints/<slug> with topup_amount
 
 ## Check Status
-`GET /agent/endpoints/<slug>` with `x-api-key` header
+GET /agent/endpoints/<slug> with x-api-key header
 
 ## Important Security Rule
 

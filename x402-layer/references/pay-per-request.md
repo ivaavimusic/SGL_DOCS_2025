@@ -18,6 +18,20 @@ python {baseDir}/scripts/awal_cli.py run auth verify <flow_id> <otp>
 python {baseDir}/scripts/awal_cli.py pay-url https://api.x402layer.cc/e/my-endpoint
 ```
 
+## OpenWallet / OWS Shortcut
+
+If you want a local delegated wallet backend instead of raw private keys, use OWS:
+
+```bash
+npm install -g @open-wallet-standard/core
+export OWS_WALLET="hackathon-wallet"
+python {baseDir}/scripts/ows_cli.py pay-url https://api.x402layer.cc/e/my-endpoint --wallet hackathon-wallet
+```
+
+Current x402-layer scope:
+- good fit for pay/discover/sign-message flows
+- private-key mode is still the default for the deepest custom registration/signing paths
+
 ## World AgentKit benefits
 
 Some direct endpoints advertise extra benefits for **verified human-backed agent wallets**.
