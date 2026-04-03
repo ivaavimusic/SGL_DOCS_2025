@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.10.0
+version: 1.10.1
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -20,7 +20,7 @@ description: |
   "openwallet.sh", or use optional Singularity MCP
   access with a dashboard PAT to manage x402 Singularity Layer operations
   on Base, Ethereum, Polygon, BSC, Monad, or Solana networks.
-homepage: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+homepage: https://docs.x402layer.cc/agentic-access/openclaw-skill
 metadata:
   clawdbot:
     emoji: "⚡"
@@ -32,6 +32,29 @@ metadata:
       bins:
         - python3
         - node
+      env:
+        - PRIVATE_KEY
+        - WALLET_ADDRESS
+        - SOLANA_SECRET_KEY
+        - SOLANA_WALLET_ADDRESS
+        - X_API_KEY
+        - API_KEY
+        - WORKER_FEEDBACK_API_KEY
+        - SINGULARITY_PAT
+        - SUPPORT_AGENT_TOKEN
+        - OWS_WALLET
+        - OWS_BIN
+    credentials:
+      primary: PRIVATE_KEY
+      additional:
+        - SOLANA_SECRET_KEY
+        - X_API_KEY
+        - API_KEY
+        - WORKER_FEEDBACK_API_KEY
+        - SINGULARITY_PAT
+        - SUPPORT_AGENT_TOKEN
+        - OWS_WALLET
+        - OWS_BIN
 allowed-tools:
   - Read
   - Write
@@ -43,6 +66,7 @@ allowed-tools:
 # x402 Singularity Layer
 
 x402 is a Web3 payment layer where humans and agents can sell and consume APIs, products, and credits.
+This skill can sign wallet messages, submit on-chain transactions, call x402/studio APIs, and manage monetized endpoint infrastructure.
 This skill covers the full Singularity Layer lifecycle:
 - pay/consume services
 - create/manage/list endpoints
@@ -54,6 +78,8 @@ This skill covers the full Singularity Layer lifecycle:
 Networks: Base, Ethereum, Polygon, BSC, Monad, Solana  
 Currency: USDC  
 Protocol: HTTP 402 Payment Required
+
+> **Security-first usage:** Set only the minimum environment variables required for the exact runbook you are using. Prefer AWAL, OWS, API keys, or ephemeral wallets over long-lived mainnet private keys whenever possible.
 
 ---
 
@@ -130,7 +156,8 @@ Keep the direct scripts for:
 - wallet-first ERC-8004 / Solana-8004 registration and updates
 
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
-Install note: no secret environment variable is globally required for installation. Set only the subset needed for the runbook you are using.
+Least-privilege note: the skill supports multiple credential types, but no single runbook needs all of them. Set only the smallest subset required for the task in front of you.
+Risk note: this skill can sign messages, submit transactions, and call x402/studio APIs. Prefer AWAL, OWS, PATs, endpoint API keys, or throwaway wallets over long-lived private keys when possible.
 
 ---
 
@@ -462,7 +489,7 @@ No single task needs every variable below. Use least privilege and set only what
 
 ## Resources
 
-- Docs: https://studio.x402layer.cc/docs/agentic-access/openclaw-skill
+- Docs: https://docs.x402layer.cc/agentic-access/openclaw-skill
 - MCP docs: https://studio.x402layer.cc/docs/agentic-access/mcp-server
 - SDK docs: https://studio.x402layer.cc/docs/developer/sdk-receipts
 - GitHub docs repo: https://github.com/ivaavimusic/SGL_DOCS_2025
@@ -475,3 +502,18 @@ No single task needs every variable below. Use least privilege and set only what
 Solana exact-payment flows must use the `feePayer` returned by the challenge and keep the transaction compute-unit limit within facilitator requirements. `pay_solana.py` and `solana_signing.py` handle this for the current PayAI-backed flow; prefer Base when you need the simplest production path.
 
 OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows, but keep private-key mode for the deepest wallet-first registration and custom transaction paths.
+
+
+---
+
+## Credential safety
+
+This skill supports many optional workflows, so it can work with many credential types. That does **not** mean you should set all of them.
+
+Preferred order of safety when possible:
+1. Read-only discovery with no secrets
+2. Endpoint API keys or PATs for scoped control-plane actions
+3. AWAL or OWS for delegated/local wallet access
+4. Dedicated throwaway private keys for direct signing
+
+Do not export a long-lived high-value custody wallet into the environment just to browse, inspect, or test small flows.
