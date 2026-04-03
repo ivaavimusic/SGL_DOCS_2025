@@ -1,9 +1,9 @@
 ---
 name: x402-layer
-version: 1.10.4
+version: 1.10.5
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
-  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
+  manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana. Optional credentialed flows may use private keys, Solana signer keys, endpoint API keys, PATs, AWAL, or OWS depending on the exact runbook; read-only discovery requires no secrets.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -43,7 +43,7 @@ allowed-tools:
 # x402 Singularity Layer
 
 x402 is a Web3 payment layer where humans and agents can sell and consume APIs, products, and credits.
-This skill can sign wallet messages, submit on-chain transactions, call x402/studio APIs, and manage monetized endpoint infrastructure.
+This skill can sign wallet messages, submit on-chain transactions, call x402/studio APIs, and manage monetized endpoint infrastructure. Sensitive credentials are only needed for specific capability paths, not for baseline installation or read-only discovery.
 This skill covers the full Singularity Layer lifecycle:
 - pay/consume services
 - create/manage/list endpoints
