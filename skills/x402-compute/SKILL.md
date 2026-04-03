@@ -1,13 +1,14 @@
 ---
 name: x402-compute
-version: 1.0.7
+version: 1.1.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "destroy server instance", "check instance status",
   "list my instances", or manage x402 Singularity Compute / x402Compute
   infrastructure. Handles GPU and VPS provisioning with USDC payment on Base
-  or Solana networks via the x402 payment protocol.
+  or Solana networks via the x402 payment protocol, with optional OWS-backed
+  auth and management flows.
 homepage: https://studio.x402layer.cc/docs/agentic-access/x402-compute
 metadata:
   clawdbot:
@@ -19,17 +20,6 @@ metadata:
     requires:
       bins:
         - python3
-      env:
-        # Option A — Base/EVM payments (provide these OR Option B, not both)
-        - PRIVATE_KEY        # EVM private key for signing payments (0x...)
-        - WALLET_ADDRESS     # EVM wallet address (0x...)
-        # Option B — Solana payments (alternative to Option A)
-        - SOLANA_SECRET_KEY        # Solana signer key (base58 or JSON byte array)
-        - SOLANA_WALLET_ADDRESS    # Solana public address
-        # Optional — preferred for routine management without exposing private keys
-        - COMPUTE_API_KEY   # Reusable API key (create once via create_api_key.py)
-    credentials:
-      primary: COMPUTE_API_KEY   # Recommended: use API key for management over raw private keys
 allowed-tools:
   - Read
   - Write
@@ -59,25 +49,33 @@ Provision and manage GPU/VPS instances paid with USDC via the x402 payment proto
 pip install -r {baseDir}/requirements.txt
 ```
 
-### 2. Set Up Wallet
+### 2. Choose Wallet Mode
 
-#### Option A: Base (EVM) Private Key
+#### Option A: Direct signing keys (Base or Solana)
 ```bash
+# Base (EVM)
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
-```
 
-#### Option B: Solana Private Key
-```bash
+# Solana
 export SOLANA_SECRET_KEY="base58-or-json-array"
 export SOLANA_WALLET_ADDRESS="YourSolanaAddress"
 export COMPUTE_AUTH_CHAIN="solana"
+```
+
+#### Option B: OpenWallet / OWS (optional-first)
+```bash
+npm install -g @open-wallet-standard/core
+export OWS_WALLET="compute-wallet"
+export COMPUTE_AUTH_MODE="ows"
 ```
 
 Create `COMPUTE_API_KEY` (optional) for management endpoints:
 ```bash
 python {baseDir}/scripts/create_api_key.py --label "my-agent"
 ```
+
+OWS is best for compute auth and routine management flows. Provision and extend still use the current direct payment-signing paths.
 
 ---
 
@@ -104,6 +102,7 @@ python {baseDir}/scripts/create_api_key.py --label "my-agent"
 | `get_one_time_password.py` | Retrieve one-time root password fallback |
 | `extend_instance.py` | Extend instance lifetime (x402 payment) |
 | `destroy_instance.py` | Destroy an instance |
+| `ows_cli.py` | Run OpenWallet / OWS wallet, sign-message, and key commands |
 | `solana_signing.py` | Internal helper for Solana x402 payment signing |
 
 ---
@@ -180,6 +179,22 @@ python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network 
 python {baseDir}/scripts/destroy_instance.py <instance_id>
 ```
 
+### C. OpenWallet / OWS
+
+```bash
+# List local OWS wallets
+python {baseDir}/scripts/ows_cli.py wallet-list
+
+# Sign a Base-compatible compute auth message
+python {baseDir}/scripts/ows_cli.py sign-message --chain eip155:8453 --wallet compute-wallet --message "hello"
+
+# Sign a Solana-compatible compute auth message
+python {baseDir}/scripts/ows_cli.py sign-message --chain solana --wallet compute-wallet --message "hello"
+
+# Create an OWS agent key
+python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet compute-wallet
+```
+
 ---
 
 ## x402 Payment Flow
@@ -210,18 +225,23 @@ For Solana, transient facilitator failures can happen. Retry once or twice if yo
 
 | Variable | Required For | Description |
 |----------|--------------|-------------|
-| `PRIVATE_KEY` | Base payments | EVM private key (0x...) |
-| `WALLET_ADDRESS` | Base mode | Base wallet address (0x...) |
-| `SOLANA_SECRET_KEY` | Solana mode | Solana signer key (base58 or JSON byte array) |
-| `SOLANA_WALLET_ADDRESS` | Solana mode | Solana wallet address (optional if derivable from secret) |
+| `PRIVATE_KEY` | Base payment signing | EVM private key (0x...) |
+| `WALLET_ADDRESS` | Base direct-signing mode | Base wallet address (0x...) |
+| `SOLANA_SECRET_KEY` | Solana direct-signing mode | Solana signer key (base58 or JSON byte array) |
+| `SOLANA_WALLET_ADDRESS` | Solana direct-signing mode | Solana wallet address (optional if derivable from secret) |
 | `COMPUTE_AUTH_CHAIN` | Solana/base auth override | `base` or `solana` |
 | `COMPUTE_API_KEY` | Optional | Reusable API key for compute management endpoints |
+| `COMPUTE_AUTH_MODE` | Optional | `auto`, `private-key`, or `ows` |
+| `OWS_WALLET` | OWS auth mode | OWS wallet name or ID |
+| `OWS_BIN` | OWS auth mode | Optional explicit path to the `ows` executable |
 
 ---
 
 ## API Reference
 
-For full endpoint details, see [references/api-reference.md](references/api-reference.md).
+For full endpoint details, see:
+- [references/api-reference.md](references/api-reference.md)
+- [references/openwallet-ows.md](references/openwallet-ows.md)
 
 ---
 
@@ -230,3 +250,11 @@ For full endpoint details, see [references/api-reference.md](references/api-refe
 - 📖 **Documentation:** [studio.x402layer.cc/docs/agentic-access/x402-compute](https://studio.x402layer.cc/docs/agentic-access/x402-compute)
 - 🖥️ **Compute Dashboard:** [compute.x402layer.cc](https://compute.x402layer.cc)
 - 🌐 **x402 Studio:** [studio.x402layer.cc](https://studio.x402layer.cc)
+
+---
+
+## OWS scope note
+
+OWS support is optional-first in this release:
+- use it for compute auth and management/API-key flows
+- keep direct Base or Solana signing keys for the paid provision and extend flows

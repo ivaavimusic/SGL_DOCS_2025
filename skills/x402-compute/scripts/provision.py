@@ -103,7 +103,10 @@ def provision_instance(
     print(f"Payment required: {amount} atomic USDC units (${amount / 1_000_000:.2f})")
 
     if network == "base":
-        signer = load_payment_signer()
+        try:
+            signer = load_payment_signer()
+        except Exception as exc:
+            return {"error": str(exc)}
         x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)
     else:
         ensure_solana_destination_ready(option)

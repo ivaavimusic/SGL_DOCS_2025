@@ -5,10 +5,14 @@ description: Provision and manage VPS/GPU compute with x402 payments, signed aut
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana, with optional OWS-backed auth and management flows.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
+</Note>
+
+<Note>
+  Current release: **v1.1.0**. This release adds optional OpenWallet / OWS support for compute auth and management flows while keeping the paid provision and extend paths on the existing direct Base/Solana signing flow.
 </Note>
 
 ## Base URL
@@ -22,11 +26,16 @@ Management endpoints require one of:
 1. Signature auth headers (`X-Auth-*`)
 2. API key (`X-API-Key`)
 
+Supported auth approaches today:
+
+- direct Base or Solana signing keys
+- optional OpenWallet / OWS for auth + API-key creation + management
+
 Recommended agent flow:
 
-1. Create API key once via `POST /compute/api-keys` with signature auth.
+1. Create API key once via `POST /compute/api-keys` using direct signing keys or OWS-backed auth.
 2. Store key in `COMPUTE_API_KEY`.
-3. Use API key for list/details/destroy/extend/password fallback calls.
+3. Use API key for routine list/details/destroy/password fallback calls.
 
 ## Endpoint Summary
 
@@ -64,6 +73,7 @@ curl -fsSL https://api.x402layer.cc/skill/x402-compute/install | bash
 | `get_one_time_password.py` | Fetch one-time root password fallback |
 | `extend_instance.py` | Extend instance duration |
 | `destroy_instance.py` | Destroy instance |
+| `ows_cli.py` | Run OpenWallet / OWS wallet, sign-message, and key commands |
 
 ## Quick Workflow
 
@@ -78,6 +88,15 @@ python scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --ssh-key-file ~/.
 ```bash
 python scripts/create_api_key.py --label "my-agent"
 export COMPUTE_API_KEY="x402c_..."
+```
+
+### 2b) Optional OpenWallet / OWS auth path
+
+```bash
+npm install -g @open-wallet-standard/core
+export OWS_WALLET="compute-wallet"
+export COMPUTE_AUTH_MODE="ows"
+python scripts/create_api_key.py --label "my-agent"
 ```
 
 ### 3) Manage Instances
@@ -97,6 +116,11 @@ python scripts/get_one_time_password.py <instance_id>
 
 This works once per instance. Repeated calls return `409`.
 
+## OWS scope note
+
+- OWS is great for compute auth and management/API-key flows
+- Provision and extend still use the current direct Base or Solana payment-signing paths
+
 ## Security Notes
 
 - Wallet/agent can only access its own instances.
@@ -109,4 +133,5 @@ This works once per instance. Repeated calls return `409`.
 
 - Skill definition: `skills/x402-compute/SKILL.md`
 - Skill API reference: `skills/x402-compute/references/api-reference.md`
+- OWS reference: `skills/x402-compute/references/openwallet-ows.md`
 - Hosted installer: `https://api.x402layer.cc/skill/x402-compute/install`

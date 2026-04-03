@@ -8,7 +8,10 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
+import shutil
+import subprocess
 import time
 import uuid
 from typing import Any, Dict, Optional
@@ -20,6 +23,7 @@ USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 USDC_NAME = "USD Coin"
 USDC_VERSION = "2"
 BASE_CHAIN_ID = 8453
+BASE_CAIP2 = "eip155:8453"
 
 
 def load_dotenv_if_available() -> None:
@@ -101,6 +105,114 @@ def load_compute_chain() -> str:
     if os.getenv("SOLANA_SECRET_KEY") or os.getenv("SOLANA_WALLET_ADDRESS"):
         return "solana"
     return "base"
+
+
+def load_compute_auth_mode() -> str:
+    """
+    Supported values:
+    - auto (default): OWS if OWS_WALLET is set, otherwise local key mode
+    - private-key: force local signing
+    - ows: force Open Wallet Standard message signing
+    """
+    load_dotenv_if_available()
+    explicit = (os.getenv("COMPUTE_AUTH_MODE") or "auto").strip().lower()
+    if explicit in {"private-key", "ows"}:
+        return explicit
+    if os.getenv("OWS_WALLET"):
+        return "ows"
+    return "private-key"
+
+
+def is_ows_mode() -> bool:
+    return load_compute_auth_mode() == "ows"
+
+
+def _build_ows_command(args: list[str]) -> list[str]:
+    explicit_bin = (os.getenv("OWS_BIN") or "").strip()
+    if explicit_bin:
+        return [explicit_bin, *args]
+
+    local_ows = shutil.which("ows")
+    if local_ows:
+        return [local_ows, *args]
+
+    npx_bin = shutil.which("npx")
+    if npx_bin:
+        return [npx_bin, "-y", "@open-wallet-standard/core", *args]
+
+    raise ValueError(
+        "OWS binary not found. Install it with `npm install -g @open-wallet-standard/core`, "
+        "ensure `npx` is available, or set OWS_BIN to the full executable path."
+    )
+
+
+def _run_ows(args: list[str], timeout: int = 180) -> str:
+    proc = subprocess.run(
+        _build_ows_command(args),
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        raise ValueError((proc.stderr or proc.stdout or "OWS command failed").strip())
+    return (proc.stdout or "").strip()
+
+
+def _load_ows_wallet_name(cli_wallet: Optional[str] = None) -> str:
+    load_dotenv_if_available()
+    wallet = (cli_wallet or os.getenv("OWS_WALLET") or "").strip()
+    if not wallet:
+        raise ValueError("Set OWS_WALLET or pass an explicit OWS wallet name/ID")
+    return wallet
+
+
+def _lookup_ows_wallet_address(chain: str, wallet_name: Optional[str] = None) -> str:
+    wallet = _load_ows_wallet_name(wallet_name)
+    output = _run_ows(["wallet", "list"])
+
+    blocks = [block.strip() for block in output.split("\n\n") if block.strip()]
+    for block in blocks:
+        if f"Name:    {wallet}" not in block and f"ID:      {wallet}" not in block:
+            continue
+
+        if chain == "solana":
+            match = re.search(r"solana:[^\n]*→\s*([1-9A-HJ-NP-Za-km-z]{32,64})", block)
+            if match:
+                return match.group(1).strip()
+        else:
+            match = re.search(r"eip155:[^\n]*→\s*(0x[a-fA-F0-9]{40})", block)
+            if match:
+                return match.group(1).strip().lower()
+
+    raise ValueError(f"Could not resolve an OWS {chain} address for wallet '{wallet}'")
+
+
+def _sign_message_with_ows(chain: str, message: str, wallet_name: Optional[str] = None) -> str:
+    wallet = _load_ows_wallet_name(wallet_name)
+    ows_chain = "solana" if chain == "solana" else BASE_CAIP2
+    output = _run_ows(
+        [
+            "sign",
+            "message",
+            "--chain",
+            ows_chain,
+            "--wallet",
+            wallet,
+            "--message",
+            message,
+            "--json",
+        ]
+    )
+
+    try:
+        payload = json.loads(output)
+    except Exception as exc:
+        raise ValueError("Could not parse OWS sign-message output") from exc
+
+    signature = str(payload.get("signature") or "").strip()
+    if not signature:
+        raise ValueError("OWS sign-message did not return a signature")
+    return signature
 
 
 class PaymentSigner:
@@ -194,6 +306,12 @@ class PaymentSigner:
 def load_payment_signer() -> PaymentSigner:
     load_dotenv_if_available()
 
+    if is_ows_mode():
+        raise ValueError(
+            "OWS mode currently supports compute auth and API-key creation flows. "
+            "Provision and extend still require direct Base or Solana signing keys."
+        )
+
     wallet = load_wallet_address(required=True)
     private_key = os.getenv("PRIVATE_KEY")
 
@@ -252,6 +370,45 @@ def create_compute_auth_headers(
     body_hash = hashlib.sha256((body_str or "").encode()).hexdigest()
     timestamp_ms = int(time.time() * 1000)
     nonce = uuid.uuid4().hex
+
+    if is_ows_mode():
+        address = _lookup_ows_wallet_address(resolved_chain)
+        message = _compute_auth_message(
+            chain=resolved_chain,
+            address=address,
+            method=method,
+            path=path,
+            body_hash=body_hash,
+            timestamp_ms=timestamp_ms,
+            nonce=nonce,
+        )
+        signature_hex = _sign_message_with_ows(resolved_chain, message)
+
+        if resolved_chain == "base":
+            if not signature_hex.startswith("0x"):
+                signature_hex = f"0x{signature_hex}"
+            return {
+                "X-Auth-Address": address,
+                "X-Auth-Chain": "base",
+                "X-Auth-Signature": signature_hex,
+                "X-Auth-Timestamp": str(timestamp_ms),
+                "X-Auth-Nonce": nonce,
+                "X-Auth-Sig-Encoding": "hex",
+            }
+
+        try:
+            signature_base64 = base64.b64encode(bytes.fromhex(signature_hex)).decode()
+        except Exception as exc:
+            raise ValueError("OWS Solana signature was not valid hex") from exc
+
+        return {
+            "X-Auth-Address": address,
+            "X-Auth-Chain": "solana",
+            "X-Auth-Signature": signature_base64,
+            "X-Auth-Timestamp": str(timestamp_ms),
+            "X-Auth-Nonce": nonce,
+            "X-Auth-Sig-Encoding": "base64",
+        }
 
     if resolved_chain == "base":
         wallet = load_wallet_address(required=True)
