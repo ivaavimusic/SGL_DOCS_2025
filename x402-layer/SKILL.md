@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.10.2
+version: 1.10.3
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -109,7 +109,7 @@ npm install -g @open-wallet-standard/core
 export OWS_WALLET="hackathon-wallet"
 ```
 
-Use private-key mode for ERC-8004 wallet-first registration. AWAL remains useful for x402 payment flows. OWS is optional-first for pay/discover/sign-message flows through `ows_cli.py`.
+Use private-key mode for deep ERC-8004 registration and any on-chain update path that still needs direct transaction signing. AWAL remains useful for x402 payment flows. OWS is optional-first for pay/discover/sign-message flows plus wallet-auth list/support flows through `ows_cli.py` and the shared wallet helpers.
 
 ### 3) Optional Dashboard / MCP Mode
 
@@ -309,6 +309,8 @@ python {baseDir}/scripts/ows_cli.py sign-message --chain ethereum --wallet hacka
 python {baseDir}/scripts/ows_cli.py key-create --name codex-agent --wallet hackathon-wallet
 ```
 
+OWS now works well for wallet lookup, challenge signing, marketplace discovery, support auth, and wallet-auth list flows. Deep ERC-8004 registration and on-chain agent update transactions still require direct signing keys.
+
 ### I) MCP Owner-Scoped Control Plane
 ```bash
 # Set a dashboard PAT only for owner-scoped control-plane actions
@@ -478,7 +480,7 @@ No single task needs every variable below. Use least privilege and set only what
 
 Solana exact-payment flows must use the `feePayer` returned by the challenge and keep the transaction compute-unit limit within facilitator requirements. `pay_solana.py` and `solana_signing.py` handle this for the current PayAI-backed flow; prefer Base when you need the simplest production path.
 
-OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows, but keep private-key mode for the deepest wallet-first registration and custom transaction paths.
+OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows and wallet-auth list/support flows, but keep private-key mode for deep wallet-first registration and on-chain update transaction paths.
 
 
 ---

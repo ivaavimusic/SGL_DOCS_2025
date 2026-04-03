@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.10.2**. This release removes globally-required secret metadata while keeping least-privilege guidance in the skill body and preserving all existing x402-layer functionality.
+  Current release: **v1.10.3**. This release extends OWS support to wallet-auth list/support flows while keeping deep ERC-8004 registration and on-chain update transaction paths on direct signing keys.
 </Note>
 
 ## Script Source Code
@@ -311,7 +311,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.10.2 |
+| **Version** | 1.10.3 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -324,7 +324,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 
 ## Changelog
 
-### v1.10.2
+### v1.10.3
 - added optional OpenWallet / OWS support for pay, discover, and sign-message flows
 - added a dedicated `ows_cli.py` wrapper plus OpenWallet guidance
 - kept private-key and AWAL flows intact while expanding wallet backend options
