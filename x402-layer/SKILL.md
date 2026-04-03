@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.10.3
+version: 1.10.4
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana.
@@ -480,7 +480,7 @@ No single task needs every variable below. Use least privilege and set only what
 
 Solana exact-payment flows must use the `feePayer` returned by the challenge and keep the transaction compute-unit limit within facilitator requirements. `pay_solana.py` and `solana_signing.py` handle this for the current PayAI-backed flow; prefer Base when you need the simplest production path.
 
-OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows and wallet-auth list/support flows, but keep private-key mode for deep wallet-first registration and on-chain update transaction paths.
+OpenWallet / OWS support is optional-first in this release: use it for pay/discover/sign-message flows and wallet-auth list/support flows, but keep private-key mode for deep wallet-first registration and on-chain update transaction paths. OWS execution now requires a local `ows` binary (or `OWS_BIN`) instead of fetching code on demand via runtime `npx`.
 
 
 ---
