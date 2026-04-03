@@ -329,7 +329,7 @@ python {baseDir}/scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.9.1 \
+  --version 1.10.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \

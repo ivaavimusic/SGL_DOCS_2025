@@ -17,7 +17,9 @@ It packages the same high-value platform capabilities already proven in the Open
 - ERC-8004 / Solana-8004 identity and reputation
 - optional PAT-backed Singularity MCP guidance
 
-> Current release: **v1.9.1**
+> Current release: **v1.10.0**
+
+This release adds optional OpenWallet / OWS support for pay, discover, and sign-message flows while keeping private-key and AWAL modes intact.
 
 ## Install
 
@@ -36,6 +38,7 @@ If you specifically need the OpenClaw-native distribution, use the `x402-layer` 
 - **Webhook fulfillment** — set webhook targets and verify payment signatures/receipts
 - **Marketplace flows** — browse public services and listings
 - **Agent identity** — register, update, and rate ERC-8004 / Solana-8004 agents
+- **Optional OWS mode** — use OpenWallet / OWS as an optional local wallet backend for pay, discover, and sign-message flows
 - **Optional MCP mode** — use Singularity MCP with a dashboard PAT for owner-scoped control-plane actions
 
 ## Example Prompts
@@ -47,6 +50,7 @@ Set up webhook fulfillment and verify receipts
 Pay for an endpoint with AgentKit enabled
 Open a support thread and send an XMTP support message
 Use my dashboard PAT to manage my endpoints through MCP
+Use OpenWallet / OWS to pay for an endpoint without exporting a raw key
 Buy credits for an endpoint and consume them
 Register my agent on ERC-8004 and bind my endpoint
 ```
@@ -62,3 +66,4 @@ Register my agent on ERC-8004 and bind my endpoint
 - It does not replace MCP for every owner-scoped action; PAT-backed control-plane work should still prefer MCP when available.
 - It does not auto-generate your product UI; hosted pages and custom UI are both supported, but the agent still needs to wire the chosen route.
 - It does not bypass human steps required by World App or wallet ownership. Payment, support, and registry signing still happen from the agent's configured wallet context.
+- OWS is optional-first in this release; the deepest wallet-first registration and custom transaction paths still default to direct key-based signing.

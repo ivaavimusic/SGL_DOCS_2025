@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.9.1**. This release hardens the XMTP helper, adds explicit World AgentKit and XMTP support runbooks, and keeps optional Singularity MCP guidance in the same install surface.
+  Current release: **v1.10.0**. This release adds optional OpenWallet / OWS support for pay, discover, and sign-message flows while keeping private-key and AWAL modes intact.
 </Note>
 
 ## Script Source Code
@@ -32,6 +32,7 @@ The full Python source code for all scripts is available in this repository: [Vi
     | `check_credits.py` | Check your credit balance | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/check_credits.py) |
     | `recharge_credits.py` | Buy credit packs for an endpoint | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/recharge_credits.py) |
     | `discover_marketplace.py` | Browse available services | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/discover_marketplace.py) |
+    | `ows_cli.py` | Run OpenWallet / OWS wallet, pay, discover, sign-message, and agent-key commands | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/ows_cli.py) |
   </Tab>
   <Tab title="Provider Mode">
     Scripts for **selling** services and managing endpoints:
@@ -97,6 +98,14 @@ For Base payment flows without exposing a private key, AWAL is still supported:
 ```bash
 npx skills add coinbase/agentic-wallet-skills
 export X402_USE_AWAL=1
+```
+
+OpenWallet / OWS is also now available as an optional local wallet backend:
+
+```bash
+npm install -g @open-wallet-standard/core
+export OWS_WALLET="hackathon-wallet"
+python scripts/ows_cli.py pay-url https://api.x402layer.cc/e/weather-data --wallet hackathon-wallet
 ```
 
 Use private-key mode for wallet-first ERC-8004 registration.
@@ -240,7 +249,7 @@ python scripts/register_agent.py \
   "Autonomous service agent" \
   --network baseSepolia \
   --image https://example.com/agent.png \
-  --version 1.9.1 \
+  --version 1.10.0 \
   --tag finance \
   --tag automation \
   --endpoint-id <ENDPOINT_UUID> \
@@ -302,7 +311,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.9.1 |
+| **Version** | 1.10.0 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -314,6 +323,11 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.10.0
+- added optional OpenWallet / OWS support for pay, discover, and sign-message flows
+- added a dedicated `ows_cli.py` wrapper plus OpenWallet guidance
+- kept private-key and AWAL flows intact while expanding wallet backend options
 
 ### v1.9.1
 - hardened `xmtp_support.mjs` by removing the environment-driven Studio base override from the helper itself
