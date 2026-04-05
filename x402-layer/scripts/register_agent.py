@@ -22,6 +22,7 @@ from solana_signing import (
 )
 from wallet_signing import (
     is_awal_mode,
+    is_ows_mode,
     load_wallet_address,
 )
 
@@ -347,6 +348,11 @@ def register_agent(
 
     if is_awal_mode():
         raise ValueError("Wallet-first registration requires direct wallet signing keys. Disable AWAL mode and set PRIVATE_KEY/WALLET_ADDRESS or SOLANA_SECRET_KEY.")
+    if is_ows_mode():
+        raise ValueError(
+            "OWS now supports wallet lookup and challenge-signing flows in x402-layer, but deep ERC-8004 registration transactions still require direct signing keys. "
+            "Set PRIVATE_KEY/WALLET_ADDRESS for EVM registration or SOLANA_SECRET_KEY for Solana registration."
+        )
 
     _assert_local_signer_matches_owner(network, owner)
 

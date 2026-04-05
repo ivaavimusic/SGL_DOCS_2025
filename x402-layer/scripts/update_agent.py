@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from erc8004_wallet_client import API_BASE, auth_chain_for_network, auth_headers, create_wallet_session, post_json
 from register_agent import _send_evm_contract_tx
 from solana_signing import load_solana_wallet_address, send_prepared_solana_transaction, wait_for_solana_confirmation
-from wallet_signing import load_wallet_address
+from wallet_signing import is_ows_mode, load_wallet_address
 
 
 def _resolve_wallet(chain: str) -> str:
@@ -98,6 +98,11 @@ def update_agent(args: argparse.Namespace) -> Dict[str, Any]:
     tx_payload: Dict[str, Optional[str]] = {}
 
     if prepare.get("requiresOnChainUpdate"):
+        if is_ows_mode():
+            raise ValueError(
+                "OWS can handle wallet-auth update flows, but this agent update requires an on-chain transaction. "
+                "Use direct signing keys for the actual on-chain update step."
+            )
         if chain == "solana":
             prepared_tx = (((prepare.get("tx") or {}).get("prepared") or {}).get("transaction"))
             rpc_url = ((prepare.get("tx") or {}).get("rpcUrl")) or (

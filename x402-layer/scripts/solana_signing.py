@@ -3,13 +3,16 @@
 Shared Solana signing helpers for x402 scripts.
 
 Builds x402-compatible X-Payment headers for Solana accepts options.
-Private-key mode only (SOLANA_SECRET_KEY as base58 or JSON bytes).
+Direct signing still uses SOLANA_SECRET_KEY. OWS support is optional-first for
+wallet lookup and message-signing flows only.
 """
 
 import base64
 import json
 import os
+import shutil
 import struct
+import subprocess
 from typing import Any, Dict, Optional
 
 import requests
@@ -20,7 +23,10 @@ RPC_URL = "https://api.mainnet-beta.solana.com"
 def _load_auth_mode() -> str:
     if (os.getenv("X402_USE_AWAL") or "").strip() == "1":
         return "awal"
-    return (os.getenv("X402_AUTH_MODE") or "auto").strip().lower()
+    explicit = (os.getenv("X402_AUTH_MODE") or "auto").strip().lower()
+    if explicit == "auto" and os.getenv("OWS_WALLET"):
+        return "ows"
+    return explicit
 
 
 def _import_solders() -> Dict[str, Any]:
@@ -54,9 +60,53 @@ def load_solders() -> Dict[str, Any]:
     return _import_solders()
 
 
+def _build_ows_command(args: list[str]) -> list[str]:
+    explicit_bin = (os.getenv("OWS_BIN") or "").strip()
+    if explicit_bin:
+        return [explicit_bin, *args]
+
+    local_ows = shutil.which("ows")
+    if local_ows:
+        return [local_ows, *args]
+
+    raise ValueError(
+        "OWS binary not found in PATH. Install it with `npm install -g @open-wallet-standard/core` "
+        "or set OWS_BIN to the full executable path."
+    )
+
+
+def _run_ows(args: list[str], timeout: int = 180) -> str:
+    proc = subprocess.run(_build_ows_command(args), text=True, capture_output=True, timeout=timeout)
+    if proc.returncode != 0:
+        raise ValueError((proc.stderr or proc.stdout or "OWS command failed").strip())
+    return (proc.stdout or "").strip()
+
+
+def _load_ows_wallet_name() -> str:
+    wallet = (os.getenv("OWS_WALLET") or "").strip()
+    if not wallet:
+        raise ValueError("Set OWS_WALLET for OWS-backed wallet lookup/signing")
+    return wallet
+
+
+def _lookup_ows_solana_address() -> Optional[str]:
+    wallet = _load_ows_wallet_name()
+    output = _run_ows(["wallet", "list"])
+    blocks = [block.strip() for block in output.split("\n\n") if block.strip()]
+    for block in blocks:
+        if f"Name:    {wallet}" not in block and f"ID:      {wallet}" not in block:
+            continue
+        for line in block.splitlines():
+            if line.strip().startswith("solana:") and "→" in line:
+                return line.split("→", 1)[1].strip()
+    return None
+
+
 def has_solana_credentials() -> bool:
     mode = _load_auth_mode()
     if mode == "awal":
+        return False
+    if mode == "ows":
         return False
     return bool(os.getenv("SOLANA_SECRET_KEY"))
 
@@ -118,7 +168,11 @@ def _derive_local_solana_wallet_address() -> Optional[str]:
 def load_solana_wallet_address() -> Optional[str]:
     explicit = os.getenv("SOLANA_WALLET_ADDRESS") or os.getenv("WALLET_ADDRESS_SECONDARY")
     local_derived = _derive_local_solana_wallet_address()
-    return explicit or local_derived
+    if explicit or local_derived:
+        return explicit or local_derived
+    if _load_auth_mode() == "ows":
+        return _lookup_ows_solana_address()
+    return None
 
 
 def load_solana_keypair() -> Any:
@@ -127,6 +181,21 @@ def load_solana_keypair() -> Any:
 
 
 def sign_solana_message_base64(message: str) -> str:
+    if _load_auth_mode() == "ows":
+        wallet = _load_ows_wallet_name()
+        output = _run_ows(["sign", "message", "--chain", "solana", "--wallet", wallet, "--message", message, "--json"])
+        try:
+            payload = json.loads(output)
+        except Exception as exc:
+            raise ValueError("Could not parse OWS sign-message output") from exc
+        signature_hex = str(payload.get("signature") or "").strip()
+        if not signature_hex:
+            raise ValueError("OWS sign-message did not return a signature")
+        try:
+            return base64.b64encode(bytes.fromhex(signature_hex)).decode()
+        except Exception as exc:
+            raise ValueError("OWS Solana signature was not valid hex") from exc
+
     keypair = load_solana_keypair()
     signature = keypair.sign_message(message.encode("utf-8"))
     return base64.b64encode(bytes(signature)).decode()
