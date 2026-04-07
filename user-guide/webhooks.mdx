@@ -59,10 +59,20 @@ Every webhook delivery is a `POST` request with this JSON body:
 
 ## Verifying Signatures
 
-Every delivery includes two headers for HMAC verification:
+Studio seller webhooks are HMAC-signed. Current deliveries include:
 
-- `X-X402-Signature` — HMAC-SHA256 hex digest of the raw body
-- `X-X402-Timestamp` — Unix timestamp of when the event was sent
+- `X-X402-Signature` — HMAC-SHA256 hex digest
+- `X-X402-Timestamp` — Unix timestamp for the delivery
+- `X-X402-Event` — event type for routing/logging
+- `X-X402-Event-Id` — stable event id for idempotency/replay protection
+
+Verify:
+
+- payload: `timestamp.rawBody`
+- algorithm: `HMAC-SHA256`
+- secret: webhook `signing_secret`
+
+Use the raw request body bytes. Do not parse and re-serialize JSON before hashing.
 
 ### Node.js
 
@@ -88,12 +98,36 @@ function verifyWebhook(rawBody, signature, timestamp, secret) {
 import hmac, hashlib
 
 def verify_webhook(raw_body: bytes, signature: str, timestamp: str, secret: str) -> bool:
-    payload = f"{timestamp}.{raw_body.decode()}"
+    payload = timestamp.encode() + b"." + raw_body
     expected = hmac.new(
-        secret.encode(), payload.encode(), hashlib.sha256
+        secret.encode(), payload, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(signature, expected)
 ```
+
+## Backward Compatibility
+
+Some older receivers still accept raw-secret headers like:
+
+- `x-x402layer-secret`
+- `x-x402-secret`
+- `Authorization: Bearer <secret>`
+
+Keep that only as fallback for legacy clients. Current Studio deliveries should be verified with the signed HMAC headers first.
+
+## Two Secret Hops
+
+### 1) Studio → your webhook receiver
+
+- secret: webhook `signing_secret`
+- auth model: HMAC verification using the signed headers above
+
+### 2) Your receiver → your app settlement route
+
+- secret: your own app-internal shared secret
+- example: a worker sends `x-x402-secret` and the app verifies it with `X402_WEBHOOK_SECRET`
+
+Do not confuse the Studio webhook signing secret with the app settlement secret. They solve different trust boundaries.
 
 ## Coverage Matrix
 
@@ -107,10 +141,12 @@ def verify_webhook(raw_body: bytes, signature: str, timestamp: str, secret: str)
 
 ## Best Practices
 
-- 🔐 **Always verify signatures** — Never trust unverified payloads.
+- 🔐 **Always verify signed headers first** — Never trust unverified payloads.
 - ⚡ **Respond quickly (< 5s)** — Process asynchronously and return `200` immediately. Queue heavy work.
 - 🔄 **Handle duplicates** — Use the event `id` for idempotency.
-- 🔑 **Rotate secrets periodically** — Use Dashboard → Webhooks → Rotate Secret.
+- 🔑 **Rotate secrets carefully** — If deliveries suddenly start returning `401`, first check whether the webhook signing secret rotated or drifted. Update the receiver before discarding the old value.
+- 🧾 **Log headers, not secrets** — Log signature/timestamp/event/event-id presence for debugging, but never log the secret itself.
+- 🛠️ **Know the common failure mode** — If Studio deliveries `401` but a manual POST with the stored secret works, the receiver likely only supports legacy raw-secret auth while Studio is sending signed webhooks.
 
 ## Webhook API Reference
 

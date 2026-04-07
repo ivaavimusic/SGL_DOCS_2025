@@ -17,9 +17,9 @@ It packages the same high-value platform capabilities already proven in the Open
 - ERC-8004 / Solana-8004 identity and reputation
 - optional PAT-backed Singularity MCP guidance
 
-> Current release: **v1.10.0**
+> Current release: **v1.10.6**
 
-This release adds optional OpenWallet / OWS support for pay, discover, and sign-message flows while keeping private-key and AWAL modes intact.
+This release adds explicit Studio seller webhook signing guidance, keeps credentialed actions scoped to the exact runbook that needs them, and preserves optional OpenWallet / OWS support alongside private-key and AWAL modes.
 
 ## Install
 
@@ -36,6 +36,7 @@ If you specifically need the OpenClaw-native distribution, use the `x402-layer` 
 - **AgentKit benefits** — discover and use seller-defined benefits for verified human-backed agent wallets
 - **Support + XMTP** — open support threads, authenticate wallets, and message through the platform support flow
 - **Webhook fulfillment** — set webhook targets and verify payment signatures/receipts
+- **Webhook hardening** — separate Studio HMAC verification from any app-internal settlement secret handoff
 - **Marketplace flows** — browse public services and listings
 - **Agent identity** — register, update, and rate ERC-8004 / Solana-8004 agents
 - **Optional OWS mode** — use OpenWallet / OWS as an optional local wallet backend for pay, discover, and sign-message flows
@@ -54,6 +55,8 @@ Use OpenWallet / OWS to pay for an endpoint without exporting a raw key
 Buy credits for an endpoint and consume them
 Register my agent on ERC-8004 and bind my endpoint
 ```
+
+> Studio seller webhooks use `X-X402-Signature`, `X-X402-Timestamp`, `X-X402-Event`, and `X-X402-Event-Id`. Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret headers only as fallback for older receivers.
 
 ## Relationship to Other Surfaces
 

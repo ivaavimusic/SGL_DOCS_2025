@@ -1,9 +1,10 @@
 ---
 name: x402-layer
-version: 1.10.5
+version: 1.10.6
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana. Optional credentialed flows may use private keys, Solana signer keys, endpoint API keys, PATs, AWAL, or OWS depending on the exact runbook; read-only discovery requires no secrets.
+  Only ask for or use privileged credentials after choosing a runbook that actually needs signing or owner-scoped writes.
   Use this skill when the user asks to "create x402 endpoint",
   "deploy monetized API", "pay for API with USDC", "check x402 credits",
   "consume API credits", "list endpoint on marketplace", "buy API credits",
@@ -57,6 +58,10 @@ Currency: USDC
 Protocol: HTTP 402 Payment Required
 
 > **Security-first usage:** No secret environment variable is universally required for installation. Set only the minimum variables needed for the exact runbook you are using. Prefer AWAL, OWS, API keys, or ephemeral wallets over long-lived mainnet private keys whenever possible.
+>
+> **Execution scope:** For discovery, docs, and listing inspection, stay on the no-secret path first. Only use private keys, Solana signer keys, endpoint API keys, PATs, or support tokens when the user explicitly wants signing, webhook management, support auth, or owner-scoped control-plane actions.
+>
+> **Expected network/binary surface:** `api.x402layer.cc`, `studio.x402layer.cc`, `mcp.x402layer.cc`, and local `awal` / `ows` binaries when those wallet modes are explicitly enabled.
 
 ---
 
@@ -110,6 +115,7 @@ export OWS_WALLET="hackathon-wallet"
 ```
 
 Use private-key mode for deep ERC-8004 registration and any on-chain update path that still needs direct transaction signing. AWAL remains useful for x402 payment flows. OWS is optional-first for pay/discover/sign-message flows plus wallet-auth list/support flows through `ows_cli.py` and the shared wallet helpers.
+Do not export every credential shown above at once. Pick one wallet path and only the extra control-plane credentials the selected runbook needs.
 
 ### 3) Optional Dashboard / MCP Mode
 
@@ -259,6 +265,14 @@ python {baseDir}/scripts/manage_webhook.py info my-api
 python {baseDir}/scripts/manage_webhook.py remove my-api
 ```
 
+Studio seller webhooks are HMAC-signed. Expect:
+- `X-X402-Signature`
+- `X-X402-Timestamp`
+- `X-X402-Event`
+- `X-X402-Event-Id`
+
+Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret header checks only as backward-compatibility fallback for older receivers.
+
 Webhook verification helper:
 ```bash
 python {baseDir}/scripts/verify_webhook_payment.py \
@@ -401,6 +415,16 @@ Load only what is needed for the user task:
 ## Environment Reference
 
 No single task needs every variable below. Use least privilege and set only what the current script requires.
+
+### Credential Path Rule
+
+Choose the smallest path that fits the task:
+
+1. **No-secret discovery:** marketplace browsing and public listing inspection
+2. **Endpoint API key:** endpoint, listing, and webhook management
+3. **PAT / MCP:** owner-scoped dashboard inventory and control-plane operations
+4. **AWAL / OWS:** delegated wallet auth or pay/discover/sign-message flows
+5. **Direct private keys:** deep wallet-first registration, on-chain updates, or flows that still require local transaction signing
 
 ### Common
 

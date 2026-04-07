@@ -3,9 +3,21 @@
 x402 Webhook Payment Verifier (Python)
 
 Purpose:
-- Verify webhook HMAC signature (X-X402-Signature)
+- Verify webhook HMAC signature (X-X402-Signature / X-X402-Timestamp)
 - Optionally verify receipt JWT (RS256/JWKS) via PyJWT
 - Cross-check payload fields against receipt claims
+
+Current Studio seller webhook deliveries also include:
+- X-X402-Event
+- X-X402-Event-Id
+
+Verification model:
+- payload = "<timestamp>.<raw_request_body>"
+- algorithm = HMAC-SHA256
+- secret = webhook signing_secret
+
+Legacy raw-secret header auth may still exist in older receivers, but
+current Studio deliveries should be validated with the signed headers first.
 
 Install:
   pip install -r requirements.txt   # pyjwt + cryptography already included

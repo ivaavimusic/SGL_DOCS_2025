@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.10.3**. This release extends OWS support to wallet-auth list/support flows while keeping deep ERC-8004 registration and on-chain update transaction paths on direct signing keys.
+  Current release: **v1.10.6**. This release adds explicit Studio seller webhook signing guidance, documents the two-secret-hop settlement model, and keeps secret-bearing actions scoped to the exact runbook that needs them.
 </Note>
 
 ## Script Source Code
@@ -117,6 +117,8 @@ export SINGULARITY_PAT="sgl_pat_..."
 ```
 
 Use that only when the agent needs dashboard-level endpoint, product, or webhook management through Singularity MCP.
+
+> Studio seller webhooks use `X-X402-Signature`, `X-X402-Timestamp`, `X-X402-Event`, and `X-X402-Event-Id`. Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret headers only as fallback for older receivers, and do not confuse the Studio signing secret with any app-internal settlement secret such as `x-x402-secret` → `X402_WEBHOOK_SECRET`.
 
 ### World AgentKit Benefits
 

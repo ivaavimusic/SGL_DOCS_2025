@@ -6,6 +6,16 @@ Set, update, or remove a webhook URL on an agent-created endpoint.
 When a webhook is configured, your endpoint receives payment.succeeded
 events at the specified HTTPS URL.
 
+Current Studio seller webhook deliveries are HMAC-signed and include:
+    X-X402-Signature
+    X-X402-Timestamp
+    X-X402-Event
+    X-X402-Event-Id
+
+Verify HMAC-SHA256 over "<timestamp>.<raw_body>" with the returned
+webhook signing_secret. Keep raw shared-secret header checks only as
+backward-compatible fallback for older receivers.
+
 Usage:
     python manage_webhook.py set <slug> <webhook_url>
     python manage_webhook.py remove <slug>
@@ -53,6 +63,7 @@ def set_webhook(slug: str, webhook_url: str) -> dict:
         if webhook.get("signing_secret"):
             print(f"\n⚠️  SAVE THIS SECRET — it will not be shown again:")
             print(f"   {webhook['signing_secret']}\n")
+            print("Use it to verify X-X402-Signature / X-X402-Timestamp seller webhooks.\n")
         return result
     return {"error": f"Status {response.status_code}", "response": response.text}
 
