@@ -6,7 +6,8 @@ description: |
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "destroy server instance", "check instance status",
   "list my instances", or manage x402 Singularity Compute / x402Compute
-  infrastructure. Handles GPU and VPS provisioning with USDC payment on Base
+  infrastructure. Handles GPU and VPS provisioning across Vultr and DigitalOcean
+  with USDC payment on Base
   or Solana networks via x402, and optional MPP/Mppx payment flows for agents
   that can pay with Tempo or Stripe/card methods. Includes optional OWS-backed
   auth and management flows.
@@ -32,15 +33,17 @@ allowed-tools:
 
 # x402 Singularity Compute
 
-Provision and manage GPU/VPS instances paid with x402 or MPP.
+Provision and manage GPU/VPS instances on Vultr or DigitalOcean paid with x402 or MPP.
 
 **Base URL:** `https://compute.x402layer.cc`
+**Providers:** Vultr • DigitalOcean
 **x402 Networks:** Base (EVM) • Solana
 **x402 Currency:** USDC
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
 **Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
 
 **Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
+**DigitalOcean Note:** DigitalOcean instances require SSH key access because one-time root passwords are not exposed through the DigitalOcean API.
 
 ---
 
@@ -112,7 +115,7 @@ OWS is best for compute auth and routine management flows. Direct x402 provision
 ## Instance Lifecycle
 
 ```
-Browse Plans → Provision (pay USDC) → Active → Extend / Destroy → Expired
+Browse Plans → Choose Provider/Plan → Provision (pay USDC) → Active → Extend / Destroy → Expired
 ```
 
 Instances expire after their prepaid duration. Extend before expiry to keep them running.
@@ -138,6 +141,10 @@ ssh-keygen -t ed25519 -N "" -f ~/.ssh/x402_compute
 
 # Provision an instance for 1 month (triggers x402 payment)
 python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu" --ssh-key-file ~/.ssh/x402_compute.pub
+
+# DigitalOcean plans are prefixed with do:
+# They require SSH key access.
+python {baseDir}/scripts/provision.py do:s-1vcpu-1gb nyc3 --days 1 --label "do-test" --ssh-key-file ~/.ssh/x402_compute.pub
 
 # Provision a daily instance (cheaper, use-and-throw)
 python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --days 1 --label "test-daily" --ssh-key-file ~/.ssh/x402_compute.pub
@@ -250,6 +257,7 @@ Notes:
 | VPS | `vc2-*` | Standard cloud compute |
 | High-Perf | `vhp-*` | High-performance dedicated |
 | Dedicated | `vdc-*` | Dedicated bare-metal |
+| DigitalOcean | `do:*` | DigitalOcean Droplets (provider-prefixed size slugs) |
 
 ---
 

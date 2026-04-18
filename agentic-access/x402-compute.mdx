@@ -5,7 +5,7 @@ description: Provision and manage VPS/GPU compute with x402 or MPP payments, sig
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base or Solana, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
@@ -13,6 +13,10 @@ The `x402-compute` skill lets agents and developers provision and manage VPS/GPU
 
 <Note>
   Current release: **v1.2.0**. This release keeps x402 Base/Solana payments live and adds MPP support for agent/CLI payments on Tempo mainnet USDC.e. Stripe card payments are code-ready and will be enabled after Stripe Machine Payments / Shared Payment Token access is approved.
+</Note>
+
+<Note>
+  DigitalOcean is available as an additional compute provider when configured. DigitalOcean plans are prefixed with `do:` and require SSH key access because DigitalOcean does not expose one-time root passwords through its API.
 </Note>
 
 ## Base URL
@@ -44,7 +48,7 @@ Recommended agent flow:
 | `GET` | `/compute/plans` | List VPS/GPU plans |
 | `GET` | `/compute/regions` | List deployment regions |
 | `GET` | `/compute/os` | List OS images |
-| `POST` | `/compute/provision` | Provision instance (x402 or MPP payment) |
+| `POST` | `/compute/provision` | Provision Vultr or DigitalOcean instance (x402 or MPP payment) |
 | `GET` | `/compute/instances` | List instances for authenticated wallet |
 | `GET` | `/compute/instances/:id` | Get instance details |
 | `POST` | `/compute/instances/:id/password` | One-time root password fallback |
@@ -92,6 +96,14 @@ npx mppx https://compute.x402layer.cc/compute/provision \
 ```
 
 If the MPP provision does not include wallet/API-key auth, the response includes a one-time `management_api_key`. Store it and use it for later instance management.
+
+DigitalOcean example:
+
+```bash
+npx mppx https://compute.x402layer.cc/compute/provision \
+  -X POST \
+  -J '{"plan":"do:s-1vcpu-1gb","provider":"digitalocean","region":"nyc3","os_id":123456789,"label":"do-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
+```
 
 ### 2) Create API Key for Agents
 
@@ -149,6 +161,13 @@ This works once per instance. Repeated calls return `409`.
 | x402 Solana USDC | Live | Existing script flow |
 | MPP Tempo USDC.e | Live | Tested with `npx mppx`; returns `Payment-Receipt` |
 | MPP Stripe cards | Pending | Requires Stripe Machine Payments / Shared Payment Token access |
+
+## Compute providers
+
+| Provider | Status | Notes |
+|---|---|---|
+| Vultr | Live | Existing VPS/GPU provider with one-time password fallback |
+| DigitalOcean | Code-ready | Requires `DIGITALOCEAN_API_TOKEN`; SSH key required |
 
 ## Security Notes
 

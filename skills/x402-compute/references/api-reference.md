@@ -7,6 +7,12 @@ Paid endpoints support both protocols:
 - **x402**: server returns JSON `accepts[]`; client retries with `X-Payment`.
 - **MPP**: server returns `WWW-Authenticate: Payment`; client retries with `Authorization: Payment ...`; success includes `Payment-Receipt`.
 
+Compute plans can be backed by multiple providers:
+
+- `provider: "vultr"` uses existing Vultr plan IDs, regions, OS images, and password fallback support.
+- `provider: "digitalocean"` uses DigitalOcean Droplet sizes prefixed as `do:<size_slug>`.
+- DigitalOcean instances require SSH key access because the DigitalOcean API does not expose initial root passwords.
+
 ## Endpoints
 
 ### Authentication (Required for management endpoints)
@@ -111,6 +117,7 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
   "label": "my-daily-instance",
   "prepaid_hours": 24,
   "ssh_public_key": "ssh-ed25519 AAAA... user@host",
+  "provider": "vultr",
   "network": "base"
 }
 ```
@@ -119,6 +126,8 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
 - `prepaid_hours` minimum is **24** (1 day). Use `24` for daily, `72` for 3 days, `168` for 1 week, `720` for 1 month, etc.
 - Provide `ssh_public_key` to enable SSH access. Passwords are not returned by the API.
 - If you do not provide an SSH key, use one-time fallback endpoint `POST /compute/instances/:id/password`.
+- For DigitalOcean plans, `ssh_public_key` or existing `ssh_key_id(s)` is required. Password fallback is Vultr-only.
+- DigitalOcean plan IDs are prefixed, for example `do:s-1vcpu-1gb`.
 
 **Headers:**
 - Auth headers (see Authentication above)
