@@ -1,18 +1,18 @@
 ---
 title: x402 Compute Skill - x402 Studio Docs
-description: Provision and manage VPS/GPU compute with x402 payments, signed auth, API keys, and one-time password fallback
+description: Provision and manage VPS/GPU compute with x402 or MPP payments, signed auth, API keys, and one-time password fallback
 ---
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana, with optional OWS-backed auth and management flows.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr using x402 payments on Base or Solana, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
 </Note>
 
 <Note>
-  Current release: **v1.1.0**. This release adds optional OpenWallet / OWS support for compute auth and management flows while keeping the paid provision and extend paths on the existing direct Base/Solana signing flow.
+  Current release: **v1.2.0**. This release keeps x402 Base/Solana payments live and adds MPP support for agent/CLI payments on Tempo mainnet USDC.e. Stripe card payments are code-ready and will be enabled after Stripe Machine Payments / Shared Payment Token access is approved.
 </Note>
 
 ## Base URL
@@ -44,11 +44,11 @@ Recommended agent flow:
 | `GET` | `/compute/plans` | List VPS/GPU plans |
 | `GET` | `/compute/regions` | List deployment regions |
 | `GET` | `/compute/os` | List OS images |
-| `POST` | `/compute/provision` | Provision instance (x402 payment + auth) |
+| `POST` | `/compute/provision` | Provision instance (x402 or MPP payment) |
 | `GET` | `/compute/instances` | List instances for authenticated wallet |
 | `GET` | `/compute/instances/:id` | Get instance details |
 | `POST` | `/compute/instances/:id/password` | One-time root password fallback |
-| `POST` | `/compute/instances/:id/extend` | Extend prepaid duration (x402 payment + auth) |
+| `POST` | `/compute/instances/:id/extend` | Extend prepaid duration (x402 or MPP payment + auth) |
 | `DELETE` | `/compute/instances/:id` | Destroy instance |
 | `POST` | `/compute/api-keys` | Create API key (signature only) |
 | `GET` | `/compute/api-keys` | List API keys |
@@ -83,6 +83,16 @@ curl -fsSL https://api.x402layer.cc/skill/x402-compute/install | bash
 python scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --ssh-key-file ~/.ssh/id_ed25519.pub
 ```
 
+### 1b) Provision with MPP / mppx
+
+```bash
+npx mppx https://compute.x402layer.cc/compute/provision \
+  -X POST \
+  -J '{"plan":"vc2-1c-1gb","region":"ewr","os_id":2284,"label":"mpp-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
+```
+
+If the MPP provision does not include wallet/API-key auth, the response includes a one-time `management_api_key`. Store it and use it for later instance management.
+
 ### 2) Create API Key for Agents
 
 ```bash
@@ -108,6 +118,15 @@ python scripts/extend_instance.py <instance_id> --hours 720
 python scripts/destroy_instance.py <instance_id>
 ```
 
+MPP-paid extension requires compute auth:
+
+```bash
+npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
+  -X POST \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -J '{"extend_hours":720}'
+```
+
 ### 4) One-Time Password Fallback (Only if no SSH key)
 
 ```bash
@@ -119,12 +138,23 @@ This works once per instance. Repeated calls return `409`.
 ## OWS scope note
 
 - OWS is great for compute auth and management/API-key flows
-- Provision and extend still use the current direct Base or Solana payment-signing paths
+- Direct x402 provision and extend still use the current Base or Solana payment-signing paths
+- MPP provision and extend use `mppx`, Tempo Wallet, or another MPP-capable client
+
+## Payment options
+
+| Option | Status | Notes |
+|---|---|---|
+| x402 Base USDC | Live | Existing UI/script flow |
+| x402 Solana USDC | Live | Existing script flow |
+| MPP Tempo USDC.e | Live | Tested with `npx mppx`; returns `Payment-Receipt` |
+| MPP Stripe cards | Pending | Requires Stripe Machine Payments / Shared Payment Token access |
 
 ## Security Notes
 
 - Wallet/agent can only access its own instances.
 - Replay protection uses signed nonce + timestamp.
+- MPP replay protection uses a shared Cloudflare Durable Object replay store.
 - Payment wallet must match authenticated wallet.
 - Passwords are not returned in standard list/details/provision responses.
 - One-time password endpoint is owner-authenticated and single-use.

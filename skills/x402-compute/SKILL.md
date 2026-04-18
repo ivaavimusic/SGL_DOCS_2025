@@ -1,13 +1,14 @@
 ---
 name: x402-compute
-version: 1.1.0
+version: 1.2.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "destroy server instance", "check instance status",
   "list my instances", or manage x402 Singularity Compute / x402Compute
   infrastructure. Handles GPU and VPS provisioning with USDC payment on Base
-  or Solana networks via the x402 payment protocol, with optional OWS-backed
+  or Solana networks via x402, and optional MPP/Mppx payment flows for agents
+  that can pay with Tempo or Stripe/card methods. Includes optional OWS-backed
   auth and management flows.
 homepage: https://studio.x402layer.cc/docs/agentic-access/x402-compute
 metadata:
@@ -31,12 +32,13 @@ allowed-tools:
 
 # x402 Singularity Compute
 
-Provision and manage GPU/VPS instances paid with USDC via the x402 payment protocol.
+Provision and manage GPU/VPS instances paid with x402 or MPP.
 
 **Base URL:** `https://compute.x402layer.cc`
-**Networks:** Base (EVM) • Solana
-**Currency:** USDC
-**Protocol:** HTTP 402 Payment Required
+**x402 Networks:** Base (EVM) • Solana
+**x402 Currency:** USDC
+**MPP Methods:** Tempo • Stripe/card when enabled by the service
+**Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
 
 **Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
 
@@ -75,7 +77,7 @@ Create `COMPUTE_API_KEY` (optional) for management endpoints:
 python {baseDir}/scripts/create_api_key.py --label "my-agent"
 ```
 
-OWS is best for compute auth and routine management flows. Provision and extend still use the current direct payment-signing paths.
+OWS is best for compute auth and routine management flows. Direct x402 provision and extend still use local payment-signing paths. MPP provision/extend should use `mppx` or Tempo Wallet.
 
 ---
 
@@ -146,6 +148,14 @@ python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --days 3 --label "short-tas
 # Provision on Solana
 python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-sol-vps" --network solana --ssh-key-file ~/.ssh/x402_compute.pub
 
+# Provision via MPP / mppx (Tempo by default; Stripe/card if your mppx config supports it)
+npx mppx https://compute.x402layer.cc/compute/provision \
+  -X POST \
+  -J '{"plan":"vc2-1c-1gb","region":"ewr","os_id":2284,"label":"mpp-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
+
+# If the response includes management_api_key, store it for later instance management:
+export COMPUTE_API_KEY="x402c_..."
+
 # ⚠️ After provisioning, wait 2-3 minutes for Vultr to complete setup
 # Then fetch your instance details (IP, status):
 python {baseDir}/scripts/instance_details.py <instance_id>
@@ -174,6 +184,13 @@ python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720
 
 # Extend on Solana
 python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network solana
+
+# Extend via MPP. MPP extension requires compute auth; use the management API key
+# returned from MPP provisioning or normal wallet signature auth.
+npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
+  -X POST \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -J '{"extend_hours":720}'
 
 # Destroy
 python {baseDir}/scripts/destroy_instance.py <instance_id>
@@ -208,6 +225,21 @@ python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet com
 
 For Solana, transient facilitator failures can happen. Retry once or twice if you get a temporary 5xx verify error.
 
+## MPP Payment Flow
+
+MPP is available side-by-side with x402 on the same paid endpoints.
+
+1. Request provision/extend -> server returns `HTTP 402` with `WWW-Authenticate: Payment`
+2. `mppx` or Tempo Wallet creates an MPP credential
+3. Client retries with `Authorization: Payment ...`
+4. Server verifies the MPP payment, provisions/extends the instance, and returns `Payment-Receipt`
+
+Notes:
+- `POST /compute/provision` can be paid via MPP without wallet auth. In that case the response includes `management_api_key`; store it because it is shown once and is required for later management.
+- `POST /compute/instances/:id/extend` via MPP requires compute auth, usually `X-API-Key: $COMPUTE_API_KEY`.
+- x402 remains fully supported through the Python scripts and `X-Payment` header flow.
+- MPP methods are service-configured. Tempo is used by default by `mppx`; Stripe/card requires a Stripe-capable MPP client/config.
+
 ---
 
 ## Plan Types
@@ -234,6 +266,7 @@ For Solana, transient facilitator failures can happen. Retry once or twice if yo
 | `COMPUTE_AUTH_MODE` | Optional | `auto`, `private-key`, or `ows` |
 | `OWS_WALLET` | OWS auth mode | OWS wallet name or ID |
 | `OWS_BIN` | OWS auth mode | Optional explicit path to the `ows` executable |
+| `COMPUTE_API_KEY` | MPP/no-wallet management | API key returned once after an MPP provision without wallet auth |
 
 ---
 

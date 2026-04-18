@@ -2,6 +2,11 @@
 
 Base URL: `https://compute.x402layer.cc`
 
+Paid endpoints support both protocols:
+
+- **x402**: server returns JSON `accepts[]`; client retries with `X-Payment`.
+- **MPP**: server returns `WWW-Authenticate: Payment`; client retries with `Authorization: Payment ...`; success includes `Payment-Receipt`.
+
 ## Endpoints
 
 ### Authentication (Required for management endpoints)
@@ -95,7 +100,7 @@ List available operating system images.
 
 ### POST /compute/provision
 
-Provision a new compute instance. Returns `402 Payment Required` with payment challenge.
+Provision a new compute instance. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges.
 
 **Request Body:**
 ```json
@@ -118,6 +123,7 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
 **Headers:**
 - Auth headers (see Authentication above)
 - `X-Payment`: Base64-encoded x402 payment payload (after 402 challenge)
+- `Authorization: Payment ...`: MPP credential (after MPP challenge)
 
 **402 Challenge Response:**
 ```json
@@ -138,6 +144,15 @@ Provision a new compute instance. Returns `402 Payment Required` with payment ch
 
 For Solana challenges, `network` may be `solana` (or facilitator-style `solana:*`) and may include `extra.feePayer`.
 
+**MPP Example:**
+```bash
+npx mppx https://compute.x402layer.cc/compute/provision \
+  -X POST \
+  -J '{"plan":"vc2-1c-1gb","region":"ewr","os_id":2284,"label":"mpp-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
+```
+
+If MPP provisioning is paid without wallet/API-key auth, the success response includes a one-time `management_api_key`. Store it and use it for `GET /compute/instances`, `POST /compute/instances/:id/extend`, password retrieval, and destroy.
+
 **Success Response (200):**
 ```json
 {
@@ -152,6 +167,16 @@ For Solana challenges, `network` may be `solana` (or facilitator-style `solana:*
     "expires_at": "2026-03-17T00:00:00Z"
   },
   "tx_hash": "0x..."
+}
+```
+
+**Additional MPP-only fields when no wallet/API-key auth was supplied:**
+```json
+{
+  "management_api_key": "x402c_...",
+  "management_api_key_id": "uuid",
+  "management_api_key_last4": "abcd",
+  "management_note": "Store this API key securely. It is shown once..."
 }
 ```
 
@@ -210,7 +235,7 @@ Subsequent calls return `409`.
 
 ### POST /compute/instances/:id/extend
 
-Extend an instance's lifetime. Returns `402 Payment Required` with payment challenge.
+Extend an instance's lifetime. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges.
 
 **Request Body:**
 ```json
@@ -223,6 +248,16 @@ Extend an instance's lifetime. Returns `402 Payment Required` with payment chall
 **Headers:**
 - Auth headers (see Authentication above)
 - `X-Payment`: Base64-encoded x402 payment payload (after 402 challenge)
+- `Authorization: Payment ...`: MPP credential (after MPP challenge)
+
+MPP extension requires compute auth because MPP card/Stripe payments do not always identify a wallet owner. Use the `management_api_key` returned from MPP provisioning:
+
+```bash
+npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
+  -X POST \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -J '{"extend_hours":720}'
+```
 
 ---
 
