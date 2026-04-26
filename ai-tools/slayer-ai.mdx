@@ -1,0 +1,46 @@
+---
+title: "Slayer Agent"
+description: "Your AI-powered assistant for managing everything on x402Studio"
+---
+
+# Slayer Agent
+
+Slayer AI is the built-in AI assistant for x402Studio. It can read, write, and manage nearly every resource on the platform — from creating endpoints and products to rotating API keys and checking analytics.
+
+Slayer operates in two surfaces:
+
+<CardGroup cols={2}>
+  <Card title="Slayer on the Dashboard" icon="message-bot" href="/ai-tools/slayer-dashboard">
+    49 tools for managing your x402Studio account via the chat interface at `/dashboard/slayer-ai`. Full CRUD on endpoints, products, webhooks, invoices, PATs, ratings, favorites, coupons, and more.
+  </Card>
+  <Card title="Slayer on the Marketplace" icon="store" href="/ai-tools/slayer-marketplace">
+    35 MCP tools for marketplace discovery, endpoint management, payment flows, and agent registry — accessible from any MCP-compatible AI client.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+### Dashboard (Chat Interface)
+1. Navigate to **Slayer AI** in the dashboard sidebar
+2. Ask anything — Slayer uses tools to look up your data and perform actions
+3. For write actions (create, update, delete), Slayer always confirms before executing
+4. Sensitive values like API keys and secrets are shown once — save them immediately
+
+### Marketplace (MCP Protocol)
+1. Connect the Singularity MCP server to your AI client (Claude Desktop, Cursor, etc.)
+2. Authenticate with a Personal Access Token (PAT)
+3. Your AI client can browse, manage, and transact on the marketplace
+
+## Availability
+
+| Feature | Free | Pro | Business |
+|---------|------|-----|----------|
+| Dashboard Slayer AI | - | Yes | Yes |
+| MCP Marketplace (read) | Yes | Yes | Yes |
+| MCP Management (write) | PAT required | PAT required | PAT required |
+
+## Security
+
+- All tools enforce **user-level isolation** — Slayer can never access another user's data
+- Write actions always require **explicit confirmation** before executing
+- Sensitive values (API keys, webhook secrets, PATs) are shown **once** and never stored in chat

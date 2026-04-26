@@ -1,0 +1,199 @@
+---
+title: "Slayer on the Marketplace"
+description: "How AI agents interact with the x402Studio marketplace via MCP"
+---
+
+# Slayer on the Marketplace
+
+The Singularity MCP server exposes **35 tools** that let any MCP-compatible AI client (Claude Desktop, Cursor, Windsurf, etc.) interact with the x402Studio marketplace. Browse listings, manage endpoints, run payment flows, and register agents — all through natural language.
+
+## Quick Setup
+
+<Tabs>
+  <Tab title="Claude Desktop">
+    Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+    ```json
+    {
+      "mcpServers": {
+        "singularity": {
+          "url": "https://mcp.x402layer.cc/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    Add to `.cursor/mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "singularity": {
+          "url": "https://mcp.x402layer.cc/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Claude Code">
+    Add to your project's `.mcp.json` or global `~/.claude/mcp.json`:
+    ```json
+    {
+      "mcpServers": {
+        "singularity": {
+          "url": "https://mcp.x402layer.cc/mcp"
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Authentication
+
+| Method | Format | Scope |
+|--------|--------|-------|
+| **Personal Access Token (PAT)** | `sgl_pat_{48hex}` | Owner-wide (all endpoints + products) |
+| **Legacy Endpoint Key** | `x402_{32hex}` | Single endpoint only |
+
+Create PATs at **Dashboard > Settings > PAT** with granular scopes:
+- `mcp:read` — List inventory, fetch details and stats
+- `mcp:endpoints:write` — Update endpoints, manage webhooks
+- `mcp:products:write` — Update product metadata and pricing
+- `mcp:*` — Full access
+
+## Phase 1: Discovery (No Auth Required)
+
+Browse and discover marketplace listings without any authentication.
+
+| Tool | Description |
+|------|-------------|
+| `browse_marketplace` | Search/filter listings by type, category, chain, rating, with pagination |
+| `get_listing` | Get full details for a specific listing by slug |
+| `get_featured` | Get featured marketplace items |
+| `get_top_rated` | Get top-rated listings |
+| `get_agent` | Get ERC-8004 agent info by network and ID |
+| `list_categories` | List all available marketplace categories |
+| `list_networks` | List supported blockchain networks |
+| `list_agents` | List all registered ERC-8004 agents with pagination |
+
+### Example: Browse AI Endpoints
+
+```json
+{
+  "name": "browse_marketplace",
+  "arguments": {
+    "category": "ai",
+    "sort": "rating",
+    "limit": 10
+  }
+}
+```
+
+## Phase 2: Management (PAT Required)
+
+Manage your x402Studio resources programmatically.
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_my_endpoints` | List all endpoints in owner scope | `mcp:read` |
+| `get_endpoint_details` | Full endpoint info including credit balance | `mcp:read` |
+| `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | `mcp:read` |
+| `update_endpoint` | Update pricing, listing flags, webhook settings | `mcp:endpoints:write` |
+| `delete_endpoint` | Permanently delete an endpoint | `mcp:endpoints:write` |
+| `list_my_products` | List all products in owner scope | `mcp:read` |
+| `update_product` | Update metadata, pricing, branding, listing state | `mcp:products:write` |
+| `set_webhook` | Set/update webhook URL, returns signing secret | `mcp:endpoints:write` |
+| `remove_webhook` | Remove webhook from endpoint | `mcp:endpoints:write` |
+
+### Example: Update Endpoint Price
+
+```json
+{
+  "name": "update_endpoint",
+  "arguments": {
+    "slug": "my-ai-api",
+    "accessToken": "sgl_pat_your_token",
+    "price": "0.05"
+  }
+}
+```
+
+## Phase 3: Payment Flows
+
+Complete payment-backed operations through MCP. These tools handle the x402 challenge-response flow.
+
+| Tool | Description |
+|------|-------------|
+| `request_endpoint_creation_payment` | Get the x402 challenge to create a new agent endpoint |
+| `create_endpoint_with_payment` | Finalize endpoint creation after payment |
+| `request_endpoint_topup_payment` | Get the x402 challenge to add credits |
+| `topup_endpoint_with_payment` | Complete a credit top-up after payment |
+| `request_product_purchase_payment` | Get the x402 challenge for a product purchase |
+| `purchase_product_with_payment` | Complete a product purchase after payment |
+| `request_endpoint_credit_purchase_payment` | Get the x402 challenge for credit pack purchase |
+| `purchase_endpoint_credits_with_payment` | Complete a credit pack purchase after payment |
+
+### How Payment Flows Work
+
+1. **Request** — Call the `request_*` tool to get an x402 payment challenge
+2. **Sign** — The AI client's wallet signs the USDC payment on-chain
+3. **Complete** — Call the corresponding completion tool with the `X-Payment` payload
+4. **Done** — The resource is created/topped up/purchased
+
+## Phase 4: Agent Registry
+
+Wallet-session tools for ERC-8004 and Solana-8004 agent management.
+
+| Tool | Description |
+|------|-------------|
+| `get_agent_registry_info` | Public registry info and supported networks |
+| `request_agent_wallet_challenge` | Request wallet-auth challenge for registration |
+| `verify_agent_wallet_challenge` | Verify signature, get session token |
+| `list_my_agent_bindable_endpoints` | List endpoints available for agent binding |
+| `list_my_registered_agents` | List agents owned by authenticated wallet |
+| `prepare_agent_registration` | Prepare wallet-first registration flow |
+| `finalize_agent_registration` | Finalize after on-chain transaction |
+| `prepare_agent_update` | Prepare agent metadata update |
+| `finalize_agent_update` | Finalize update after any on-chain tx |
+| `submit_agent_feedback` | Submit reputation feedback for an agent |
+
+<Note>
+  MCP never holds wallet private keys. The wallet signs locally, and MCP exchanges the signature for a short-lived session token.
+</Note>
+
+## MCP Resources
+
+Static resources available via the MCP resource protocol:
+
+| URI | Description |
+|-----|-------------|
+| `singularity://featured` | Featured marketplace listings |
+| `singularity://top-rated` | Top rated listings |
+| `singularity://categories` | Available categories |
+| `singularity://networks` | Supported blockchain networks |
+| `singularity://agents` | All registered ERC-8004 agents |
+| `singularity://listing/{slug}` | Individual listing details |
+| `singularity://agent/{network}/{id}` | Agent details by network and ID |
+
+## Security
+
+- PATs and endpoint keys are passed per-request and **never stored** by the MCP server
+- Read-only PATs (`mcp:read`) cannot perform writes
+- Endpoint-write PATs cannot mutate products (and vice versa)
+- Revoked or expired PATs are rejected immediately
+- All tool calls are scoped to the authenticated owner's resources
+
+## Server Info
+
+| Property | Value |
+|----------|-------|
+| Endpoint | `https://mcp.x402layer.cc/mcp` |
+| Registry | `io.github.ivaavimusic/singularity` |
+| Version | `1.6.0` |
+| Protocol | MCP `2024-11-05` |
+| Transport | HTTP (stateless) |
+| Total Tools | 35 |
+
+<Card title="Full MCP Documentation" icon="book" href="/agentic-access/mcp-server">
+  See the complete MCP server reference for advanced usage, direct API testing, and detailed parameter schemas.
+</Card>
