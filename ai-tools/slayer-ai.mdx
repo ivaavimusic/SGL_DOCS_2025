@@ -43,4 +43,5 @@ Slayer operates in two surfaces:
 
 - All tools enforce **user-level isolation** — Slayer can never access another user's data
 - Write actions always require **explicit confirmation** before executing
-- Sensitive values (API keys, webhook secrets, PATs) are shown **once** and never stored in chat
+- **Secrets never touch the AI model** — API keys, webhook signing secrets, and PATs are delivered directly from our infrastructure to your screen as secure UI cards. They are never sent to the language model and never appear in conversation history.
+- **Rate limited** — Chat requests are throttled per-user to prevent abuse

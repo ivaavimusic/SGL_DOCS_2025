@@ -173,7 +173,8 @@ Slayer understands the entire x402Studio platform. Ask it about any topic — en
 - **Confirmation required** — Every write action (create, update, delete, rotate, toggle, revoke) requires your explicit confirmation before execution
 - **User isolation** — Slayer can only access your own data. It cannot see other users' resources.
 - **Audit logging** — Sensitive actions like API key rotations and PAT management are fully audit-logged
-- **Secrets shown once** — API keys, webhook signing secrets, and PAT values are displayed exactly once and never stored in chat history
+- **Secrets never touch the AI** — API keys, webhook signing secrets, and PAT values are delivered directly from the platform to your screen as secure cards. They never pass through the language model, are never stored in chat history, and are displayed exactly once.
+- **Rate limited** — Chat requests are throttled per-user to prevent abuse
 - **No wallet access** — Slayer cannot sign transactions, connect wallets, or initiate on-chain operations
 
 ## What Slayer Can't Do (Yet)
