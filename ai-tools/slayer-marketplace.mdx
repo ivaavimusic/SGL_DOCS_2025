@@ -5,7 +5,7 @@ description: "How AI agents interact with the x402Studio marketplace via MCP"
 
 # Slayer on the Marketplace
 
-The Singularity MCP server exposes **35 tools** that let any MCP-compatible AI client (Claude Desktop, Cursor, Windsurf, etc.) interact with the x402Studio marketplace. Browse listings, manage endpoints, run payment flows, and register agents — all through natural language.
+The Singularity MCP server exposes **35 tools** that let any MCP-compatible AI client (Claude Desktop, Cursor, Windsurf, Claude Code, etc.) interact with the x402Studio marketplace. Browse listings, manage endpoints, process payments, and register agents — all through natural language.
 
 ## Quick Setup
 
@@ -53,7 +53,7 @@ The Singularity MCP server exposes **35 tools** that let any MCP-compatible AI c
 | Method | Format | Scope |
 |--------|--------|-------|
 | **Personal Access Token (PAT)** | `sgl_pat_{48hex}` | Owner-wide (all endpoints + products) |
-| **Legacy Endpoint Key** | `x402_{32hex}` | Single endpoint only |
+| **Endpoint API Key** | `x402_{32hex}` | Single endpoint only |
 
 Create PATs at **Dashboard > Settings > PAT** with granular scopes:
 - `mcp:read` — List inventory, fetch details and stats
@@ -61,70 +61,44 @@ Create PATs at **Dashboard > Settings > PAT** with granular scopes:
 - `mcp:products:write` — Update product metadata and pricing
 - `mcp:*` — Full access
 
-## Phase 1: Discovery (No Auth Required)
+## Discovery Tools
 
 Browse and discover marketplace listings without any authentication.
 
 | Tool | Description |
 |------|-------------|
-| `browse_marketplace` | Search/filter listings by type, category, chain, rating, with pagination |
-| `get_listing` | Get full details for a specific listing by slug |
-| `get_featured` | Get featured marketplace items |
-| `get_top_rated` | Get top-rated listings |
-| `get_agent` | Get ERC-8004 agent info by network and ID |
-| `list_categories` | List all available marketplace categories |
-| `list_networks` | List supported blockchain networks |
-| `list_agents` | List all registered ERC-8004 agents with pagination |
+| `browse_marketplace` | Search and filter listings by type, category, chain, rating, with pagination |
+| `get_listing` | Full details for a specific listing by slug |
+| `get_featured` | Featured marketplace items |
+| `get_top_rated` | Top-rated listings |
+| `get_agent` | ERC-8004 agent info by network and ID |
+| `list_categories` | All available marketplace categories |
+| `list_networks` | Supported blockchain networks |
+| `list_agents` | All registered ERC-8004 agents with pagination |
 
-### Example: Browse AI Endpoints
+## Management Tools
 
-```json
-{
-  "name": "browse_marketplace",
-  "arguments": {
-    "category": "ai",
-    "sort": "rating",
-    "limit": 10
-  }
-}
-```
-
-## Phase 2: Management (PAT Required)
-
-Manage your x402Studio resources programmatically.
+Manage your x402Studio resources programmatically. Requires a PAT.
 
 | Tool | Description | Scope |
 |------|-------------|-------|
-| `list_my_endpoints` | List all endpoints in owner scope | `mcp:read` |
+| `list_my_endpoints` | List all your endpoints | `mcp:read` |
 | `get_endpoint_details` | Full endpoint info including credit balance | `mcp:read` |
 | `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | `mcp:read` |
 | `update_endpoint` | Update pricing, listing flags, webhook settings | `mcp:endpoints:write` |
 | `delete_endpoint` | Permanently delete an endpoint | `mcp:endpoints:write` |
-| `list_my_products` | List all products in owner scope | `mcp:read` |
+| `list_my_products` | List all your products | `mcp:read` |
 | `update_product` | Update metadata, pricing, branding, listing state | `mcp:products:write` |
-| `set_webhook` | Set/update webhook URL, returns signing secret | `mcp:endpoints:write` |
-| `remove_webhook` | Remove webhook from endpoint | `mcp:endpoints:write` |
+| `set_webhook` | Set or update webhook URL (returns signing secret) | `mcp:endpoints:write` |
+| `remove_webhook` | Remove webhook from an endpoint | `mcp:endpoints:write` |
 
-### Example: Update Endpoint Price
-
-```json
-{
-  "name": "update_endpoint",
-  "arguments": {
-    "slug": "my-ai-api",
-    "accessToken": "sgl_pat_your_token",
-    "price": "0.05"
-  }
-}
-```
-
-## Phase 3: Payment Flows
+## Payment Tools
 
 Complete payment-backed operations through MCP. These tools handle the x402 challenge-response flow.
 
 | Tool | Description |
 |------|-------------|
-| `request_endpoint_creation_payment` | Get the x402 challenge to create a new agent endpoint |
+| `request_endpoint_creation_payment` | Get the x402 challenge to create a new endpoint |
 | `create_endpoint_with_payment` | Finalize endpoint creation after payment |
 | `request_endpoint_topup_payment` | Get the x402 challenge to add credits |
 | `topup_endpoint_with_payment` | Complete a credit top-up after payment |
@@ -138,9 +112,9 @@ Complete payment-backed operations through MCP. These tools handle the x402 chal
 1. **Request** — Call the `request_*` tool to get an x402 payment challenge
 2. **Sign** — The AI client's wallet signs the USDC payment on-chain
 3. **Complete** — Call the corresponding completion tool with the `X-Payment` payload
-4. **Done** — The resource is created/topped up/purchased
+4. **Done** — The resource is created, topped up, or purchased
 
-## Phase 4: Agent Registry
+## Agent Registry Tools
 
 Wallet-session tools for ERC-8004 and Solana-8004 agent management.
 
@@ -177,19 +151,18 @@ Static resources available via the MCP resource protocol:
 
 ## Security
 
-- PATs and endpoint keys are passed per-request and **never stored** by the MCP server
-- Read-only PATs (`mcp:read`) cannot perform writes
-- Endpoint-write PATs cannot mutate products (and vice versa)
-- Revoked or expired PATs are rejected immediately
-- All tool calls are scoped to the authenticated owner's resources
+- **Secrets never touch the AI model** — PATs and API keys are passed per-request to the MCP server and never stored. They are used only for authentication and immediately discarded after the request completes.
+- **No secret logging** — Token values are never written to logs, analytics, or any persistent storage on the MCP server.
+- **Prompt injection safe** — Because secrets are handled at the transport layer (HTTP headers), they cannot be extracted through prompt injection attacks against the AI client.
+- **Scoped access** — Read-only PATs (`mcp:read`) cannot perform writes. Endpoint-write PATs cannot mutate products (and vice versa).
+- **Instant revocation** — Revoked or expired PATs are rejected immediately. Revoke from **Dashboard > Settings > PAT** at any time.
+- **Owner isolation** — All tool calls are scoped to the authenticated owner's resources. You cannot access another user's data.
 
 ## Server Info
 
 | Property | Value |
 |----------|-------|
 | Endpoint | `https://mcp.x402layer.cc/mcp` |
-| Registry | `io.github.ivaavimusic/singularity` |
-| Version | `1.6.0` |
 | Protocol | MCP `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Total Tools | 35 |
