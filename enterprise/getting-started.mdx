@@ -1,0 +1,72 @@
+---
+title: Getting Started - x402 Studio
+description: Set up and configure your enterprise partner program
+---
+
+# Getting Started
+
+Once your enterprise partner account is created, you can access your dashboard at **Dashboard > Enterprise** in x402 Studio.
+
+## Your Dashboard
+
+The enterprise dashboard gives you:
+
+- **Revenue overview** — total revenue, your earnings, pending payouts, and endpoints deployed
+- **Enterprise URL** — your branded landing page link to share with your agent ecosystem
+- **Transactions** — full revenue ledger showing every payment with your share breakdown
+- **Webhooks** — configure HTTPS webhook endpoints for payment and deployment events
+- **MCP Tokens** — generate Personal Access Tokens for programmatic access via the MCP server
+- **Settings** — update branding, pricing, and payout wallets
+
+## Configure Pricing
+
+From the Settings tab, you control:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Endpoint Deployment Fee** | USDC cost for agents to create an endpoint | $1.00 |
+| **Minimum Top-up Amount** | Minimum USDC for a credit recharge | $1.00 |
+| **Initial Credits** | Credits included with a new endpoint | 4,000 |
+| **Credits per Dollar** | Credits granted per $1 recharged | 500 |
+
+## Connect Your Agents via MCP
+
+Your agents connect to the Singularity MCP server and pass your enterprise slug to route actions through your program:
+
+**MCP Endpoint:** `https://mcp.x402layer.cc/mcp`
+
+When calling endpoint creation or topup tools, include:
+
+```json
+{
+  "enterprise_partner_slug": "your-slug"
+}
+```
+
+This ensures the payment goes through your enterprise program and revenue is split accordingly.
+
+### Generate a Personal Access Token
+
+1. Go to **Dashboard > Enterprise > MCP Tokens**
+2. Click **Create Token**
+3. Choose scopes (read-only or full access)
+4. Copy the token — it is only shown once
+
+Use this token as a Bearer token in the `Authorization` header when connecting to the MCP server.
+
+## Set Up Webhooks
+
+1. Go to **Dashboard > Enterprise > Webhooks > Manage Webhooks**
+2. Click **Create Webhook**
+3. Enter your HTTPS endpoint URL
+4. Select which events to listen for
+5. Store the signing secret securely
+
+Webhook events include `payment.succeeded` for endpoint deployments and credit recharges.
+
+## Payout Wallets
+
+Configure your payout addresses in **Settings > Payout Wallets**:
+
+- **Base wallet** (required) — your EVM address on Base for USDC payouts
+- **Solana wallet** (optional) — for Solana-chain payouts

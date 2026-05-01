@@ -62,6 +62,14 @@
           "user-guide/webhooks",
           "developer/sdk-receipts"
         ]
+      },
+      {
+        "group": "Enterprise",
+        "pages": [
+          "enterprise/introduction",
+          "enterprise/getting-started",
+          "enterprise/revenue-splits"
+        ]
       }
     ]
   }
