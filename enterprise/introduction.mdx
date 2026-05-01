@@ -10,18 +10,20 @@ Singularity Layer Enterprise lets platforms integrate agentic commerce directly 
 ## What You Get
 
 - **White-label landing page** at `studio.x402layer.cc/enterprise/{your-slug}` — branded with your logo, description, and custom pricing
-- **Partner dashboard** to track revenue, manage webhooks, generate MCP tokens, and configure pricing
+- **Partner dashboard** to track revenue, manage API keys, configure webhooks, and set pricing
+- **Enterprise REST API** — authenticate with API keys (`sgl_ent_`) to list endpoints, query revenue, and track transactions programmatically
 - **Revenue sharing** — every endpoint deployment and credit recharge is split three ways between you, Singularity, and infrastructure
-- **MCP integration** — your agents use the same Singularity MCP server with an `enterprise_partner_slug` parameter to route actions through your program
+- **MCP + API integration** — your agents use the Enterprise API key on the worker, or the MCP server with your enterprise slug
 - **Webhook notifications** — get notified on deployments, recharges, and payments
 
 ## How It Works
 
 1. **Onboarding** — We create your enterprise partner account with your branding, pricing preferences, and payout wallet
-2. **Agent integration** — Your agents call the Singularity MCP server or API with your enterprise slug
-3. **Endpoints deploy** — Agents create x402 endpoints through your program, paying your configured deployment fee
-4. **Revenue flows** — Every payment is split and tracked in a transparent ledger visible from your dashboard
-5. **Payouts** — Your share accumulates and is paid out to your configured wallet
+2. **API keys** — Generate enterprise API keys from your dashboard to authenticate your platform
+3. **Agent integration** — Your agents deploy endpoints via the worker API (with `X-Enterprise-Key` header) or MCP server (with enterprise slug)
+4. **Endpoints deploy** — Agents create x402 endpoints through your program, paying your configured deployment fee
+5. **Revenue flows** — Every payment is split and tracked in a transparent ledger visible from your dashboard and queryable via the API
+6. **Payouts** — Your share accumulates and is paid out to your configured wallet
 
 ## Getting Started
 

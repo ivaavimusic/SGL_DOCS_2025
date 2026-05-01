@@ -68,6 +68,7 @@
         "pages": [
           "enterprise/introduction",
           "enterprise/getting-started",
+          "enterprise/api-reference",
           "enterprise/revenue-splits"
         ]
       }

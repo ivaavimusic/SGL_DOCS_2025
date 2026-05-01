@@ -1,0 +1,254 @@
+---
+title: Enterprise API Reference - x402 Studio
+description: REST API for enterprise partners to integrate Singularity Layer into their platform
+---
+
+# Enterprise API Reference
+
+The Enterprise API lets you integrate Singularity Layer directly into your platform. Your backend authenticates with an API key and can list endpoints, query revenue, and track transactions programmatically.
+
+## Authentication
+
+All API requests require an enterprise API key passed via the `X-Enterprise-Key` header:
+
+```bash
+curl https://studio.x402layer.cc/api/v1/enterprise \
+  -H "X-Enterprise-Key: sgl_ent_your_api_key_here"
+```
+
+### Getting an API Key
+
+1. Go to your [Enterprise Dashboard](https://studio.x402layer.cc/enterprise/dashboard)
+2. Navigate to **API Keys**
+3. Click **Create Key**
+4. Copy the key — it is only shown once
+
+Keys use the `sgl_ent_` prefix. You can create up to 10 active keys per partner. Keys can be set to expire after 30, 90, or 365 days, or never.
+
+## Base URL
+
+```
+https://studio.x402layer.cc/api/v1/enterprise
+```
+
+---
+
+## Endpoints
+
+### Get Partner Config
+
+Returns your enterprise partner configuration and pricing.
+
+```
+GET /api/v1/enterprise
+```
+
+**Response:**
+
+```json
+{
+  "partner": {
+    "id": "uuid",
+    "name": "Your Platform",
+    "slug": "your-platform",
+    "endpoint_creation_fee": 2.00,
+    "min_topup_amount": 1.00,
+    "initial_credits": 4000,
+    "credits_per_dollar": 500,
+    "revenue_share_enterprise": 0.40,
+    "revenue_share_singularity": 0.30,
+    "revenue_share_infra": 0.30
+  }
+}
+```
+
+---
+
+### List Endpoints
+
+Returns all endpoints deployed through your enterprise program.
+
+```
+GET /api/v1/enterprise/endpoints
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number |
+| `limit` | integer | 50 | Results per page (max 100) |
+
+**Response:**
+
+```json
+{
+  "endpoints": [
+    {
+      "id": "uuid",
+      "slug": "my-agent-api",
+      "title": "My Agent API",
+      "description": "...",
+      "url": "https://my-agent.com/api",
+      "chain": "base",
+      "pricing_model": "credit",
+      "price_per_request": 1,
+      "owner_credits": 3500,
+      "is_active": true,
+      "created_at": "2026-05-01T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 12,
+    "pages": 1
+  }
+}
+```
+
+---
+
+### Get Revenue Stats
+
+Returns an aggregated revenue summary for your enterprise program.
+
+```
+GET /api/v1/enterprise/stats
+```
+
+**Response:**
+
+```json
+{
+  "total_revenue": 150.00,
+  "enterprise_earned": 60.00,
+  "singularity_earned": 45.00,
+  "infra_reserved": 45.00,
+  "pending_payout": 40.00,
+  "distributed": 20.00,
+  "transaction_count": 25,
+  "endpoint_count": 12
+}
+```
+
+---
+
+### List Transactions
+
+Returns the full revenue ledger showing every payment and the three-way split.
+
+```
+GET /api/v1/enterprise/transactions
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | integer | 1 | Page number |
+| `limit` | integer | 50 | Results per page (max 100) |
+| `type` | string | — | Filter by type: `endpoint_creation`, `topup`, `recharge` |
+
+**Response:**
+
+```json
+{
+  "transactions": [
+    {
+      "id": "uuid",
+      "payment_type": "endpoint_creation",
+      "total_amount": 5.00,
+      "enterprise_amount": 2.00,
+      "singularity_amount": 1.50,
+      "infra_amount": 1.50,
+      "currency": "USDC",
+      "chain": "base",
+      "tx_hash": "0x...",
+      "payer_wallet": "0x...",
+      "enterprise_distributed": false,
+      "created_at": "2026-05-01T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 25,
+    "pages": 1
+  }
+}
+```
+
+---
+
+## Worker API (Endpoint Creation)
+
+When agents on your platform deploy endpoints, they call the Singularity worker API. You can authenticate the request with your enterprise API key instead of the public `?partner=slug` parameter:
+
+```bash
+curl -X POST https://worker.x402layer.cc/agent/endpoints \
+  -H "X-Enterprise-Key: sgl_ent_your_api_key_here" \
+  -H "X-Payment: <x402-payment-payload>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My Agent API",
+    "url": "https://my-agent.com/api",
+    "description": "Agent-powered data analysis",
+    "chain": "base",
+    "pricing_model": "credit",
+    "category": "AI Tools"
+  }'
+```
+
+The `X-Enterprise-Key` header replaces `?partner=your-slug` and provides authenticated partner identification. The x402 payment flow is unchanged — agents still pay the deployment fee via the `X-Payment` header.
+
+### Topup (Credit Recharge)
+
+```bash
+curl -X PUT "https://worker.x402layer.cc/agent/endpoints?slug=my-agent-api&action=topup" \
+  -H "X-Enterprise-Key: sgl_ent_your_api_key_here" \
+  -H "X-Payment: <x402-payment-payload>"
+```
+
+---
+
+## MCP Server
+
+For agent-native integration, your agents can also connect to the Singularity MCP server directly:
+
+**Endpoint:** `https://mcp.x402layer.cc/mcp`
+
+Pass your enterprise slug as a parameter in MCP tool calls:
+
+```json
+{
+  "enterprise_partner_slug": "your-slug"
+}
+```
+
+This routes the action through your enterprise program with the same revenue split and pricing overrides.
+
+---
+
+## Error Responses
+
+All errors follow a consistent format:
+
+```json
+{
+  "error": "Description of what went wrong"
+}
+```
+
+| Status | Meaning |
+|--------|---------|
+| `401` | Missing or invalid API key |
+| `403` | Insufficient scope |
+| `404` | Resource not found |
+| `500` | Server error |
+
+---
+
+## Rate Limits
+
+Enterprise API requests are not currently rate-limited, but we reserve the right to introduce limits in the future. Use pagination for large result sets.

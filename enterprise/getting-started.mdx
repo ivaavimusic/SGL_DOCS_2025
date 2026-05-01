@@ -15,7 +15,7 @@ The enterprise dashboard gives you:
 - **Enterprise URL** — your branded landing page link to share with your agent ecosystem
 - **Transactions** — full revenue ledger showing every payment with your share breakdown
 - **Webhooks** — configure HTTPS webhook endpoints for payment and deployment events
-- **MCP Tokens** — generate Personal Access Tokens for programmatic access via the MCP server
+- **API Keys** — generate enterprise API keys for programmatic access to the REST API and worker
 - **Settings** — update branding, pricing, and payout wallets
 
 ## Configure Pricing
@@ -29,9 +29,40 @@ From the Settings tab, you control:
 | **Initial Credits** | Credits included with a new endpoint | 4,000 |
 | **Credits per Dollar** | Credits granted per $1 recharged | 500 |
 
-## Connect Your Agents via MCP
+## Integrate via API
 
-Your agents connect to the Singularity MCP server and pass your enterprise slug to route actions through your program:
+Your platform authenticates with the Singularity Enterprise API using API keys. This lets your backend list endpoints, query revenue, and identify your agents during endpoint creation.
+
+### Generate an API Key
+
+1. Go to **Enterprise Dashboard > API Keys**
+2. Click **Create Key**
+3. Copy the key — it is only shown once
+
+Use this key in the `X-Enterprise-Key` header on all API requests:
+
+```bash
+curl https://studio.x402layer.cc/api/v1/enterprise/endpoints \
+  -H "X-Enterprise-Key: sgl_ent_your_key_here"
+```
+
+### Endpoint Creation with Enterprise Auth
+
+When agents on your platform deploy endpoints, pass the enterprise API key instead of the `?partner=slug` query parameter:
+
+```bash
+curl -X POST https://worker.x402layer.cc/agent/endpoints \
+  -H "X-Enterprise-Key: sgl_ent_your_key_here" \
+  -H "X-Payment: <x402-payment-payload>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My API", "url": "https://...", "chain": "base"}'
+```
+
+See the full [API Reference](/enterprise/api-reference) for all available endpoints.
+
+## Connect Agents via MCP
+
+For agent-native integration, your agents can connect to the Singularity MCP server directly:
 
 **MCP Endpoint:** `https://mcp.x402layer.cc/mcp`
 
@@ -43,16 +74,7 @@ When calling endpoint creation or topup tools, include:
 }
 ```
 
-This ensures the payment goes through your enterprise program and revenue is split accordingly.
-
-### Generate a Personal Access Token
-
-1. Go to **Dashboard > Enterprise > MCP Tokens**
-2. Click **Create Token**
-3. Choose scopes (read-only or full access)
-4. Copy the token — it is only shown once
-
-Use this token as a Bearer token in the `Authorization` header when connecting to the MCP server.
+This routes the action through your enterprise program with the same revenue split and pricing.
 
 ## Set Up Webhooks
 
