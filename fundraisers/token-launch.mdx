@@ -1,11 +1,11 @@
 ---
 title: Token Launch
-description: How community tokens are created and launched automatically when a campaign reaches its funding target
+description: How community tokens are created and launched automatically when a campaign reaches its funding target or clears the expiry threshold
 ---
 
 # Token Launch
 
-When a campaign reaches its USDC funding target, the platform automatically launches a community token via the [Bags.fm](https://bags.fm) API. This is a fully automated 5-step process — no manual action is needed from the campaign creator or contributors.
+When a campaign reaches its USDC funding target, the platform automatically launches a community token via the [Bags.fm](https://bags.fm) API. If a campaign expires after raising at least 25% of target, the same launch flow is triggered automatically using the collected funds. This is a fully automated process — no manual action is needed from the campaign creator or contributors.
 
 ## Prerequisites
 
@@ -79,7 +79,8 @@ If any step in the launch process fails:
 
 - Campaign status transitions to `launch_failed`
 - Error details are recorded in the campaign metadata
-- The campaign becomes eligible for refunds if the raised amount is below 25% of the target
+- If the campaign expires below 25% of target, refunds are triggered instead of launch
+- If the campaign expires at or above 25% of target, launch still proceeds and the collected USDC is disbursed to the creator wallet
 - The platform team can investigate and retry the launch if appropriate
 
 ## Idempotent Retries
