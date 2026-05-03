@@ -1,0 +1,329 @@
+---
+title: Fundraiser API Reference
+description: API endpoints for listing, viewing, and contributing to fundraiser campaigns
+---
+
+# Fundraiser API Reference
+
+All fundraiser read APIs are publicly accessible. Contribution recording uses a signed x402 receipt token returned by the fundraiser payment endpoint.
+
+**Base URL:** `https://studio.x402layer.cc`
+
+## List Campaigns
+
+<ParamField path="GET" query="/api/campaigns">
+  Returns all publicly visible campaigns with an agent metadata block.
+</ParamField>
+
+### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | integer | Page size for the campaign list (default `50`, max `200`) |
+| `offset` | integer | Pagination offset (default `0`) |
+| `category` | string | Filter by category (e.g., `tech`, `medical`) |
+| `status` | string | Filter by status (default: shows `active`, `funded`, `launched`, `expired`) |
+
+### Response
+
+```json
+{
+  "campaigns": [
+    {
+      "id": "uuid",
+      "slug": "my-campaign-a1b2c3d4",
+      "title": "My Campaign",
+      "description": "...",
+      "images": ["https://..."],
+      "target_amount": 10000,
+      "raised_amount": 2500,
+      "token_ticker": "MYCAM",
+      "fee_option": "supporters",
+      "status": "active",
+      "chain": "solana",
+      "deadline": "2026-06-01T23:59:59Z",
+      "contributor_count": 12,
+      "category": "tech",
+      "subcategory": "defi",
+      "page_url": "https://studio.x402layer.cc/fundraisers/my-campaign-a1b2c3d4",
+      "api_url": "https://studio.x402layer.cc/api/campaigns/my-campaign-a1b2c3d4",
+      "created_at": "2026-05-01T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "total": 12,
+    "limit": 50,
+    "offset": 0,
+    "has_more": false
+  },
+  "agent": {
+    "description": "Singularity Fundraisers — crowdfunding campaigns with x402 payments. First 100 supporters earn proportional fee-sharing on the launched token.",
+    "protocol": "x402",
+    "currency": "USDC",
+    "list_url": "https://studio.x402layer.cc/api/campaigns",
+    "detail_url_pattern": "https://studio.x402layer.cc/api/campaigns/{slug}",
+    "campaign_page_pattern": "https://studio.x402layer.cc/fundraisers/{slug}",
+    "supports_pagination": true,
+    "supports_category_filter": true,
+    "active_count": 3
+  }
+}
+```
+
+## Get Campaign Details
+
+<ParamField path="GET" query="/api/campaigns/{slug}">
+  Returns a single campaign with its contributions and agent metadata including payment instructions.
+</ParamField>
+
+### Response
+
+```json
+{
+  "campaign": {
+    "id": "uuid",
+    "slug": "my-campaign-a1b2c3d4",
+    "title": "My Campaign",
+    "description": "...",
+    "images": ["https://..."],
+    "target_amount": 10000,
+    "raised_amount": 2500,
+    "token_ticker": "MYCAM",
+    "fee_option": "supporters",
+    "fee_split_pct": 0,
+    "status": "active",
+    "chain": "solana",
+    "wallet_address": "ABC...XYZ",
+    "deadline": "2026-06-01T23:59:59Z",
+    "contributor_count": 12,
+    "created_at": "2026-05-01T12:00:00Z"
+  },
+  "contributions": [
+    {
+      "wallet_address": "DEF...UVW",
+      "display_name": "Alice",
+      "amount": 500,
+      "chain": "solana",
+      "created_at": "2026-05-02T10:00:00Z"
+    }
+  ],
+  "agent": {
+    "payment_endpoint": "https://api.x402layer.cc/e/fund-my-campaign-a1b2c3d4",
+    "accepts": ["solana"],
+    "currency": "USDC",
+    "protocol": "x402",
+    "min_amount": 1,
+    "status": "active",
+    "target_amount": 10000,
+    "raised_amount": 2500,
+    "remaining": 7500,
+    "fee_share_eligible": true,
+    "fee_share_slots_remaining": 88,
+    "campaign_url": "https://studio.x402layer.cc/fundraisers/my-campaign-a1b2c3d4",
+    "campaign_api_url": "https://studio.x402layer.cc/api/campaigns/my-campaign-a1b2c3d4",
+    "contribute_api": "https://studio.x402layer.cc/api/campaigns/my-campaign-a1b2c3d4/contributions",
+    "contribute_api_auth": "none",
+    "receipt_header": "X-X402-Receipt-Token",
+    "instructions": "To contribute, send a x402 payment to the payment endpoint with an amount query parameter in USDC. After payment, read the X-X402-Receipt-Token response header and POST it to the contribute_api as receipt_token."
+  }
+}
+```
+
+### Agent Metadata Fields
+
+The `agent` block is designed for AI agents to programmatically discover and interact with campaigns:
+
+| Field | Description |
+|-------|-------------|
+| `payment_endpoint` | x402-compatible payment URL. Send USDC here. |
+| `fee_share_eligible` | Whether new contributors can still earn fee-sharing |
+| `fee_share_slots_remaining` | How many of the 100 fee-share slots are still open |
+| `remaining` | USDC still needed to reach the target |
+| `contribute_api` | POST endpoint to register the contribution after payment |
+| `receipt_header` | Response header that contains the signed x402 receipt token after a successful payment |
+| `instructions` | Human-readable instructions for making a contribution |
+
+## Submit a Contribution
+
+<ParamField path="POST" query="/api/campaigns/{slug}/contributions">
+  Record a contribution after a successful x402 payment. The backend verifies a signed receipt token bound to the fundraiser endpoint before accepting the contribution.
+</ParamField>
+
+### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `receipt_token` | string | Yes | Signed x402 receipt token from the `X-X402-Receipt-Token` response header |
+| `display_name` | string | No | Public name shown in the supporters list (max 50 characters) |
+
+### Example
+
+```bash
+# 1. Pay the fundraiser endpoint and capture the X-X402-Receipt-Token header
+curl -i "https://api.x402layer.cc/e/fund-my-campaign-a1b2c3d4?action=purchase&amount=100.00"
+
+# 2. Submit the receipt token to record the contribution
+curl -X POST https://studio.x402layer.cc/api/campaigns/my-campaign-a1b2c3d4/contributions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "receipt_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "display_name": "Alice"
+  }'
+```
+
+### Receipt Verification
+
+The server performs receipt-based verification:
+
+1. Verifies the receipt JWT signature against x402layer JWKS
+2. Confirms the receipt event is `payment.succeeded`
+3. Confirms the receipt `source_slug` matches the specific fundraiser endpoint
+4. Uses the receipt `payer_wallet`, `amount`, and `tx_hash` as the source of truth
+5. Rejects duplicate transaction hashes
+6. Counts contributor slots by unique wallet, not by raw contribution row count
+
+### Contributor Count Semantics
+
+`contributor_count` represents the number of **unique contributor wallets** for a campaign.
+
+- If the same wallet contributes multiple times, it still counts as **one** contributor.
+- Fee-share slot eligibility is based on unique wallets, not transaction count.
+- A wallet&apos;s fee-share weight is based on its **total contributed amount** across all of its successful contributions.
+
+### Response
+
+```json
+{
+  "success": true,
+  "contribution": {
+    "id": "uuid",
+    "amount": 100,
+    "fee_share_eligible": true,
+    "new_raised_total": 2600,
+    "campaign_status": "active"
+  }
+}
+```
+
+## List Contributions
+
+<ParamField path="GET" query="/api/campaigns/{slug}/contributions">
+  Returns up to 200 contributions for a campaign, ordered by amount (highest first). No authentication required.
+</ParamField>
+
+## Recent Contributions Feed
+
+<ParamField path="GET" query="/api/campaigns/contributions">
+  Returns the 20 most recent contributions across all campaigns. Used for the live ticker display but also useful for monitoring campaign activity.
+</ParamField>
+
+```json
+{
+  "contributions": [
+    {
+      "who": "Alice",
+      "amount": 500,
+      "campaign": "My Campaign",
+      "at": "2026-05-02T10:00:00Z"
+    }
+  ]
+}
+```
+
+## Campaign Comments
+
+### List Comments
+
+<ParamField path="GET" query="/api/campaigns/{slug}/comments">
+  Returns up to 100 comments on a campaign, ordered by newest first. No authentication required.
+</ParamField>
+
+### Post a Comment
+
+<ParamField path="POST" query="/api/campaigns/{slug}/comments">
+  Requires authentication. Post a comment on a campaign.
+</ParamField>
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `body` | string | Yes | Comment text (1–2,000 characters) |
+| `display_name` | string | No | Public display name (max 50 characters) |
+
+## Create a Campaign
+
+<ParamField path="POST" query="/api/campaigns">
+  Requires authentication. Creates a new fundraiser campaign.
+</ParamField>
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Campaign title (min 3 characters) |
+| `description` | string | No | Campaign description |
+| `wallet_address` | string | Yes | Creator's Solana wallet for payouts |
+| `target_amount` | number | Yes | Funding target in USDC (minimum $1,000) |
+| `token_ticker` | string | No | 2–10 uppercase alphanumeric characters |
+| `fee_option` | string | No | `supporters` (default), `creator`, or `split` |
+| `fee_split_pct` | number | No | Creator's percentage when using `split` (0–100) |
+| `images` | string[] | No | Array of image URLs (max 5). First image = token logo. |
+| `x_handle` | string | No | X/Twitter handle (without `@`) |
+| `deadline` | string | No | ISO 8601 timestamp. Campaign expires after this date. |
+| `category` | string | No | One of: `medical`, `emergency`, `education`, `community`, `creative`, `tech`, `business`, `personal`, `other` |
+| `bags_config_type` | string | No | Fee tier UUID. See [Token Launch](/fundraisers/token-launch#fee-tier-options). |
+
+### Response
+
+```json
+{
+  "success": true,
+  "campaign": {
+    "id": "uuid",
+    "slug": "my-campaign-a1b2c3d4",
+    "title": "My Campaign",
+    "url": "https://studio.x402layer.cc/fundraisers/my-campaign-a1b2c3d4",
+    "endpoint_slug": "fund-my-campaign-a1b2c3d4"
+  }
+}
+```
+
+## Edit a Campaign
+
+<ParamField path="PATCH" query="/api/campaigns/{slug}">
+  Requires authentication. Only the campaign owner can edit. Editing is blocked once the campaign is `funded`, `launched`, or `expired`.
+</ParamField>
+
+Editable fields: `title`, `description`, `x_handle`, `images`, `links`.
+
+## OG Images
+
+Each campaign has an auto-generated Open Graph image available at:
+
+```
+GET /api/og/campaign/{slug}
+```
+
+Returns a 1200x630 PNG image showing the campaign status, title, raised amount, progress bar, and backer count. Used automatically for social media previews when sharing campaign links.
+
+## Image Uploads
+
+<ParamField path="POST" query="/api/campaigns/upload">
+  Requires authentication. Upload a campaign image.
+</ParamField>
+
+| Constraint | Value |
+|------------|-------|
+| Max file size | 1 MB |
+| Allowed types | JPEG, PNG, WebP, GIF |
+| Validation | Magic byte verification (not just MIME type) |
+
+## Escrow Wallet
+
+All USDC contributions are held in the platform escrow wallet:
+
+```
+AunvqAg5Zm9yUCPJCeusQwqpF7LhACxmtcmv36PZ47th
+```
+
+This wallet is used for:
+- Receiving all campaign contributions
+- Signing token launch transactions
+- Processing refunds back to contributors

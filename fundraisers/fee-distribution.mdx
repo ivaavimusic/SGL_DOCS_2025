@@ -1,0 +1,104 @@
+---
+title: Fee Distribution
+description: How trading fees from launched tokens are distributed between creators and supporters
+---
+
+# Fee Distribution
+
+When a campaign's token launches, trading fees generated on every buy and sell are distributed to fee-share holders. The distribution is configured at launch time based on the campaign's fee option and cannot be changed afterward.
+
+## Fee Options
+
+Campaign creators choose one of three fee distribution models when creating a campaign:
+
+### Supporters Only (Default)
+
+**100% of fee-share revenue goes to contributors.**
+
+The first 100 unique contributor wallets each receive a share proportional to their total contribution amount relative to the total raised. This is the default and most common option — it maximizes the incentive for supporters.
+
+**Example:** A campaign raises $10,000 total.
+- Contributor A gave $2,000 → receives 20% of trading fees
+- Contributor B gave $500 → receives 5% of trading fees
+- Remaining contributors share the rest proportionally
+
+### Creator Only
+
+**100% of fee-share revenue goes to the campaign creator.**
+
+The creator's wallet is registered as the sole fee-share recipient. Supporters contribute to fund the project but do not earn trading fee revenue.
+
+### Creator–Supporter Split
+
+**Fee revenue is split between the creator and supporters at a custom ratio.**
+
+The creator sets a percentage (e.g., 30%) at campaign creation. That share goes to the creator's wallet, and the remaining share is distributed proportionally among the first 99 contributors.
+
+**Example:** A 30/70 split on a $10,000 campaign:
+- Creator receives 30% of all trading fees
+- Contributor A gave $2,000 of $10,000 → receives 70% × (2,000/10,000) = 14% of trading fees
+- Other contributors share the remaining supporter allocation proportionally
+
+## How Shares Are Calculated
+
+Fee shares are measured in **basis points (BPS)** out of a total pool of 10,000 BPS (representing 100%).
+
+<Steps>
+  <Step title="Determine the supporter pool">
+    For **Supporters Only**: the full 10,000 BPS goes to supporters.
+
+    For **Creator–Supporter Split**: the creator's BPS is calculated as `floor(fee_split_pct / 100 × 10,000)`, and the remainder goes to the supporter pool.
+  </Step>
+  <Step title="Identify eligible wallets">
+    Up to 100 contributor wallets are eligible (99 if using creator–supporter split, since one slot is used by the creator). Contributors are ranked by total contribution amount. If a wallet contributed multiple times, those amounts are merged.
+  </Step>
+  <Step title="Calculate per-wallet BPS">
+    Each wallet's BPS = `floor((wallet_total / total_contributed) × supporter_pool_bps)`.
+
+    Due to floor rounding, there may be a small remainder — this is added to the top contributor's share.
+  </Step>
+  <Step title="Register on-chain">
+    The final BPS mapping is submitted to the Bags.fm fee-share contract on Solana. Once registered, fee-share percentages are immutable.
+  </Step>
+</Steps>
+
+## Eligibility Rules
+
+| Rule | Detail |
+|------|--------|
+| Maximum eligible contributors | 100 (99 if using creator split) |
+| Selection criteria | Ranked by contribution amount (highest first) |
+| Duplicate wallets | Merged — total contribution across all transactions |
+| Minimum contribution | $2.50 USDC |
+| When eligibility is checked | At contribution time; slots are first-come within the 100 limit |
+
+<Note>
+Fee-share eligibility is determined by the number of unique wallets that have contributed, not the number of transactions. The same wallet contributing multiple times counts as one slot.
+</Note>
+
+## Fund Distribution Breakdown
+
+Separately from trading fee distribution, campaign creators can define a **fund distribution plan** that shows supporters how the raised USDC will be used. This is a transparency feature — it's displayed on the campaign page but does not enforce on-chain spending.
+
+| Constraint | Value |
+|------------|-------|
+| Minimum portions | 2 |
+| Maximum portions | 6 |
+| Minimum per portion | 5% |
+| Label max length | 40 characters |
+
+**Example:**
+- Development: 40%
+- Marketing: 25%
+- Operations: 20%
+- Community Rewards: 15%
+
+## Fees at a Glance
+
+| Item | Detail |
+|------|--------|
+| Trading fee tiers | 2% (default), 0.25%→1%, 1%→0.25%, 10% |
+| Fee-share pool | 10,000 BPS (100%) |
+| Max fee-share recipients | 100 wallets |
+| Fee-share duration | Perpetual — as long as the token is traded |
+| Can fee shares be changed? | No — locked at token launch |

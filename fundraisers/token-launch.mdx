@@ -1,0 +1,87 @@
+---
+title: Token Launch
+description: How community tokens are created and launched automatically when a campaign reaches its funding target
+---
+
+# Token Launch
+
+When a campaign reaches its USDC funding target, the platform automatically launches a community token via the [Bags.fm](https://bags.fm) API. This is a fully automated 5-step process — no manual action is needed from the campaign creator or contributors.
+
+## Prerequisites
+
+Before a token can launch:
+
+- Campaign status must be `funded` (target amount reached)
+- The campaign must have at least one image (used as the token logo)
+- A token ticker should be set (falls back to the campaign slug if not provided)
+
+## The 5-Step Launch Process
+
+<Steps>
+  <Step title="Create Token Info">
+    The platform registers the token with Bags.fm using the campaign's title as the token name, the `token_ticker` as the symbol, the first campaign image as the logo, and the campaign's X handle (if provided).
+
+    The Bags API returns a `tokenMint` address (the Solana SPL token mint) and metadata URL.
+  </Step>
+  <Step title="Configure Fee-Sharing">
+    A fee-share configuration is created on-chain that maps each eligible contributor's wallet to their proportional share of trading fees (measured in basis points out of 10,000).
+
+    See [Fee Distribution](/fundraisers/fee-distribution) for details on how shares are calculated.
+  </Step>
+  <Step title="Create Launch Transaction">
+    The platform requests a launch transaction from the Bags API. This transaction deploys the token on the bonding curve with zero initial buy (no insider allocation).
+  </Step>
+  <Step title="Sign Transaction">
+    The platform's escrow wallet signs the launch transaction. This is the wallet that held the campaign's USDC contributions.
+  </Step>
+  <Step title="Broadcast">
+    The signed transaction is submitted to the Solana network. The platform first attempts to broadcast via the Bags API, then falls back to a direct Solana RPC submission if needed.
+  </Step>
+</Steps>
+
+## After Launch
+
+Once the token is live:
+
+- Campaign status transitions to `launched`
+- The token mint address is stored in the campaign record
+- Trading fee revenue begins flowing to the configured fee-share recipients
+- The campaign page displays the token information and a link to trade
+
+## Token Ticker Rules
+
+| Rule | Detail |
+|------|--------|
+| Length | 2–10 characters |
+| Characters | Uppercase letters and numbers only (`A-Z`, `0-9`) |
+| Auto-formatting | Lowercase input is automatically uppercased |
+
+If no ticker is provided, the platform derives one from the campaign slug.
+
+## Fee Tier Options
+
+When creating a campaign, you can select a trading fee tier that determines how much of each trade's value is collected as fees and distributed to fee-share holders:
+
+| Tier | Fee Rate | Description |
+|------|----------|-------------|
+| **Default** | 2% | Balanced fee rate suitable for most campaigns |
+| **Low Early / High Later** | 0.25% → 1% | Lower fees during the bonding curve phase, higher after DEX migration |
+| **High Early / Low Later** | 1% → 0.25% | Higher fees during the bonding curve phase, lower after DEX migration |
+| **High Flat** | 10% | Maximum fee rate — maximizes fee-share revenue |
+
+<Note>
+The fee tier is set at campaign creation and cannot be changed after the token launches.
+</Note>
+
+## Failure Handling
+
+If any step in the launch process fails:
+
+- Campaign status transitions to `launch_failed`
+- Error details are recorded in the campaign metadata
+- The campaign becomes eligible for refunds if the raised amount is below 25% of the target
+- The platform team can investigate and retry the launch if appropriate
+
+## Idempotent Retries
+
+The launch process stores intermediate state after each step. If a failure occurs mid-process, the system can resume from where it left off without duplicating work — token info isn't re-created if it was already registered, and fee-share configuration isn't re-submitted if it was already set up on-chain.
