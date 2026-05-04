@@ -5,7 +5,7 @@ description: "Full list of what Slayer AI can do from the dashboard chat interfa
 
 # Slayer on the Dashboard
 
-Slayer AI lives at `/dashboard/slayer-ai` and has **49 tools** covering the entire x402Studio dashboard. It can read your data, create resources, update settings, and delete items — all from natural language chat.
+Slayer AI lives at `/dashboard/slayer-ai` and has **53 tools** covering the entire x402Studio dashboard. It can read your data, create resources, update settings, and delete items — all from natural language chat.
 
 <Info>
   Slayer AI is available on **Pro** and **Business** plans. Free plan users see an upgrade prompt.
@@ -131,6 +131,29 @@ Comprehensive data across your entire account.
 | **Support threads** | List support threads where you're buyer or seller |
 | **Verification status** | World ID human verification status |
 | **Platform guide** | On-demand deep-dive docs on any platform topic |
+
+## Fundraiser Campaigns
+
+Full lifecycle management for Solana-based crowdfunding campaigns.
+
+| Action | What It Does |
+|--------|-------------|
+| **List campaigns** | Shows all your campaigns with title, target, raised amount, status, contributor count |
+| **Get campaign details** | Full details including top contributions, funding progress, payment endpoint URL |
+| **Create campaign** | New fundraiser with title, target amount, Solana wallet, optional ticker/category/deadline. Auto-provisions a payment endpoint. |
+| **Update campaign** | Edit title, description, X handle, images, or links (active campaigns only) |
+
+### Campaign Creation Details
+
+When creating a campaign, Slayer handles:
+- **Slug generation** from the title with random suffix
+- **Payment endpoint provisioning** — creates a `fund-{slug}` endpoint pointing to the platform escrow
+- **Solana wallet validation** — creator's payout wallet must be a valid Solana address
+- **Fee option configuration** — supporters (default), creator, or split
+
+<Warning>
+  Campaigns are Solana-only. Minimum target is $1,000 USDC. Financial fields (target, wallet, fee option) cannot be changed after creation.
+</Warning>
 
 ## Ratings & Reviews
 
