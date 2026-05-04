@@ -58,6 +58,7 @@ The Singularity MCP server exposes **35 tools** that let any MCP-compatible AI c
 Create PATs at **Dashboard > Settings > PAT** with granular scopes:
 - `mcp:read` — List inventory, fetch details and stats
 - `mcp:endpoints:write` — Update endpoints, manage webhooks
+- `mcp:campaigns:write` — Create and update fundraiser campaigns
 - `mcp:products:write` — Update product metadata and pricing
 - `mcp:*` — Full access
 
@@ -83,6 +84,9 @@ Manage your x402Studio resources programmatically. Requires a PAT.
 | Tool | Description | Scope |
 |------|-------------|-------|
 | `list_my_endpoints` | List all your endpoints | `mcp:read` |
+| `list_my_campaigns` | List all your fundraiser campaigns | `mcp:read` |
+| `create_campaign` | Create a fundraiser campaign with internal endpoint provisioning | `mcp:campaigns:write` |
+| `update_campaign` | Update allowlisted fundraiser campaign fields | `mcp:campaigns:write` |
 | `get_endpoint_details` | Full endpoint info including credit balance | `mcp:read` |
 | `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | `mcp:read` |
 | `update_endpoint` | Update pricing, listing flags, webhook settings | `mcp:endpoints:write` |

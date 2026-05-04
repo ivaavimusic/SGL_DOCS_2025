@@ -7,6 +7,7 @@ Use this reference when the user wants optional dashboard-level access through S
 Singularity MCP is the owner-scoped control plane for:
 
 - listing dashboard-owned endpoints and products
+- listing and managing dashboard-owned fundraiser campaigns
 - reading endpoint details and stats
 - updating endpoints and products
 - setting or removing webhooks
@@ -67,6 +68,8 @@ Important:
   list endpoints/products and read endpoint details/stats
 - `mcp:endpoints:write`:
   update endpoints, create endpoints, top up endpoints, manage webhooks
+- `mcp:campaigns:write`:
+  create and update fundraiser campaigns
 - `mcp:products:write`:
   update products
 - `mcp:*`:
@@ -79,7 +82,9 @@ Choose the narrowest scope needed.
 Use MCP first for these skill intents:
 
 - inventory:
-  `list_my_endpoints`, `list_my_products`
+  `list_my_endpoints`, `list_my_campaigns`, `list_my_products`
+- fundraiser campaign changes:
+  `create_campaign`, `update_campaign`
 - endpoint inspection:
   `get_endpoint_details`, `get_endpoint_stats`
 - endpoint changes:

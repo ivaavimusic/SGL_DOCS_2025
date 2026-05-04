@@ -97,6 +97,7 @@ Personal access tokens are now the default account-level credential for MCP. Cre
 |-------|---------|
 | `mcp:read` | Owner inventory, endpoint details, and stats |
 | `mcp:endpoints:write` | Endpoint updates and webhook management |
+| `mcp:campaigns:write` | Fundraiser campaign creation and updates |
 | `mcp:products:write` | Product updates |
 | `mcp:*` | Full MCP access |
 
@@ -126,6 +127,9 @@ Manage your x402 endpoints and products through authenticated MCP tools. Use `ac
 | `get_endpoint_details` | Full endpoint info including credit balance | slug, accessToken or apiKey | `mcp:read` |
 | `get_endpoint_stats` | Usage analytics (requests, revenue, success rate) | slug, accessToken or apiKey (optional) | `mcp:read` if PAT is used |
 | `list_my_endpoints` | List endpoints in owner scope, with safe fallback to endpoint-only scope | accessToken or apiKey | `mcp:read` |
+| `list_my_campaigns` | List fundraiser campaigns in owner scope | accessToken, optional slug | `mcp:read` |
+| `create_campaign` | Create a fundraiser campaign with internal endpoint provisioning | accessToken, title, targetAmount, walletAddress, campaign config | `mcp:campaigns:write` |
+| `update_campaign` | Update allowlisted campaign metadata fields | accessToken, slug, title/description/xHandle/images/links | `mcp:campaigns:write` |
 | `update_endpoint` | Update allowlisted endpoint fields, pricing, listing flags, and webhook settings | slug, accessToken or apiKey, allowlisted fields | `mcp:endpoints:write` |
 | `list_my_products` | List products in owner scope | accessToken or apiKey | `mcp:read` |
 | `update_product` | Update allowlisted product metadata, pricing, branding, and listing state | id or slug, accessToken or apiKey, allowlisted fields | `mcp:products:write` |
