@@ -75,7 +75,7 @@ Use this routing first, then load the relevant reference doc.
 | Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py`, `ows_cli.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md`, `references/openwallet-ows.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md`, `references/agentkit-benefits.md` |
-| Manage dashboard/platform control plane with PAT-backed access | `Singularity MCP` tools such as `list_my_endpoints`, `list_my_campaigns`, `create_campaign`, `update_campaign`, `update_endpoint`, `list_my_products`, `update_product`, `set_webhook`, `remove_webhook`, `request_endpoint_creation_payment` | `references/mcp-control-plane.md`, `references/agentic-endpoints.md`, `references/marketplace.md` |
+| Manage dashboard/platform control plane with PAT-backed MCP access or owner-linked dashboard API keys | `manage_campaign.py`, `manage_endpoint.py`, `manage_webhook.py`, plus `Singularity MCP` tools such as `list_my_endpoints`, `list_my_campaigns`, `create_campaign`, `update_campaign`, `update_endpoint`, `list_my_products`, `update_product`, `set_webhook`, `remove_webhook`, `request_endpoint_creation_payment` | `references/mcp-control-plane.md`, `references/agentic-endpoints.md`, `references/marketplace.md` |
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
 | Human-backed agent wallet benefits (World AgentKit) | `pay_base.py`, `discover_marketplace.py` | `references/agentkit-benefits.md` |
@@ -139,6 +139,25 @@ Keep the direct scripts for:
 - support and XMTP flows
 - wallet-first ERC-8004 / Solana-8004 registration and updates
 
+### 4) Optional Dashboard API Key Mode
+
+If the user already has an owner-linked dashboard API key, the direct worker management routes can also be used without MCP:
+
+```bash
+export X_API_KEY="x402_..."
+
+# Direct worker management with owner-linked API key
+python {baseDir}/scripts/manage_campaign.py list
+python {baseDir}/scripts/manage_campaign.py create --title "My Campaign" --wallet <SOLANA_WALLET> --target 1000
+python {baseDir}/scripts/manage_endpoint.py info my-api
+```
+
+Use the direct API-key path when the task is about:
+- existing dashboard/agent management routes on `api.x402layer.cc`
+- endpoint and webhook operations through the worker API
+- fundraiser campaign management through `/agent/campaigns`
+- environments that already have an owner-linked `X-API-Key` but do not need MCP
+
 Security note: scripts read only explicit process environment variables. `.env` files are not auto-loaded.
 Least-privilege note: the skill supports multiple credential types, but no single runbook needs all of them. Read-only discovery needs no secrets. PAT, API-key, AWAL, OWS, EVM, and Solana signing flows should be treated as separate capability paths, and users should set only the smallest subset required for the task in front of them.
 Risk note: this skill can sign messages, submit transactions, and call x402/studio APIs. Prefer AWAL, OWS, PATs, endpoint API keys, or throwaway wallets over long-lived private keys when possible.
@@ -167,6 +186,7 @@ Risk note: this skill can sign messages, submit transactions, and call x402/stud
 | Script | Purpose |
 |---|---|
 | `create_endpoint.py` | Deploy endpoint ($1 one-time, includes 4,000 credits) |
+| `manage_campaign.py` | List/create/update fundraiser campaigns via the owner-scoped worker API |
 | `manage_endpoint.py` | List/update endpoint settings |
 | `topup_endpoint.py` | Recharge provider endpoint credits |
 | `list_on_marketplace.py` | List/unlist/update marketplace listing |
@@ -344,6 +364,16 @@ export SINGULARITY_PAT="sgl_pat_..."
 # - request_endpoint_creation_payment
 ```
 
+### I2) Direct Dashboard API Key Management
+```bash
+# If you already have an owner-linked dashboard API key, you can use direct worker routes too
+export X_API_KEY="x402_..."
+
+python {baseDir}/scripts/manage_campaign.py list
+python {baseDir}/scripts/manage_campaign.py create --title "My Campaign" --wallet <SOLANA_WALLET> --target 1000
+python {baseDir}/scripts/manage_campaign.py update my-campaign-slug --title "Updated Campaign"
+```
+
 ### J) Agent Registration + Reputation
 ```bash
 python {baseDir}/scripts/list_my_endpoints.py
@@ -425,8 +455,8 @@ No single task needs every variable below. Use least privilege and set only what
 Choose the smallest path that fits the task:
 
 1. **No-secret discovery:** marketplace browsing and public listing inspection
-2. **Endpoint API key:** endpoint, listing, and webhook management
-3. **PAT / MCP:** owner-scoped dashboard inventory and control-plane operations
+2. **Endpoint / dashboard API key:** direct endpoint, listing, webhook, and worker campaign management
+3. **PAT / MCP:** owner-scoped dashboard inventory and MCP control-plane operations
 4. **AWAL / OWS:** delegated wallet auth or pay/discover/sign-message flows
 5. **Direct private keys:** deep wallet-first registration, on-chain updates, or flows that still require local transaction signing
 
@@ -454,7 +484,7 @@ Choose the smallest path that fits the task:
 
 | Variable | Used by | Notes |
 |---|---|---|
-| `X_API_KEY` | endpoint/webhook/listing management | endpoint API key |
+| `X_API_KEY` | endpoint/webhook/listing/fundraiser management | direct worker API key; owner-linked keys can manage campaigns too |
 | `API_KEY` | fallback for management scripts | interchangeable fallback with `X_API_KEY` |
 
 ### Solana

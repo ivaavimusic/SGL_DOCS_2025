@@ -61,6 +61,7 @@ Important:
 - do not treat `SINGULARITY_PAT` as globally required for skill installation
 - MCP management tools accept PATs as `accessToken` input
 - some tools also accept legacy endpoint API keys for endpoint-scoped fallback access
+- the direct worker management routes can also use an owner-linked `X-API-Key` outside MCP, including fundraiser campaign routes
 
 ## Minimal PAT Scopes
 
@@ -95,6 +96,12 @@ Use MCP first for these skill intents:
   `request_endpoint_creation_payment`, `create_endpoint_with_payment`
 - payment-backed endpoint top-ups:
   `request_endpoint_topup_payment`, `topup_endpoint_with_payment`
+
+Use direct worker API-key scripts first for:
+
+- `manage_campaign.py`
+- `manage_endpoint.py`
+- `manage_webhook.py`
 
 Use direct scripts first for:
 
@@ -131,4 +138,5 @@ Use this simple rule inside the skill:
 
 - if the task is marketplace discovery or public consumption, the normal scripts are enough
 - if the task is owner-scoped dashboard inventory or configuration, prefer Singularity MCP when a PAT is available
+- if the task already has an owner-linked `X-API-Key`, direct worker management routes can be simpler than MCP
 - if the task requires local wallet signing or chain-specific execution, stay with the scripts

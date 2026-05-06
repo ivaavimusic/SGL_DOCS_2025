@@ -116,7 +116,15 @@ Optional owner-scoped MCP management:
 export SINGULARITY_PAT="sgl_pat_..."
 ```
 
-Use that only when the agent needs dashboard-level endpoint, product, or webhook management through Singularity MCP.
+Optional direct dashboard API-key management:
+
+```bash
+export X_API_KEY="x402_..."
+python scripts/manage_campaign.py list
+python scripts/manage_campaign.py create --title "My Campaign" --wallet <SOLANA_WALLET> --target 1000
+```
+
+Use the PAT when the agent needs MCP. Use the owner-linked `X-API-Key` when the agent already has the direct worker-management key for endpoint, webhook, or fundraiser campaign management.
 
 > Studio seller webhooks use `X-X402-Signature`, `X-X402-Timestamp`, `X-X402-Event`, and `X-X402-Event-Id`. Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret headers only as fallback for older receivers, and do not confuse the Studio signing secret with any app-internal settlement secret such as `x-x402-secret` → `X402_WEBHOOK_SECRET`.
 
