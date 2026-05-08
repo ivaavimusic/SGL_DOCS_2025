@@ -97,6 +97,62 @@ def check_api_key():
 
 > **Public Endpoints:** If you don't want to require API key validation (e.g., your API is already public), you can disable the "Require API Key" toggle when creating the endpoint. However, this means anyone who discovers your origin URL can access it without payment.
 
+## Health Check (Service Availability)
+
+Before showing the payment button, x402 Studio runs a health check against your origin URL to verify your service is reachable. If the check fails, the payment page shows **"Service Unavailable"** and disables the pay button — protecting customers from paying for a down service.
+
+### How the Health Check Works
+
+1. We send a `HEAD` request to your origin URL (with your API key in headers if configured)
+2. If `HEAD` fails or returns 400+, we retry with a `GET` request
+3. Responses of **2xx**, **3xx**, or **402** mean your service is up
+4. Responses of **401/403** (auth error), **404** (not found), or **5xx** (server error) mark the service as unavailable
+5. No response within **10 seconds** is treated as a timeout
+
+<Warning>
+Make sure your origin handles `HEAD` requests. Most frameworks (Express, Flask, FastAPI) handle `HEAD` automatically for any route that supports `GET`. If yours doesn't, ensure the `GET` fallback returns 200.
+</Warning>
+
+### Troubleshooting "Service Unavailable"
+
+| Symptom | Cause | Fix |
+| :--- | :--- | :--- |
+| **401/403** | API key missing or incorrect | Re-check the key in your server's environment variables |
+| **404** | No route at the root path | Make sure `GET /` returns something (even a simple 200 OK) |
+| **Timeout** | Server took >10s to respond | Check if your server is running and reachable from the public internet |
+| **Network error** | Server unreachable | Ensure your server isn't behind a firewall blocking external requests |
+
+## Payment Page Inputs (API Schema)
+
+You can define custom input forms that appear on your endpoint's payment page. This lets customers provide data (like a prompt, email, or configuration) when they pay for your API.
+
+### Auto-Detect from OpenAPI
+
+If your origin server has an OpenAPI or Swagger spec, x402 Studio will automatically detect it when you enter your origin URL. Detected routes are pre-populated in the form builder — you can edit or remove them.
+
+### Manual Builder
+
+Use the form builder to define routes and input fields manually:
+
+1. Click **Add Route** to add an API route (GET, POST, PUT, etc.)
+2. Give it a **Service Name** — this is what customers see
+3. Add **Input Fields** — each field becomes a form input on the payment page
+4. Set labels, placeholders, and whether the field is required
+5. Use the **Preview** toggle to see exactly what customers will see
+
+### Where the Schema Appears
+
+| Surface | What's Shown |
+| :--- | :--- |
+| **Payment page** | Interactive form with your defined inputs |
+| **Marketplace listing** | API documentation with routes and parameters |
+| **402 challenge response** | Machine-readable `api_schema` field for agents |
+| **Agentic endpoints API** | Returned in GET/list responses |
+
+<Tip>
+The schema is optional. Endpoints without a schema work exactly the same — the proxy forwards everything as-is. The schema just helps consumers understand what to send.
+</Tip>
+
 ## Testing Your Endpoint
 
 After creation, test that everything works:
