@@ -5,14 +5,14 @@ description: Provision and manage VPS/GPU compute with x402 or MPP payments, sig
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base or Solana, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base, Solana, or MegaETH, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
 </Note>
 
 <Note>
-  Current release: **v1.2.0**. This release keeps x402 Base/Solana payments live and adds MPP support for agent/CLI payments on Tempo mainnet USDC.e. Stripe card payments are code-ready and will be enabled after Stripe Machine Payments / Shared Payment Token access is approved.
+  Current release: **v1.3.0**. x402 Base/Solana/MegaETH payments are live. MegaETH uses USDm (ERC-2612 permit) with an embedded facilitator — gasless for users. MPP Tempo USDC.e payments are also live for agent/CLI provisioning. Stripe card payments are code-ready pending Stripe Machine Payments / Shared Payment Token access.
 </Note>
 
 <Note>
@@ -32,7 +32,7 @@ Management endpoints require one of:
 
 Supported auth approaches today:
 
-- direct Base or Solana signing keys
+- direct Base, Solana, or MegaETH signing keys
 - optional OpenWallet / OWS for auth + API-key creation + management
 
 Recommended agent flow:
@@ -150,7 +150,7 @@ This works once per instance. Repeated calls return `409`.
 ## OWS scope note
 
 - OWS is great for compute auth and management/API-key flows
-- Direct x402 provision and extend still use the current Base or Solana payment-signing paths
+- Direct x402 provision and extend still use the current Base, Solana, or MegaETH payment-signing paths
 - MPP provision and extend use `mppx`, Tempo Wallet, or another MPP-capable client
 
 ## Payment options
@@ -159,6 +159,7 @@ This works once per instance. Repeated calls return `409`.
 |---|---|---|
 | x402 Base USDC | Live | Existing UI/script flow |
 | x402 Solana USDC | Live | Existing script flow |
+| x402 MegaETH USDm | Live | ERC-2612 permit flow; embedded facilitator; gasless for users |
 | MPP Tempo USDC.e | Live | Tested with `npx mppx`; returns `Payment-Receipt` |
 | MPP Stripe cards | Pending | Requires Stripe Machine Payments / Shared Payment Token access |
 

@@ -23,6 +23,7 @@ Primary scripts:
 - `create_endpoint.py`
 - `pay_base.py`
 - `pay_solana.py`
+- `pay_megaeth.py` (USDm over MegaETH — ERC-2612 permit, gasless)
 
 ### 2. Credits-based endpoint payments
 Use this when the caller may hit the same endpoint repeatedly and you want lower latency after the initial purchase.
@@ -157,7 +158,7 @@ SDK docs:
 
 If the user asks for the "best default" path:
 
-- use **Base** first for the simplest production flow
+- use **Base** or **MegaETH** first for the simplest production flow (MegaETH offers near-zero gas and ~10ms finality)
 - use **direct endpoint payments** for low-volume premium actions
 - use **credits** for repeated API usage
 - use **webhook + receipt verification** for fulfillment
@@ -171,4 +172,4 @@ If the user asks for the "best default" path:
 - signing secret stored securely
 - webhook signature verification implemented
 - receipt verification implemented for valuable unlocks
-- one real Base payment tested end-to-end
+- one real Base, MegaETH, or Solana payment tested end-to-end

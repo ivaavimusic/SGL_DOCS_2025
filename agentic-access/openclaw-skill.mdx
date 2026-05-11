@@ -12,7 +12,7 @@ The **x402-layer** skill enables [OpenClaw](https://x.com/openclaw) agents to in
 </Note>
 
 <Note>
-  Current release: **v1.11.1**. This release keeps the webhook hardening guidance, preserves optional OpenWallet / OWS support, and adds direct fundraiser campaign management through owner-linked dashboard API keys alongside the PAT-backed MCP path.
+  Current release: **v1.12.0**. This release adds API schema support for endpoint route documentation, enabling agents to self-discover routes from 402 challenges, powering interactive API testers on pay pages, and displaying route docs on marketplace listings.
 </Note>
 
 ## Script Source Code
@@ -39,8 +39,8 @@ The full Python source code for all scripts is available in this repository: [Vi
 
     | Script | Purpose | Source |
     |--------|---------|--------|
-    | `create_endpoint.py` | Deploy new monetized endpoint ($1 fee) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/create_endpoint.py) |
-    | `manage_endpoint.py` | View/update your endpoints | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/manage_endpoint.py) |
+    | `create_endpoint.py` | Deploy new monetized endpoint ($1 fee), optional `--schema-file` for API docs | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/create_endpoint.py) |
+    | `manage_endpoint.py` | View/update your endpoints (including API schema) | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/manage_endpoint.py) |
     | `topup_endpoint.py` | Add credits to YOUR endpoint | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/topup_endpoint.py) |
     | `list_on_marketplace.py` | Publish endpoint publicly | [View Code](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill/blob/main/scripts/list_on_marketplace.py) |
   </Tab>
@@ -210,6 +210,29 @@ This now costs **$1 one-time** and includes **4,000 starting credits**.
 
 > **Note**: Save the `API Key` from the output and use it to secure your origin server.
 
+### Add API Schema Documentation
+
+Attach a schema so consumers and agents know what routes, parameters, and body fields your API supports:
+
+```bash
+# Attach schema at creation
+python scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01 \
+  --schema-file schema.json
+
+# Update schema on existing endpoint
+python scripts/manage_endpoint.py update my-api --schema-file updated-schema.json
+
+# Clear schema
+python scripts/manage_endpoint.py update my-api --clear-schema
+```
+
+Schema format: `{"version": 1, "routes": [...]}` where each route specifies `path`, `method`, `summary`, `parameters` (with `name`, `in`, `type`, `required`, `example`), optional `requestBody`, and optional `responseExample`.
+
+When set, the schema:
+- Displays on marketplace listings
+- Is included in 402 challenge responses for programmatic discovery
+- Powers the interactive API tester on hosted pay pages
+
 ---
 
 ### Security: API Key Verification
@@ -321,7 +344,7 @@ Uses `VersionedTransaction` with `MessageV0`:
 | Field | Value |
 |-------|-------|
 | **Slug** | `x402-layer` |
-| **Version** | 1.10.3 |
+| **Version** | 1.12.0 |
 | **Networks** | Base, Ethereum, Polygon, BSC, Monad, Solana |
 | **Currency** | USDC |
 
@@ -333,6 +356,12 @@ Uses `VersionedTransaction` with `MessageV0`:
 - [GitHub Repository](https://github.com/ivaavimusic/x402-Layer-Clawhub-Skill)
 
 ## Changelog
+
+### v1.12.0
+- Added API schema support for endpoint route documentation (`--schema-file`, `--schema-json`, `--clear-schema`)
+- Schema displays on marketplace listings, 402 challenge responses, and hosted pay page API testers
+- Agents can self-discover available routes from the 402 challenge or management API before paying
+- Fixed worker skill version mismatch (was 1.10.6 in worker vs 1.11.1 in SKILL.md)
 
 ### v1.10.3
 - added optional OpenWallet / OWS support for pay, discover, and sign-message flows
