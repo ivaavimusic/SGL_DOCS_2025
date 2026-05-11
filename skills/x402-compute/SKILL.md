@@ -1,16 +1,15 @@
 ---
 name: x402-compute
-version: 1.2.0
+version: 1.3.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "destroy server instance", "check instance status",
   "list my instances", or manage x402 Singularity Compute / x402Compute
   infrastructure. Handles GPU and VPS provisioning across Vultr and DigitalOcean
-  with USDC payment on Base
-  or Solana networks via x402, and optional MPP/Mppx payment flows for agents
-  that can pay with Tempo or Stripe/card methods. Includes optional OWS-backed
-  auth and management flows.
+  with USDC payment on Base or Solana, USDm payment on MegaETH via x402,
+  and optional MPP/Mppx payment flows for agents that can pay with Tempo or
+  Stripe/card methods. Includes optional OWS-backed auth and management flows.
 homepage: https://studio.x402layer.cc/docs/agentic-access/x402-compute
 metadata:
   clawdbot:
@@ -37,8 +36,8 @@ Provision and manage GPU/VPS instances on Vultr or DigitalOcean paid with x402 o
 
 **Base URL:** `https://compute.x402layer.cc`
 **Providers:** Vultr • DigitalOcean
-**x402 Networks:** Base (EVM) • Solana
-**x402 Currency:** USDC
+**x402 Networks:** Base (EVM) • Solana • MegaETH
+**x402 Currency:** USDC (Base/Solana) • USDm (MegaETH)
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
 **Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
 
@@ -56,11 +55,16 @@ pip install -r {baseDir}/requirements.txt
 
 ### 2. Choose Wallet Mode
 
-#### Option A: Direct signing keys (Base or Solana)
+#### Option A: Direct signing keys (Base, MegaETH, or Solana)
 ```bash
-# Base (EVM)
+# Base (EVM) — same keys work for MegaETH
 export PRIVATE_KEY="0x..."
 export WALLET_ADDRESS="0x..."
+
+# MegaETH (uses same EVM keys as Base)
+export PRIVATE_KEY="0x..."
+export WALLET_ADDRESS="0x..."
+export COMPUTE_AUTH_CHAIN="megaeth"
 
 # Solana
 export SOLANA_SECRET_KEY="base58-or-json-array"
@@ -90,7 +94,7 @@ OWS is best for compute auth and routine management flows. Direct x402 provision
 >
 > - **Never use your primary custody wallet** - Create a dedicated wallet with limited funds
 > - **Private keys are used locally only** - They sign transactions locally and are never transmitted
-> - **For testing**: Use a throwaway wallet with minimal USDC
+> - **For testing**: Use a throwaway wallet with minimal USDC/USDm
 
 ---
 
@@ -115,7 +119,7 @@ OWS is best for compute auth and routine management flows. Direct x402 provision
 ## Instance Lifecycle
 
 ```
-Browse Plans → Choose Provider/Plan → Provision (pay USDC) → Active → Extend / Destroy → Expired
+Browse Plans → Choose Provider/Plan → Provision (pay USDC/USDm) → Active → Extend / Destroy → Expired
 ```
 
 Instances expire after their prepaid duration. Extend before expiry to keep them running.
@@ -155,6 +159,9 @@ python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --days 3 --label "short-tas
 # Provision on Solana
 python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-sol-vps" --network solana --ssh-key-file ~/.ssh/x402_compute.pub
 
+# Provision on MegaETH (pays with USDm)
+python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-mega-vps" --network megaeth --ssh-key-file ~/.ssh/x402_compute.pub
+
 # Provision via MPP / mppx (Tempo by default; Stripe/card if your mppx config supports it)
 npx mppx https://compute.x402layer.cc/compute/provision \
   -X POST \
@@ -192,6 +199,9 @@ python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720
 # Extend on Solana
 python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network solana
 
+# Extend on MegaETH (pays with USDm)
+python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network megaeth
+
 # Extend via MPP. MPP extension requires compute auth; use the management API key
 # returned from MPP provisioning or normal wallet signature auth.
 npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
@@ -212,6 +222,9 @@ python {baseDir}/scripts/ows_cli.py wallet-list
 # Sign a Base-compatible compute auth message
 python {baseDir}/scripts/ows_cli.py sign-message --chain eip155:8453 --wallet compute-wallet --message "hello"
 
+# Sign a MegaETH-compatible compute auth message
+python {baseDir}/scripts/ows_cli.py sign-message --chain eip155:4326 --wallet compute-wallet --message "hello"
+
 # Sign a Solana-compatible compute auth message
 python {baseDir}/scripts/ows_cli.py sign-message --chain solana --wallet compute-wallet --message "hello"
 
@@ -226,9 +239,12 @@ python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet com
 1. Request provision/extend → server returns `HTTP 402` with payment requirements
 2. Script signs payment locally:
    - Base: USDC `TransferWithAuthorization` (EIP-712)
+   - MegaETH: USDm ERC-2612 `permit` (EIP-712) — gasless for the user, facilitator settles on-chain
    - Solana: signed SPL transfer transaction payload
 3. Script resends request with `X-Payment` header containing signed payload
 4. Server verifies payment, settles on-chain, provisions/extends instance
+
+MegaETH uses an embedded facilitator (no external CDP dependency). The user signs an off-chain ERC-2612 permit, and the facilitator calls `permit()` + `transferFrom()` on MegaETH (~10ms blocks, near-zero gas).
 
 For Solana, transient facilitator failures can happen. Retry once or twice if you get a temporary 5xx verify error.
 
@@ -265,11 +281,11 @@ Notes:
 
 | Variable | Required For | Description |
 |----------|--------------|-------------|
-| `PRIVATE_KEY` | Base payment signing | EVM private key (0x...) |
-| `WALLET_ADDRESS` | Base direct-signing mode | Base wallet address (0x...) |
+| `PRIVATE_KEY` | Base/MegaETH payment signing | EVM private key (0x...) |
+| `WALLET_ADDRESS` | Base/MegaETH direct-signing mode | EVM wallet address (0x...) |
 | `SOLANA_SECRET_KEY` | Solana direct-signing mode | Solana signer key (base58 or JSON byte array) |
 | `SOLANA_WALLET_ADDRESS` | Solana direct-signing mode | Solana wallet address (optional if derivable from secret) |
-| `COMPUTE_AUTH_CHAIN` | Solana/base auth override | `base` or `solana` |
+| `COMPUTE_AUTH_CHAIN` | Chain auth override | `base`, `megaeth`, or `solana` |
 | `COMPUTE_API_KEY` | Optional | Reusable API key for compute management endpoints |
 | `COMPUTE_AUTH_MODE` | Optional | `auto`, `private-key`, or `ows` |
 | `OWS_WALLET` | OWS auth mode | OWS wallet name or ID |
@@ -298,4 +314,4 @@ For full endpoint details, see:
 
 OWS support is optional-first in this release:
 - use it for compute auth and management/API-key flows
-- keep direct Base or Solana signing keys for the paid provision and extend flows
+- keep direct Base, MegaETH, or Solana signing keys for the paid provision and extend flows
