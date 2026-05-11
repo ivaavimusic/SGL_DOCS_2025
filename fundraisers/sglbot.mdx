@@ -1,0 +1,103 @@
+---
+title: "SGLBot on X"
+description: "Launch fundraisers by tagging @SGLBot on X — how it works, required info, and claiming"
+---
+
+[@SGLBot](https://x.com/SGLBot) is the official X bot for Singularity Agentic Fundraisers. Tag it on X to launch a fundraiser for anyone — no account required. The bot will collect the required details, create the campaign, and post the link back in the thread.
+
+## How to Launch a Fundraiser
+
+1. **Tag @SGLBot on X** — Mention `@SGLBot` in a tweet or reply. Tell it who the fundraiser is for and include as much detail as you can.
+2. **Provide the required info** — The bot needs four things before it can create the campaign. You can include them all in one tweet or answer the bot's follow-up questions in the thread.
+3. **Campaign goes live** — Once all details are collected, the bot creates the campaign and replies with the link. Contributors can start funding immediately.
+
+## Required Information
+
+The bot will ask for anything missing. You can provide everything in one tweet or reply with the details when prompted.
+
+| Field | Example | Description |
+|-------|---------|-------------|
+| **Beneficiary** | `@musician` | Who the fundraiser is for. Tag them or say "for me". |
+| **Token Ticker** | `$MUSIC` | The ticker symbol for the community token (2-10 characters). |
+| **Target Amount** | `$5000 USDC` | Funding goal in USDC. Minimum $1,000. |
+| **Deadline** | `7 days` | How long the campaign runs. E.g. "7 days", "2 weeks", "June 15". |
+
+## Example Tweets
+
+<CodeGroup>
+```text All info in one tweet
+@SGLBot launch a fundraiser for @musician $MUSIC target $5000 USDC 7 days
+```
+
+```text Minimal (bot asks for rest)
+@SGLBot launch a fundraiser for @musician
+```
+
+```text Follow-up reply
+$MUSIC 5000 USDC 2 weeks
+```
+</CodeGroup>
+
+<Note>
+When all required info is provided in the initial tweet, the campaign is created immediately. Otherwise, the bot will reply asking for the missing details.
+</Note>
+
+## Claiming a Campaign
+
+When someone creates a fundraiser for you via @SGLBot, you need to claim it to verify your identity.
+
+<Steps>
+  <Step title="Sign in to x402 Studio">
+    Go to [studio.x402layer.cc](https://studio.x402layer.cc) and sign in with any method (email, Google, etc.).
+  </Step>
+  <Step title="Link your X account">
+    If you haven't already, link your X (Twitter) account from the dashboard profile or when prompted on the campaign page.
+  </Step>
+  <Step title="Visit the Created for You tab">
+    Go to [My Fundraisers](https://studio.x402layer.cc/fundraisers/my). Campaigns created for your X handle appear under "Created for You".
+  </Step>
+  <Step title="Claim">
+    If your linked X handle matches the campaign beneficiary, click "Claim". No Solana wallet is needed — the platform manages a secure wallet for your campaign automatically.
+  </Step>
+</Steps>
+
+## What Happens After Creation
+
+<CardGroup cols={2}>
+  <Card title="Platform Wallet" icon="wallet">
+    A Solana wallet is generated and encrypted for the beneficiary automatically. No wallet setup required.
+  </Card>
+  <Card title="Campaign Page" icon="globe">
+    Each campaign gets a public page at `studio.x402layer.cc/fundraisers/[slug]` where anyone can contribute USDC.
+  </Card>
+  <Card title="Token Launch" icon="rocket">
+    When the campaign reaches its target (or 25% at deadline), a community token is launched on Bags.fm with the chosen ticker.
+  </Card>
+  <Card title="Fee Sharing" icon="chart-pie">
+    The first 100 unique contributors earn a share of the token's trading fees forever, proportional to their contribution.
+  </Card>
+</CardGroup>
+
+## Deleting a Campaign
+
+Campaign owners and beneficiaries can delete a campaign **only if it has received zero contributions** ($0 raised). Once any funds are contributed, the campaign cannot be deleted.
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Can I create a fundraiser for myself?">
+    Yes. Tag @SGLBot and say "for me" or "for myself".
+  </Accordion>
+  <Accordion title="Do I need a Solana wallet to claim?">
+    No. The platform creates and manages a wallet for you. Just verify your X identity.
+  </Accordion>
+  <Accordion title="Can anyone reply in the thread to add info?">
+    No. Only the person who originally tagged @SGLBot can provide follow-up details. Other replies are ignored.
+  </Accordion>
+  <Accordion title="What if the bot doesn't reply?">
+    Make sure @SGLBot is directly mentioned in the tweet text. Replies in a thread that don't explicitly tag @SGLBot will not trigger a new campaign.
+  </Accordion>
+  <Accordion title="How long does the conversation stay active?">
+    You have 24 hours to provide the missing details after the bot's first reply. After that, the conversation expires and you'd need to start a new one.
+  </Accordion>
+</AccordionGroup>
