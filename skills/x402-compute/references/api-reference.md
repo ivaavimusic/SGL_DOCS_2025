@@ -160,7 +160,7 @@ npx mppx https://compute.x402layer.cc/compute/provision \
   -J '{"plan":"vc2-1c-1gb","region":"ewr","os_id":2284,"label":"mpp-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
 ```
 
-If MPP provisioning is paid without wallet/API-key auth, the success response includes a one-time `management_api_key`. Store it and use it for `GET /compute/instances`, `POST /compute/instances/:id/extend`, password retrieval, and destroy.
+If MPP provisioning is paid without wallet/API-key auth, the success response includes a one-time `management_api_key`. Store it and use it for `GET /compute/instances`, `POST /compute/instances/:id/resize`, `POST /compute/instances/:id/extend`, password retrieval, and destroy.
 
 **Success Response (200):**
 ```json
@@ -266,6 +266,45 @@ npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
   -X POST \
   -H "X-API-Key: $COMPUTE_API_KEY" \
   -J '{"extend_hours":720}'
+```
+
+---
+
+### POST /compute/instances/:id/resize
+
+Resize an active instance in place on its current provider.
+
+**Request Body:**
+```json
+{
+  "plan": "vc2-2c-4gb"
+}
+```
+
+**Optional confirmation for irreversible disk growth:**
+```json
+{
+  "plan": "do:s-2vcpu-4gb",
+  "confirm_disk_resize": true
+}
+```
+
+**Headers:**
+- Auth headers (see Authentication above)
+
+**Behavior:**
+- Resize is a management action only. It does **not** create a new x402 or MPP payment challenge.
+- The API preserves remaining prepaid dollar credit and recalculates `expires_at` for the target hourly rate.
+- Resize stays on the current provider and region.
+- Vultr is upgrade-only.
+- DigitalOcean disk increases are irreversible and require `confirm_disk_resize: true`.
+
+**Example:**
+```bash
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/resize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"plan":"vc2-2c-4gb"}'
 ```
 
 ---

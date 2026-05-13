@@ -1,11 +1,11 @@
 ---
 title: x402 Compute Skill - x402 Studio Docs
-description: Provision and manage VPS/GPU compute with x402 or MPP payments, signed auth, API keys, and one-time password fallback
+description: Provision, manage, resize, and extend VPS/GPU compute with x402 or MPP payments, signed auth, API keys, and one-time password fallback
 ---
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base, Solana, or MegaETH, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base, Solana, or MegaETH, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows, including in-place resize.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
@@ -39,7 +39,16 @@ Recommended agent flow:
 
 1. Create API key once via `POST /compute/api-keys` using direct signing keys or OWS-backed auth.
 2. Store key in `COMPUTE_API_KEY`.
-3. Use API key for routine list/details/destroy/password fallback calls.
+3. Use API key for routine list/details/resize/destroy/password fallback calls.
+
+## Resize model
+
+- `POST /compute/instances/:id/resize` is a management action, not a second payment flow.
+- The API preserves the instance's remaining prepaid dollar credit and recalculates `expires_at` for the target hourly rate.
+- Resize stays on the current provider and current region. The backend validates family/spec compatibility before it forwards the provider API call.
+- Vultr resizes are upgrade-only.
+- DigitalOcean can increase disk size, but disk-growing resizes require `confirm_disk_resize: true` because the disk change is irreversible.
+- Expect downtime during resize. Take a snapshot/backup first.
 
 ## Endpoint Summary
 
@@ -53,6 +62,7 @@ Recommended agent flow:
 | `GET` | `/compute/instances/:id` | Get instance details |
 | `POST` | `/compute/instances/:id/password` | One-time root password fallback |
 | `POST` | `/compute/instances/:id/extend` | Extend prepaid duration (x402 or MPP payment + auth) |
+| `POST` | `/compute/instances/:id/resize` | Resize an instance in place and recalculate remaining prepaid time |
 | `DELETE` | `/compute/instances/:id` | Destroy instance |
 | `POST` | `/compute/api-keys` | Create API key (signature only) |
 | `GET` | `/compute/api-keys` | List API keys |
@@ -76,6 +86,7 @@ curl -fsSL https://api.x402layer.cc/skill/x402-compute/install | bash
 | `instance_details.py` | Get detailed status |
 | `get_one_time_password.py` | Fetch one-time root password fallback |
 | `extend_instance.py` | Extend instance duration |
+| `resize_instance.py` | Resize an instance in place |
 | `destroy_instance.py` | Destroy instance |
 | `ows_cli.py` | Run OpenWallet / OWS wallet, sign-message, and key commands |
 
@@ -126,6 +137,7 @@ python scripts/create_api_key.py --label "my-agent"
 ```bash
 python scripts/list_instances.py
 python scripts/instance_details.py <instance_id>
+python scripts/resize_instance.py <instance_id> vc2-2c-4gb
 python scripts/extend_instance.py <instance_id> --hours 720
 python scripts/destroy_instance.py <instance_id>
 ```
@@ -137,6 +149,24 @@ npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
   -X POST \
   -H "X-API-Key: $COMPUTE_API_KEY" \
   -J '{"extend_hours":720}'
+```
+
+Resize uses the same management auth, but does not require x402 or MPP payment:
+
+```bash
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/resize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"plan":"vc2-2c-4gb"}'
+```
+
+DigitalOcean disk growth example:
+
+```bash
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/resize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"plan":"do:s-2vcpu-4gb","confirm_disk_resize":true}'
 ```
 
 ### 4) One-Time Password Fallback (Only if no SSH key)
@@ -167,8 +197,8 @@ This works once per instance. Repeated calls return `409`.
 
 | Provider | Status | Notes |
 |---|---|---|
-| Vultr | Live | Existing VPS/GPU provider with one-time password fallback |
-| DigitalOcean | Code-ready | Requires `DIGITALOCEAN_API_TOKEN`; SSH key required |
+| Vultr | Live | One-time password fallback available; resize is upgrade-only |
+| DigitalOcean | Code-ready | Requires `DIGITALOCEAN_API_TOKEN`; SSH key required; disk growth is irreversible |
 
 ## Security Notes
 
@@ -176,6 +206,7 @@ This works once per instance. Repeated calls return `409`.
 - Replay protection uses signed nonce + timestamp.
 - MPP replay protection uses a shared Cloudflare Durable Object replay store.
 - Payment wallet must match authenticated wallet.
+- Resize preserves remaining prepaid value by changing expiry instead of charging a second payment.
 - Passwords are not returned in standard list/details/provision responses.
 - One-time password endpoint is owner-authenticated and single-use.
 

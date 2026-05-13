@@ -4,7 +4,7 @@ version: 1.3.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
-  "extend compute instance", "destroy server instance", "check instance status",
+  "extend compute instance", "resize compute instance", "destroy server instance", "check instance status",
   "list my instances", or manage x402 Singularity Compute / x402Compute
   infrastructure. Handles GPU and VPS provisioning across Vultr and DigitalOcean
   with USDC payment on Base or Solana, USDm payment on MegaETH via x402,
@@ -32,7 +32,7 @@ allowed-tools:
 
 # x402 Singularity Compute
 
-Provision and manage GPU/VPS instances on Vultr or DigitalOcean paid with x402 or MPP.
+Provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean paid with x402 or MPP.
 
 **Base URL:** `https://compute.x402layer.cc`
 **Providers:** Vultr • DigitalOcean
@@ -86,6 +86,8 @@ python {baseDir}/scripts/create_api_key.py --label "my-agent"
 
 OWS is best for compute auth and routine management flows. Direct x402 provision and extend still use local payment-signing paths. MPP provision/extend should use `mppx` or Tempo Wallet.
 
+Resize is a management action, not a second payment flow. The API preserves remaining prepaid dollar credit by recalculating `expires_at` for the target hourly rate after the provider accepts the resize.
+
 ---
 
 ## ⚠️ Security Notice
@@ -110,6 +112,7 @@ OWS is best for compute auth and routine management flows. Direct x402 provision
 | `instance_details.py` | Get details for a specific instance |
 | `get_one_time_password.py` | Retrieve one-time root password fallback |
 | `extend_instance.py` | Extend instance lifetime (x402 payment) |
+| `resize_instance.py` | Resize an instance in place (compute auth only) |
 | `destroy_instance.py` | Destroy an instance |
 | `ows_cli.py` | Run OpenWallet / OWS wallet, sign-message, and key commands |
 | `solana_signing.py` | Internal helper for Solana x402 payment signing |
@@ -209,6 +212,21 @@ npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
   -H "X-API-Key: $COMPUTE_API_KEY" \
   -J '{"extend_hours":720}'
 
+# Resize via bundled helper script
+python {baseDir}/scripts/resize_instance.py <instance_id> vc2-2c-4gb
+
+# Resize in place with management auth only (no x402 or MPP payment)
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/resize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"plan":"vc2-2c-4gb"}'
+
+# DigitalOcean disk growth is irreversible and must be confirmed explicitly
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/resize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"plan":"do:s-2vcpu-4gb","confirm_disk_resize":true}'
+
 # Destroy
 python {baseDir}/scripts/destroy_instance.py <instance_id>
 ```
@@ -260,6 +278,7 @@ MPP is available side-by-side with x402 on the same paid endpoints.
 Notes:
 - `POST /compute/provision` can be paid via MPP without wallet auth. In that case the response includes `management_api_key`; store it because it is shown once and is required for later management.
 - `POST /compute/instances/:id/extend` via MPP requires compute auth, usually `X-API-Key: $COMPUTE_API_KEY`.
+- `POST /compute/instances/:id/resize` uses compute auth only. It preserves remaining prepaid value by changing expiry instead of charging again.
 - x402 remains fully supported through the Python scripts and `X-Payment` header flow.
 - MPP methods are service-configured. Tempo is used by default by `mppx`; Stripe/card requires a Stripe-capable MPP client/config.
 
@@ -315,3 +334,4 @@ For full endpoint details, see:
 OWS support is optional-first in this release:
 - use it for compute auth and management/API-key flows
 - keep direct Base, MegaETH, or Solana signing keys for the paid provision and extend flows
+- resize, list, details, password fallback, and destroy work with normal compute auth / API keys

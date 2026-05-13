@@ -13,6 +13,7 @@ That makes it useful for:
 - `create_api_key.py`
 - `list_instances.py`
 - `instance_details.py`
+- `POST /compute/instances/:id/resize`
 - `get_one_time_password.py`
 - `destroy_instance.py`
 
@@ -88,4 +89,4 @@ python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet com
 Good guidance:
 - `Use OWS for compute auth and management if you want to avoid exporting raw private keys into every shell.`
 - `Create a compute API key once, then use COMPUTE_API_KEY for routine instance management.`
-- `Use direct Base or Solana signing keys when you need the paid provision or extend flows today.`
+- `Use direct Base or Solana signing keys when you need the paid provision or extend flows today. Resize works with normal compute auth and does not need a payment signer.`
