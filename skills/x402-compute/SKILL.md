@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.4.0
+version: 1.4.1
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -21,6 +21,31 @@ metadata:
     requires:
       bins:
         - python3
+      env:
+        - name: PRIVATE_KEY
+          description: EVM private key for Base/MegaETH payment signing (use a dedicated low-balance wallet)
+          sensitive: true
+          optional: true
+        - name: WALLET_ADDRESS
+          description: EVM wallet address corresponding to PRIVATE_KEY
+          optional: true
+        - name: SOLANA_SECRET_KEY
+          description: Solana signer key for Solana payment signing (use a dedicated low-balance wallet)
+          sensitive: true
+          optional: true
+        - name: SOLANA_WALLET_ADDRESS
+          description: Solana wallet address
+          optional: true
+        - name: COMPUTE_API_KEY
+          description: Reusable API key for management endpoints (created via POST /compute/api-keys)
+          sensitive: true
+          optional: true
+        - name: COMPUTE_AUTH_CHAIN
+          description: Auth chain override — base, megaeth, or solana
+          optional: true
+        - name: OWS_BIN
+          description: Explicit path to a locally installed OWS binary (avoids runtime npx downloads)
+          optional: true
 allowed-tools:
   - Read
   - Write
@@ -57,25 +82,28 @@ pip install -r {baseDir}/requirements.txt
 ### 2. Choose Wallet Mode
 
 #### Option A: Direct signing keys (Base, MegaETH, or Solana)
+
+> **Use a dedicated low-balance wallet.** Never use your primary custody wallet.
+
 ```bash
 # Base (EVM) — same keys work for MegaETH
-export PRIVATE_KEY="0x..."
-export WALLET_ADDRESS="0x..."
+export PRIVATE_KEY=<your-evm-private-key>
+export WALLET_ADDRESS=<your-evm-wallet-address>
 
 # MegaETH (uses same EVM keys as Base)
-export PRIVATE_KEY="0x..."
-export WALLET_ADDRESS="0x..."
+export PRIVATE_KEY=<your-evm-private-key>
+export WALLET_ADDRESS=<your-evm-wallet-address>
 export COMPUTE_AUTH_CHAIN="megaeth"
 
 # Solana
-export SOLANA_SECRET_KEY="base58-or-json-array"
-export SOLANA_WALLET_ADDRESS="YourSolanaAddress"
+export SOLANA_SECRET_KEY=<your-solana-secret-key>
+export SOLANA_WALLET_ADDRESS=<your-solana-wallet-address>
 export COMPUTE_AUTH_CHAIN="solana"
 ```
 
 #### Option B: OpenWallet / OWS (optional-first)
 ```bash
-npm install -g @open-wallet-standard/core
+npm install -g @open-wallet-standard/core@0.5.0
 export OWS_WALLET="compute-wallet"
 export COMPUTE_AUTH_MODE="ows"
 ```

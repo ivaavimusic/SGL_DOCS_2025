@@ -14,6 +14,9 @@ import sys
 from typing import List
 
 
+OWS_PINNED_PACKAGE = "@open-wallet-standard/core@0.5.0"
+
+
 def build_ows_command(args: List[str]) -> List[str]:
     explicit_bin = os.getenv("OWS_BIN", "").strip()
     if explicit_bin:
@@ -23,13 +26,11 @@ def build_ows_command(args: List[str]) -> List[str]:
     if local_ows:
         return [local_ows, *args]
 
-    npx_bin = shutil.which("npx")
-    if npx_bin:
-        return [npx_bin, "-y", "@open-wallet-standard/core", *args]
-
     raise ValueError(
-        "OWS binary not found. Install it with `npm install -g @open-wallet-standard/core`, "
-        "ensure `npx` is available, or set OWS_BIN to the full executable path."
+        "OWS binary not found. Install it with:\n"
+        f"  npm install -g {OWS_PINNED_PACKAGE}\n"
+        "Then ensure `ows` is in your PATH, or set OWS_BIN to the full executable path.\n"
+        "Avoid runtime npx downloads for wallet operations."
     )
 
 
@@ -62,9 +63,9 @@ Examples:
 
 Notes:
   - Wrapper uses OWS_BIN first, then local `ows` in PATH.
-  - Install OWS with:
-      npm install -g @open-wallet-standard/core
-    (If `ows` is not in PATH, this wrapper will also fall back to `npx -y @open-wallet-standard/core`.)
+  - Install OWS with a pinned version:
+      npm install -g @open-wallet-standard/core@0.5.0
+  - Do NOT rely on runtime npx downloads for wallet operations.
   - OWS currently fits compute auth and management/API-key workflows best.
   - Provision and extend still use direct payment-signing keys today.
 """,

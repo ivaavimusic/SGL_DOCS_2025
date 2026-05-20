@@ -39,6 +39,9 @@ def _find_accept_option(challenge: dict, requested_network: str) -> dict:
     raise ValueError(f"No {requested_network} payment option found in 402 challenge")
 
 
+MAX_SPEND_USD = float(os.getenv("COMPUTE_MAX_SPEND_USD", "500"))
+
+
 def provision_instance(
     plan: str,
     region: str,
@@ -48,6 +51,7 @@ def provision_instance(
     label: str = "x402-instance",
     network: str = "base",
     ssh_public_key: Optional[str] = None,
+    skip_confirm: bool = False,
 ) -> dict:
     """Provision a compute instance with x402 payment."""
     if days > 0:
@@ -100,7 +104,24 @@ def provision_instance(
     option = _find_accept_option(challenge, network)
     pay_to = option["payTo"]
     amount = int(option["maxAmountRequired"])
-    print(f"Payment required: {amount} atomic USDC units (${amount / 1_000_000:.2f})")
+    cost_usd = amount / 1_000_000
+
+    if cost_usd > MAX_SPEND_USD:
+        return {"error": f"Cost ${cost_usd:.2f} exceeds max spend limit ${MAX_SPEND_USD:.2f}. "
+                f"Set COMPUTE_MAX_SPEND_USD to override."}
+
+    print(f"\n--- Payment Confirmation ---")
+    print(f"  Plan:        {plan}")
+    print(f"  Region:      {region}")
+    print(f"  Duration:    {duration_label}")
+    print(f"  Network:     {network}")
+    print(f"  Cost:        ${cost_usd:.2f} USDC")
+    print(f"  Pay to:      {pay_to}")
+
+    if not skip_confirm:
+        confirm = input("\nProceed with payment? [y/N] ").strip().lower()
+        if confirm not in ("y", "yes"):
+            return {"error": "Payment cancelled by user"}
 
     if network == "base":
         try:
@@ -155,7 +176,12 @@ if __name__ == "__main__":
     parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
     parser.add_argument("--ssh-public-key", help="SSH public key contents (recommended)")
     parser.add_argument("--ssh-key-file", help="Path to SSH public key file (e.g. ~/.ssh/id_ed25519.pub)")
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip payment confirmation prompt")
+    parser.add_argument("--max-spend", type=float, help="Max USD spend limit (default: $500 or COMPUTE_MAX_SPEND_USD)")
     args = parser.parse_args()
+    if args.max_spend is not None:
+        global MAX_SPEND_USD
+        MAX_SPEND_USD = args.max_spend
     if args.ssh_public_key and args.ssh_key_file:
         print("Error: provide either --ssh-public-key or --ssh-key-file, not both.")
         sys.exit(1)
@@ -182,6 +208,7 @@ if __name__ == "__main__":
         label=args.label,
         network=args.network,
         ssh_public_key=ssh_public_key,
+        skip_confirm=args.yes,
     )
     if "error" in result:
         print(json.dumps(result, indent=2))

@@ -38,12 +38,25 @@ def get_one_time_password(instance_id: str) -> dict:
 
     data = response.json()
     access = data.get("access", {})
+    password = access.get("password", "")
 
     print("One-time access credentials:")
     print(f"  Username: {access.get('username', 'root')}")
     print(f"  IP:       {access.get('ip_address', 'pending')}")
-    print(f"  Password: {access.get('password', 'N/A')}")
-    print("This password is shown once by API. Store it securely.")
+    print(f"  Password: [SENSITIVE — written to .compute_password_{instance_id}]")
+    print("")
+    print("⚠️  This password is single-use and will not be shown by the API again.")
+    print("    Prefer SSH key access for all future instances.")
+
+    if password:
+        fname = f".compute_password_{instance_id}"
+        with open(fname, "w", encoding="utf-8") as f:
+            f.write(f"username={access.get('username', 'root')}\n")
+            f.write(f"ip={access.get('ip_address', '')}\n")
+            f.write(f"password={password}\n")
+        import os, stat
+        os.chmod(fname, stat.S_IRUSR | stat.S_IWUSR)
+        print(f"    Credentials saved to {fname} (mode 600)")
 
     return data
 
