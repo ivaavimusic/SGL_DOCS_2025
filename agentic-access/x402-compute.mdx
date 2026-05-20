@@ -5,7 +5,7 @@ description: Provision, manage, resize, and extend VPS/GPU compute with x402 or 
 
 # x402 Compute Skill
 
-The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base, Solana, or MegaETH, or MPP payments through Tempo-compatible clients such as `mppx`. Optional OWS-backed auth and API keys are available for management flows, including in-place resize.
+The `x402-compute` skill lets agents and developers provision and manage VPS/GPU instances on Vultr or DigitalOcean using x402 payments on Base, Solana, or MegaETH, MPP payments through Tempo-compatible clients such as `mppx`, or pre-loaded USD credits. Optional OWS-backed auth and API keys are available for management flows, including in-place resize.
 
 <Note>
   Primary access method is SSH public key. If no SSH key was provided during provisioning, a one-time password fallback endpoint is available.
@@ -64,9 +64,24 @@ Recommended agent flow:
 | `POST` | `/compute/instances/:id/extend` | Extend prepaid duration (x402 or MPP payment + auth) |
 | `POST` | `/compute/instances/:id/resize` | Resize an instance in place and recalculate remaining prepaid time |
 | `DELETE` | `/compute/instances/:id` | Destroy instance |
+| `GET` | `/compute/credits/balance` | Get credit balance for authenticated wallet |
+| `POST` | `/compute/credits/topup` | Top up credits via x402 payment |
 | `POST` | `/compute/api-keys` | Create API key (signature only) |
 | `GET` | `/compute/api-keys` | List API keys |
 | `DELETE` | `/compute/api-keys/:id` | Revoke API key |
+
+## Credits
+
+Pre-load USD credits to your wallet via a one-time x402 payment, then provision and extend instances without a live blockchain payment each time. Credits are ideal for API-key-driven automation where you want to avoid per-operation payment flows.
+
+- **Top up:** `POST /compute/credits/topup` with `{ "amount": 50, "network": "base" }`. Omit the `X-Payment` header to receive a 402 challenge, then pay and retry. Supports all networks: base, solana, megaeth.
+- **Check balance:** `GET /compute/credits/balance` with auth headers or API key.
+- **Use credits:** Pass `"use_credits": true` in the provision or extend request body. The server deducts from your credit balance instead of requiring x402/MPP payment.
+- **Auto-refund:** If the cloud provider rejects the instance after credits are deducted, the full amount is automatically refunded to your balance.
+
+<Note>
+  Credits are scoped per wallet. One credit pool covers all operations (provision + extend) across all providers and regions.
+</Note>
 
 ## Install Skill
 
@@ -114,6 +129,35 @@ DigitalOcean example:
 npx mppx https://compute.x402layer.cc/compute/provision \
   -X POST \
   -J '{"plan":"do:s-1vcpu-1gb","provider":"digitalocean","region":"nyc3","os_id":123456789,"label":"do-vps","prepaid_hours":24,"ssh_public_key":"ssh-ed25519 AAAA... agent"}'
+```
+
+### 1c) Provision with Credits
+
+```bash
+# Step 1: Top up credits (one-time x402 payment)
+curl -X POST https://compute.x402layer.cc/compute/credits/topup \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"amount": 100, "network": "base"}'
+# Returns 402 → pay → credits added
+
+# Step 2: Provision using credits (no payment needed)
+curl -X POST https://compute.x402layer.cc/compute/provision \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{
+    "plan": "vc2-1c-1gb",
+    "region": "ewr",
+    "os_id": 2284,
+    "label": "credit-vps",
+    "prepaid_hours": 720,
+    "ssh_public_key": "ssh-ed25519 AAAA... agent",
+    "use_credits": true
+  }'
+
+# Step 3: Check remaining balance
+curl https://compute.x402layer.cc/compute/credits/balance \
+  -H "X-API-Key: $COMPUTE_API_KEY"
 ```
 
 ### 2) Create API Key for Agents
@@ -191,6 +235,7 @@ This works once per instance. Repeated calls return `409`.
 | x402 Solana USDC | Live | Existing script flow |
 | x402 MegaETH USDm | Live | ERC-2612 permit flow; embedded facilitator; gasless for users |
 | MPP Tempo USDC.e | Live | Tested with `npx mppx`; returns `Payment-Receipt` |
+| Credits | Live | Pre-load USD via x402 topup; provision/extend with `use_credits: true` |
 | MPP Stripe cards | Pending | Requires Stripe Machine Payments / Shared Payment Token access |
 
 ## Compute providers
@@ -209,6 +254,8 @@ This works once per instance. Repeated calls return `409`.
 - Resize preserves remaining prepaid value by changing expiry instead of charging a second payment.
 - Passwords are not returned in standard list/details/provision responses.
 - One-time password endpoint is owner-authenticated and single-use.
+- Credit deduction uses PostgreSQL row-level locking to prevent double-spend under concurrent requests.
+- Failed provider calls trigger automatic credit refund before the error response is returned.
 
 ## References
 
