@@ -134,6 +134,103 @@ Dependencies (already in `requirements.txt`):
 pip install pyjwt[crypto] cryptography
 ```
 
+## Webhook Payload Schema
+
+A `payment.succeeded` webhook body looks like:
+
+```json
+{
+  "id": "event-uuid",
+  "type": "payment.succeeded",
+  "created_at": "2026-05-20T12:00:00.000Z",
+  "data": {
+    "source": "endpoint",
+    "source_id": "endpoint-uuid",
+    "source_slug": "my-api",
+    "amount": 0.01,
+    "currency": "USDC",
+    "tx_hash": "0xabc...",
+    "payer_wallet": "0x123...",
+    "network": "base",
+    "status": "confirmed",
+    "client_reference_id": "order-456",
+    "metadata": {
+      "factory_payment_id": "f1ee6b40-...",
+      "plan": "pro"
+    },
+    "receipt_token": "eyJ...",
+    "jwks_url": "https://api.x402layer.cc/.well-known/jwks.json"
+  }
+}
+```
+
+Fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `source` | `"endpoint"` or `"product"` | What was paid for |
+| `source_id` | uuid | Endpoint or product ID |
+| `source_slug` | string | URL slug |
+| `amount` | number | Amount paid in `currency` |
+| `currency` | string | Always `"USDC"` today |
+| `tx_hash` | string | On-chain transaction hash |
+| `payer_wallet` | string | Buyer wallet address |
+| `network` | string | Chain used (`base`, `solana`, etc.) |
+| `status` | string | Always `"confirmed"` on success |
+| `client_reference_id` | string or null | From `?client_reference_id=` query param |
+| `metadata` | object | All custom query params from the payment URL (see below) |
+| `receipt_token` | string or null | Signed JWT for receipt verification |
+| `jwks_url` | string or null | JWKS endpoint for verifying receipt |
+
+## Payment Metadata Passthrough
+
+Any query parameter on a payment URL that is not a Singularity-internal parameter is automatically captured in the webhook `metadata` field. This works like Stripe metadata passthrough.
+
+### Supported patterns
+
+| URL pattern | Result in webhook `metadata` |
+|---|---|
+| `?factory_payment_id=abc` | `{"factory_payment_id": "abc"}` |
+| `?order_id=123&user_email=a@b.com` | `{"order_id": "123", "user_email": "a@b.com"}` |
+| `?client_reference_id=ref-99` | Populates `client_reference_id` field (top-level, not in metadata) |
+| `?metadata={"key":"val"}` | Parsed JSON merged into metadata |
+| `?metadata.plan=pro` | `{"plan": "pro"}` |
+| `?meta_source=ios` | `{"source": "ios"}` |
+
+### Reserved parameters (not forwarded)
+
+These are consumed by the payment engine and excluded from metadata:
+`client_reference_id`, `clientReferenceId`, `purchaseId`, `purchase_id`, `reference`, `metadata`, `credits`, `wallet`, `action`, `useCredits`, `amount`, `subscription_coupon_token`, `subscription_holder_token`
+
+### Limits
+
+- Max 24 metadata entries
+- Max 64 characters per key
+- Values must be scalar (string, number, boolean, null)
+- Total metadata JSON must be under 2048 bytes
+- Keys `__proto__`, `constructor`, `prototype` are blocked
+
+### Example: correlating a webhook to an internal record
+
+Build the payment URL with your internal ID:
+
+```
+https://api.x402layer.cc/e/my-api?order_id=abc-123
+```
+
+When payment succeeds, the webhook arrives with:
+
+```json
+{
+  "data": {
+    "metadata": { "order_id": "abc-123" },
+    ...
+  }
+}
+```
+
+Your server matches `metadata.order_id` to your internal record.
+
 ## Cross-check Rules
 
 When a receipt is present, compare:

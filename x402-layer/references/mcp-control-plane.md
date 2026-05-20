@@ -88,7 +88,7 @@ Use MCP first for these skill intents:
   `create_campaign`, `update_campaign`
 - endpoint inspection:
   `get_endpoint_details`, `get_endpoint_stats`
-- endpoint changes:
+- endpoint changes (including API schema):
   `update_endpoint`, `set_webhook`, `remove_webhook`, `delete_endpoint`
 - product changes:
   `update_product`

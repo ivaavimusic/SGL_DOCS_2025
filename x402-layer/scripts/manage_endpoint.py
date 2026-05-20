@@ -123,6 +123,7 @@ def update_endpoint(
     agentkit_benefit: Optional[str] = None,
     agentkit_discount_percent: Optional[float] = None,
     agentkit_free_trial_uses: Optional[int] = None,
+    api_schema: Optional[dict] = None,
 ) -> dict:
     if agentkit_benefit == "discount":
         if agentkit_discount_percent is None or agentkit_discount_percent <= 0 or agentkit_discount_percent >= 100:
@@ -151,6 +152,8 @@ def update_endpoint(
         updates["agentkit_discount_percent"] = agentkit_discount_percent
     if agentkit_free_trial_uses is not None:
         updates["agentkit_free_trial_uses"] = agentkit_free_trial_uses
+    if api_schema is not None:
+        updates["apiSchema"] = api_schema
 
     if not updates:
         return {"error": "No updates specified"}
@@ -214,6 +217,9 @@ def main() -> None:
     update_parser.add_argument("--agentkit-benefit", choices=["off", "free", "free_trial", "discount"], help="Benefit for verified human-backed agent wallets")
     update_parser.add_argument("--agentkit-discount-percent", type=float, help="Discount percent when benefit mode is discount")
     update_parser.add_argument("--agentkit-free-trial-uses", type=int, help="Free requests when benefit mode is free_trial")
+    update_parser.add_argument("--schema-file", help="Path to JSON file containing API schema")
+    update_parser.add_argument("--schema-json", help="Inline JSON string for API schema")
+    update_parser.add_argument("--clear-schema", action="store_true", help="Remove existing API schema")
 
     delete_parser = subparsers.add_parser("delete", help="Delete endpoint (requires API key)")
     delete_parser.add_argument("slug", help="Endpoint slug")
@@ -228,6 +234,15 @@ def main() -> None:
     elif args.command == "stats":
         result = get_endpoint_stats(args.slug, api_key)
     elif args.command == "update":
+        schema = None
+        if getattr(args, "clear_schema", False):
+            schema = {}
+        elif getattr(args, "schema_file", None):
+            with open(args.schema_file, "r") as f:
+                schema = json.load(f)
+        elif getattr(args, "schema_json", None):
+            schema = json.loads(args.schema_json)
+
         result = update_endpoint(
             args.slug,
             args.price,
@@ -237,6 +252,7 @@ def main() -> None:
             getattr(args, "agentkit_benefit", None),
             getattr(args, "agentkit_discount_percent", None),
             getattr(args, "agentkit_free_trial_uses", None),
+            api_schema=schema,
         )
     elif args.command == "delete":
         result = delete_endpoint(args.slug, api_key)

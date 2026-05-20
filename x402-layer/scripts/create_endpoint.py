@@ -22,6 +22,10 @@ With Marketplace Listing:
         --category ai --description "AI-powered analysis" \
         --logo https://example.com/logo.png --banner https://example.com/banner.jpg
 
+With API Schema (auto-documented routes):
+    python create_endpoint.py my-api "My API" https://api.example.com 0.01 \
+        --schema-file schema.json
+
 Auth Modes:
 - Base: private-key (PRIVATE_KEY) or awal (X402_USE_AWAL=1)
 - Solana: SOLANA_SECRET_KEY (private-key mode only)
@@ -66,6 +70,7 @@ def create_endpoint(
     agentkit_benefit_mode: str = "off",
     agentkit_discount_percent: Optional[float] = None,
     agentkit_free_trial_uses: Optional[int] = None,
+    api_schema: Optional[Dict[str, Any]] = None,
 ) -> dict:
     """Create a new agentic endpoint."""
     if chain == "solana":
@@ -122,6 +127,8 @@ def create_endpoint(
         data["agentkit_discount_percent"] = agentkit_discount_percent
     if agentkit_benefit_mode == "free_trial":
         data["agentkit_free_trial_uses"] = agentkit_free_trial_uses
+    if api_schema:
+        data["apiSchema"] = api_schema
 
     url = f"{API_BASE}/agent/endpoints"
 
@@ -133,6 +140,9 @@ def create_endpoint(
     print(f"Best Fit Audience: {audience_mode}")
     if agentkit_benefit_mode != "off":
         print(f"AgentKit Benefit: {agentkit_benefit_mode}")
+    if api_schema:
+        route_count = len(api_schema.get("routes", []))
+        print(f"API Schema: {route_count} route(s) defined")
     print("Cost: $1 USDC (includes 4,000 credits)")
 
     challenge_resp = requests.post(
@@ -248,6 +258,8 @@ Examples:
     parser.add_argument("--agentkit-benefit", choices=["off", "free", "free_trial", "discount"], default="off", help="Benefit for verified human-backed agent wallets (direct endpoints only)")
     parser.add_argument("--agentkit-discount-percent", type=float, help="Discount percent when --agentkit-benefit discount")
     parser.add_argument("--agentkit-free-trial-uses", type=int, help="Free requests when --agentkit-benefit free_trial")
+    parser.add_argument("--schema-file", help="Path to JSON file containing API schema (routes, params, body)")
+    parser.add_argument("--schema-json", help="Inline JSON string for API schema")
 
     args = parser.parse_args()
 
@@ -275,6 +287,13 @@ Examples:
             print(json.dumps({"error": "Set --agentkit-free-trial-uses to an integer of at least 1"}, indent=2))
             sys.exit(1)
 
+    api_schema = None
+    if args.schema_file:
+        with open(args.schema_file, "r") as f:
+            api_schema = json.load(f)
+    elif args.schema_json:
+        api_schema = json.loads(args.schema_json)
+
     list_on_marketplace = not args.no_list and bool(args.category or args.description or args.logo or args.banner)
 
     result = create_endpoint(
@@ -294,6 +313,7 @@ Examples:
         agentkit_benefit_mode=args.agentkit_benefit,
         agentkit_discount_percent=args.agentkit_discount_percent,
         agentkit_free_trial_uses=args.agentkit_free_trial_uses,
+        api_schema=api_schema,
     )
     print(json.dumps(result, indent=2))
 

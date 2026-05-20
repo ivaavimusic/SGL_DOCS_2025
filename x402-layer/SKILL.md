@@ -1,6 +1,6 @@
 ---
 name: x402-layer
-version: 1.11.1
+version: 1.13.0
 description: |
   x402-layer helps agents pay for APIs with USDC, deploy monetized endpoints,
   manage credits/webhooks/marketplace listings, and handle wallet-first ERC-8004 registration/discovery/management/reputation on Base, Ethereum, Polygon, BSC, Monad, and Solana. Optional credentialed flows may use private keys, Solana signer keys, endpoint API keys, PATs, AWAL, or OWS depending on the exact runbook; read-only discovery requires no secrets.
@@ -16,7 +16,8 @@ description: |
   "register ERC-8004 agent", "register Solana 8004 agent",
   "submit on-chain reputation feedback", "rate ERC-8004 agent",
   "use World AgentKit", "unlock human-backed agent wallet discount",
-  "check if an endpoint has an AgentKit benefit", "open support chat",
+  "check if an endpoint has an AgentKit benefit", "add API schema to endpoint",
+  "document my API routes", "auto-detect OpenAPI schema", "open support chat",
   use "Coinbase Agentic Wallet (AWAL)", "OpenWallet", "OWS",
   "openwallet.sh", or use optional Singularity MCP
   access with a dashboard PAT to manage x402 Singularity Layer operations
@@ -75,6 +76,7 @@ Use this routing first, then load the relevant reference doc.
 | Pay/consume endpoint or product | `pay_base.py`, `pay_solana.py`, `consume_credits.py`, `consume_product.py`, `ows_cli.py` | `references/pay-per-request.md`, `references/credit-based.md`, `references/agentkit-benefits.md`, `references/openwallet-ows.md` |
 | Discover/search marketplace | `discover_marketplace.py` | `references/marketplace.md`, `references/agentkit-benefits.md` |
 | Create/edit/list endpoint | `create_endpoint.py`, `manage_endpoint.py`, `list_on_marketplace.py`, `topup_endpoint.py` | `references/agentic-endpoints.md`, `references/marketplace.md`, `references/agentkit-benefits.md` |
+| Add or update API schema for an endpoint | `create_endpoint.py --schema-file`, `manage_endpoint.py update --schema-file` | `references/agentic-endpoints.md` |
 | Manage dashboard/platform control plane with PAT-backed MCP access or owner-linked dashboard API keys | `manage_campaign.py`, `manage_endpoint.py`, `manage_webhook.py`, plus `Singularity MCP` tools such as `list_my_endpoints`, `list_my_campaigns`, `create_campaign`, `update_campaign`, `update_endpoint`, `list_my_products`, `update_product`, `set_webhook`, `remove_webhook`, `request_endpoint_creation_payment` | `references/mcp-control-plane.md`, `references/agentic-endpoints.md`, `references/marketplace.md` |
 | Configure/verify webhooks | `manage_webhook.py`, `verify_webhook_payment.py` | `references/webhooks-verification.md` |
 | Register/discover/manage/rate agents (ERC-8004/Solana-8004) | `register_agent.py`, `list_agents.py`, `list_my_endpoints.py`, `update_agent.py`, `submit_feedback.py` | `references/agent-registry-reputation.md` |
@@ -185,9 +187,9 @@ Risk note: this skill can sign messages, submit transactions, and call x402/stud
 ### Provider
 | Script | Purpose |
 |---|---|
-| `create_endpoint.py` | Deploy endpoint ($1 one-time, includes 4,000 credits) |
+| `create_endpoint.py` | Deploy endpoint ($1 one-time, includes 4,000 credits), optional `--schema-file` for API docs |
 | `manage_campaign.py` | List/create/update fundraiser campaigns via the owner-scoped worker API |
-| `manage_endpoint.py` | List/update endpoint settings |
+| `manage_endpoint.py` | List/update endpoint settings (including API schema) |
 | `topup_endpoint.py` | Recharge provider endpoint credits |
 | `list_on_marketplace.py` | List/unlist/update marketplace listing |
 | `manage_webhook.py` | Set/remove/check endpoint webhook URL |
@@ -294,6 +296,8 @@ Studio seller webhooks are HMAC-signed. Expect:
 
 Verify `HMAC-SHA256(timestamp + "." + rawBody)` with the webhook `signing_secret`. Keep legacy raw-secret header checks only as backward-compatibility fallback for older receivers.
 
+**Metadata passthrough:** Any query parameter on the payment URL (e.g. `?order_id=123`) is automatically included in the webhook `metadata` field. Use `?client_reference_id=` for a dedicated top-level correlation field. See `references/webhooks-verification.md` for the full payload schema and limits.
+
 Webhook verification helper:
 ```bash
 python {baseDir}/scripts/verify_webhook_payment.py \
@@ -374,7 +378,27 @@ python {baseDir}/scripts/manage_campaign.py create --title "My Campaign" --walle
 python {baseDir}/scripts/manage_campaign.py update my-campaign-slug --title "Updated Campaign"
 ```
 
-### J) Agent Registration + Reputation
+### J) API Schema Documentation
+```bash
+# Attach schema at creation
+python {baseDir}/scripts/create_endpoint.py my-api "My API" https://api.example.com 0.01 \
+  --schema-file schema.json
+
+# Update schema on existing endpoint
+python {baseDir}/scripts/manage_endpoint.py update my-api --schema-file updated-schema.json
+
+# Clear schema
+python {baseDir}/scripts/manage_endpoint.py update my-api --clear-schema
+```
+
+Schema format: `{"version": 1, "routes": [...]}` with each route specifying `path`, `method`, `summary`, `parameters` (name/in/type/required/example), optional `requestBody`, and optional `responseExample`. See `references/agentic-endpoints.md` for the full format.
+
+When set, the schema:
+- displays on marketplace listings
+- is included in 402 challenge responses for programmatic discovery
+- powers the interactive API tester on hosted pay pages
+
+### K) Agent Registration + Reputation
 ```bash
 python {baseDir}/scripts/list_my_endpoints.py
 

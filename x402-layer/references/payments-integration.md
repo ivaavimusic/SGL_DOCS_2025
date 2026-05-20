@@ -23,7 +23,6 @@ Primary scripts:
 - `create_endpoint.py`
 - `pay_base.py`
 - `pay_solana.py`
-- `pay_megaeth.py` (USDm over MegaETH — ERC-2612 permit, gasless)
 
 ### 2. Credits-based endpoint payments
 Use this when the caller may hit the same endpoint repeatedly and you want lower latency after the initial purchase.
@@ -109,6 +108,29 @@ A normal monetized endpoint can be:
 
 You only need separate endpoints when you want different pricing, isolated accounting, or different fulfillment logic.
 
+## Passing Custom Data Through Payments
+
+Append query parameters to any payment URL and they will appear in the webhook `metadata` field after payment succeeds.
+
+### Hosted pay page
+```
+https://studio.x402layer.cc/pay/credits/my-api?order_id=abc-123&plan=pro
+```
+
+### Direct endpoint
+```
+https://api.x402layer.cc/e/my-api?factory_payment_id=f1ee6b40-...
+```
+
+### Embed / iframe
+When building payment links in embedded components, append query params to the endpoint URL the component navigates to. The params survive through the full payment flow.
+
+### Correlation
+
+Use `?client_reference_id=<your-id>` for a dedicated top-level field in the webhook, or use any custom param name for passthrough into `metadata`.
+
+See `references/webhooks-verification.md` for the full payload schema, supported patterns, reserved params, and limits.
+
 ## Fulfillment Patterns
 
 ### Pattern 1: Server-side webhook unlock
@@ -158,7 +180,7 @@ SDK docs:
 
 If the user asks for the "best default" path:
 
-- use **Base** or **MegaETH** first for the simplest production flow (MegaETH offers near-zero gas and ~10ms finality)
+- use **Base** first for the simplest production flow
 - use **direct endpoint payments** for low-volume premium actions
 - use **credits** for repeated API usage
 - use **webhook + receipt verification** for fulfillment
@@ -167,9 +189,10 @@ If the user asks for the "best default" path:
 ## Minimal Launch Checklist
 
 - endpoint or product created
+- API schema attached (if your origin has multiple routes/params)
 - origin verifies `x-api-key` when using endpoints
 - webhook configured
 - signing secret stored securely
 - webhook signature verification implemented
 - receipt verification implemented for valuable unlocks
-- one real Base, MegaETH, or Solana payment tested end-to-end
+- one real Base payment tested end-to-end
