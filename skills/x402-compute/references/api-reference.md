@@ -104,9 +104,61 @@ List available operating system images.
 
 ---
 
+### GET /compute/credits/balance
+
+Get credit balance for the authenticated wallet.
+
+**Headers:**
+- Auth headers (see Authentication above)
+
+**Response (200):**
+```json
+{
+  "wallet": "0x...",
+  "balance": "150.00",
+  "total_deposited": "200.00",
+  "total_spent": "50.00"
+}
+```
+
+If no credits have been deposited, returns `{ "balance": 0, "total_deposited": 0, "total_spent": 0 }`.
+
+---
+
+### POST /compute/credits/topup
+
+Top up credits via x402 payment. Returns `402 Payment Required` if no `X-Payment` header.
+
+**Request Body:**
+```json
+{
+  "amount": 50,
+  "network": "base"
+}
+```
+
+- `amount`: USD to deposit (minimum $1)
+- `network`: `base`, `solana`, or `megaeth`
+
+**Headers:**
+- Auth headers (see Authentication above)
+- `X-Payment`: Base64-encoded x402 payment payload (after 402 challenge)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "deposited": 50,
+  "new_balance": "150.00",
+  "tx_hash": "0x..."
+}
+```
+
+---
+
 ### POST /compute/provision
 
-Provision a new compute instance. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges.
+Provision a new compute instance. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges — unless `use_credits` is `true`.
 
 **Request Body:**
 ```json
@@ -118,7 +170,8 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
   "prepaid_hours": 24,
   "ssh_public_key": "ssh-ed25519 AAAA... user@host",
   "provider": "vultr",
-  "network": "base"
+  "network": "base",
+  "use_credits": false
 }
 ```
 
@@ -128,6 +181,7 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
 - If you do not provide an SSH key, use one-time fallback endpoint `POST /compute/instances/:id/password`.
 - For DigitalOcean plans, `ssh_public_key` or existing `ssh_key_id(s)` is required. Password fallback is Vultr-only.
 - DigitalOcean plan IDs are prefixed, for example `do:s-1vcpu-1gb`.
+- Set `use_credits: true` to deduct from pre-loaded credit balance instead of requiring x402/MPP payment. Auth is required for the credit path. If balance is insufficient, returns `402` with the shortfall.
 
 **Headers:**
 - Auth headers (see Authentication above)
@@ -244,13 +298,14 @@ Subsequent calls return `409`.
 
 ### POST /compute/instances/:id/extend
 
-Extend an instance's lifetime. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges.
+Extend an instance's lifetime. Returns `402 Payment Required` with x402 and, when configured, MPP payment challenges — unless `use_credits` is `true`.
 
 **Request Body:**
 ```json
 {
   "extend_hours": 720,
-  "network": "base"
+  "network": "base",
+  "use_credits": false
 }
 ```
 
@@ -267,6 +322,8 @@ npx mppx https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
   -H "X-API-Key: $COMPUTE_API_KEY" \
   -J '{"extend_hours":720}'
 ```
+
+Set `use_credits: true` to extend using pre-loaded credits instead of x402/MPP payment. Auth is required, and the wallet must own the instance.
 
 ---
 

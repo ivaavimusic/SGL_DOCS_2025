@@ -1,15 +1,15 @@
 ---
 name: x402-compute
-version: 1.3.1
+version: 1.4.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "resize compute instance", "destroy server instance", "check instance status",
-  "list my instances", or manage x402 Singularity Compute / x402Compute
+  "list my instances", "top up compute credits", "check credit balance", or manage x402 Singularity Compute / x402Compute
   infrastructure. Handles GPU and VPS provisioning across Vultr and DigitalOcean
   with USDC payment on Base or Solana, USDm payment on MegaETH via x402,
-  and optional MPP/Mppx payment flows for agents that can pay with Tempo or
-  Stripe/card methods. Includes optional OWS-backed auth and management flows.
+  optional MPP/Mppx payment flows, or pre-loaded USD credits for payment-free
+  provisioning and extending. Includes optional OWS-backed auth and management flows.
 homepage: https://studio.x402layer.cc/docs/agentic-access/x402-compute
 metadata:
   clawdbot:
@@ -32,13 +32,14 @@ allowed-tools:
 
 # x402 Singularity Compute
 
-Provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean paid with x402 or MPP.
+Provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean paid with x402, MPP, or pre-loaded credits.
 
 **Base URL:** `https://compute.x402layer.cc`
 **Providers:** Vultr • DigitalOcean
 **x402 Networks:** Base (EVM) • Solana • MegaETH
 **x402 Currency:** USDC (Base/Solana) • USDm (MegaETH)
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
+**Credits:** Pre-load USD via x402 topup, then provision/extend with `use_credits: true`
 **Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
 
 **Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
@@ -122,7 +123,7 @@ Resize is a management action, not a second payment flow. The API preserves rema
 ## Instance Lifecycle
 
 ```
-Browse Plans → Choose Provider/Plan → Provision (pay USDC/USDm) → Active → Extend / Destroy → Expired
+Browse Plans → Choose Provider/Plan → Provision (x402/MPP/Credits) → Active → Extend / Destroy → Expired
 ```
 
 Instances expire after their prepaid duration. Extend before expiry to keep them running.
@@ -249,6 +250,43 @@ python {baseDir}/scripts/ows_cli.py sign-message --chain solana --wallet compute
 # Create an OWS agent key
 python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet compute-wallet
 ```
+
+### D. Credits (payment-free provisioning)
+
+```bash
+# Top up credits via x402 payment (one-time)
+curl -X POST https://compute.x402layer.cc/compute/credits/topup \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"amount": 100, "network": "base"}'
+# Returns 402 → pay → credits added to wallet balance
+
+# Check credit balance
+curl https://compute.x402layer.cc/compute/credits/balance \
+  -H "X-API-Key: $COMPUTE_API_KEY"
+
+# Provision using credits (no x402/MPP payment needed)
+curl -X POST https://compute.x402layer.cc/compute/provision \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{
+    "plan": "vc2-1c-1gb",
+    "region": "ewr",
+    "os_id": 2284,
+    "label": "credit-vps",
+    "prepaid_hours": 720,
+    "ssh_public_key": "ssh-ed25519 AAAA... agent",
+    "use_credits": true
+  }'
+
+# Extend using credits
+curl -X POST https://compute.x402layer.cc/compute/instances/<instance_id>/extend \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"extend_hours": 720, "use_credits": true}'
+```
+
+Credits are scoped per wallet. If the cloud provider rejects the instance after credits are deducted, the full amount is automatically refunded.
 
 ---
 
