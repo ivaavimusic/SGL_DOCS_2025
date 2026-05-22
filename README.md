@@ -1,5 +1,14 @@
 # x402 Singularity Layer Documentation
 
+> [!CAUTION]
+> **The only official $SGL token is on Solana.**
+>
+> **CA:** `5c4HyD2rSShqnTsf5z3SaoD2H3GE452u2CUuYjviBAGS`
+>
+> **[View on Dexscreener](https://dexscreener.com/solana/7wxri7wjm6nrgxpla1s2xhyemufrg5dyjtvwbiapbayc)**
+>
+> All other tokens claiming to be $SGL are scams. Please stay safe out there.
+
 <p align="center">
   <img src="./assets/SGL_logo.webp" alt="x402 Singularity Layer" width="300" />
 </p>
