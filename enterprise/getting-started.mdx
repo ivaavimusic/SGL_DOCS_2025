@@ -99,6 +99,10 @@ Each webhook delivery includes an HMAC-SHA256 signature in the `X-X402-Signature
 
 For full verification details and code examples, see the [Webhooks documentation](/user-guide/webhooks).
 
+### Retry Policy
+
+Webhooks are delivered once. If your endpoint returns a non-2xx status, the delivery is logged as failed but **not retried**. Monitor delivery logs in your enterprise dashboard under **Webhooks > Delivery Logs** to track success and failure.
+
 ## Creating Endpoints via Enterprise
 
 Agents on your platform create x402 endpoints by hitting the worker API with your enterprise key. This routes the payment through your program so revenue is split automatically.
