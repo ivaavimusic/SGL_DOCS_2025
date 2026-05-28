@@ -1,5 +1,5 @@
 ---
-title: Getting Started - x402 Studio
+title: Getting Started
 description: Set up and configure your enterprise partner program
 ---
 
@@ -46,18 +46,6 @@ curl https://studio.x402layer.cc/api/v1/enterprise/endpoints \
   -H "X-Enterprise-Key: sgl_ent_your_key_here"
 ```
 
-### Endpoint Creation with Enterprise Auth
-
-When agents on your platform deploy endpoints, pass the enterprise API key instead of the `?partner=slug` query parameter:
-
-```bash
-curl -X POST https://worker.x402layer.cc/agent/endpoints \
-  -H "X-Enterprise-Key: sgl_ent_your_key_here" \
-  -H "X-Payment: <x402-payment-payload>" \
-  -H "Content-Type: application/json" \
-  -d '{"title": "My API", "url": "https://...", "chain": "base"}'
-```
-
 See the full [API Reference](/enterprise/api-reference) for all available endpoints.
 
 ## Connect Agents via MCP
@@ -74,17 +62,68 @@ When calling endpoint creation or topup tools, include:
 }
 ```
 
-This routes the action through your enterprise program with the same revenue split and pricing.
-
 ## Set Up Webhooks
 
-1. Go to **Dashboard > Enterprise > Webhooks > Manage Webhooks**
-2. Click **Create Webhook**
+1. Go to **Dashboard > Enterprise > Webhooks**
+2. Click **Add Webhook**
 3. Enter your HTTPS endpoint URL
 4. Select which events to listen for
-5. Store the signing secret securely
+5. Store the signing secret securely — it is only shown once
 
-Webhook events include `payment.succeeded` for endpoint deployments and credit recharges.
+### Enterprise Webhook Events
+
+| Event | Fires When |
+|-------|------------|
+| `payment.succeeded` | An agent deploys an endpoint or recharges credits through your program |
+| `endpoint.created` | A new x402 endpoint is created through your enterprise |
+
+### Webhook Payload
+
+```json
+{
+  "event": "payment.succeeded",
+  "source": "endpoint",
+  "source_slug": "my-agent-endpoint",
+  "amount": "1.00",
+  "currency": "USDC",
+  "tx_hash": "0xabc123...",
+  "payer_wallet": "0x742d35Cc...",
+  "network": "base",
+  "status": "confirmed"
+}
+```
+
+### Verifying Signatures
+
+Each webhook delivery includes an HMAC-SHA256 signature in the `X-X402-Signature` header. Compute `HMAC(timestamp + "." + rawBody, secret)` and compare.
+
+For full verification details and code examples, see the [Webhooks documentation](/user-guide/webhooks).
+
+## Creating Endpoints via Enterprise
+
+Agents on your platform create x402 endpoints by hitting the worker API with your enterprise key. This routes the payment through your program so revenue is split automatically.
+
+### Via REST API
+
+```bash
+POST https://api.x402layer.cc/agent/endpoints
+X-Enterprise-Key: sgl_ent_your_key_here
+Content-Type: application/json
+
+{
+  "name": "My Agent Endpoint",
+  "base_url": "https://my-agent.com/api",
+  "routes": [...]
+}
+```
+
+The worker returns a 402 payment challenge. The agent signs the EIP-712 payload and resubmits with the `X-Payment` header. The endpoint is created at your configured deployment fee, and the revenue split applies immediately.
+
+### Via MCP
+
+Agents connected to the Singularity MCP server include `enterprise_partner_slug` in the tool call to route through your program.
+
+For full endpoint creation details (pricing, schema format, top-ups), see the [Agentic Endpoints documentation](/agentic-endpoints).
 
 ## Payout Wallets
 

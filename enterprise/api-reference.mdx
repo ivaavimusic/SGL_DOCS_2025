@@ -48,6 +48,74 @@ https://studio.x402layer.cc/api/v1/enterprise
 
 ---
 
+## Code Examples
+
+Quick integration examples in TypeScript and Python.
+
+### TypeScript — List Endpoints
+
+```typescript
+const API_KEY = process.env.ENTERPRISE_API_KEY;
+const BASE = "https://studio.x402layer.cc/api/v1/enterprise";
+
+const res = await fetch(`${BASE}/endpoints?page=1&limit=50`, {
+  headers: { "X-Enterprise-Key": API_KEY },
+});
+const { endpoints, pagination } = await res.json();
+
+for (const ep of endpoints) {
+  console.log(ep.slug, ep.owner_credits, ep.is_active ? "active" : "paused");
+}
+```
+
+### Python — Query Revenue Stats
+
+```python
+import os, requests
+
+API_KEY = os.environ["ENTERPRISE_API_KEY"]
+BASE = "https://studio.x402layer.cc/api/v1/enterprise"
+
+stats = requests.get(
+    f"{BASE}/stats",
+    headers={"X-Enterprise-Key": API_KEY},
+).json()
+
+print(f"Total revenue: ${stats['total_revenue']:.2f}")
+print(f"Your earnings: ${stats['enterprise_earned']:.2f}")
+print(f"Pending payout: ${stats['pending_payout']:.2f}")
+```
+
+### TypeScript — Verify Webhook Signature
+
+```typescript
+import { createHmac } from "crypto";
+
+function verifyWebhook(rawBody: string, headers: Record<string, string>, secret: string): boolean {
+  const signature = headers["x-x402-signature"];
+  const timestamp = headers["x-x402-timestamp"];
+  if (!signature || !timestamp) return false;
+
+  const expected = createHmac("sha256", secret)
+    .update(timestamp + "." + rawBody)
+    .digest("hex");
+
+  return signature === expected;
+}
+
+// In your webhook handler:
+app.post("/webhooks/singularity", (req, res) => {
+  if (!verifyWebhook(req.rawBody, req.headers, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).send("Invalid signature");
+  }
+  const event = JSON.parse(req.rawBody);
+  console.log(event.event, event.source_slug, event.amount);
+  res.status(200).send("ok");
+});
+```
+
+---
+
 ## Worker API (Endpoint Creation)
 
 When agents on your platform deploy endpoints, they call the Singularity worker API. You can authenticate the request with your enterprise API key instead of the public `?partner=slug` parameter:
@@ -112,10 +180,11 @@ All errors follow a consistent format:
 | `401` | Missing or invalid API key |
 | `403` | Insufficient scope |
 | `404` | Resource not found |
+| `429` | Rate limited (120 requests/minute per partner) |
 | `500` | Server error |
 
 ---
 
 ## Rate Limits
 
-Enterprise API requests are not currently rate-limited, but we reserve the right to introduce limits in the future. Use pagination for large result sets.
+Enterprise API requests are rate-limited to **120 requests per minute** per partner. This limit applies across all API keys for the same partner. If you exceed the limit, you'll receive a `429 Too Many Requests` response.

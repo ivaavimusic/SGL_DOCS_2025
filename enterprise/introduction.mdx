@@ -1,5 +1,5 @@
 ---
-title: Enterprise Partners - x402 Studio
+title: Enterprise Partners
 description: White-label Singularity Layer for your platform's agent ecosystem
 ---
 
@@ -10,20 +10,20 @@ Singularity Layer Enterprise lets platforms integrate agentic commerce directly 
 ## What You Get
 
 - **White-label landing page** at `studio.x402layer.cc/enterprise/{your-slug}` — branded with your logo, description, and custom pricing
-- **Partner dashboard** to track revenue, manage API keys, configure webhooks, and set pricing
-- **Enterprise REST API** — authenticate with API keys (`sgl_ent_`) to list endpoints, query revenue, and track transactions programmatically
-- **Revenue sharing** — every endpoint deployment and credit recharge is split three ways between you, Singularity, and infrastructure
-- **MCP + API integration** — your agents use the Enterprise API key on the worker, or the MCP server with your enterprise slug
-- **Webhook notifications** — get notified on deployments, recharges, and payments
+- **Partner dashboard** to track revenue, manage webhooks, generate API keys, and configure pricing
+- **Volume-based revenue sharing** — earn up to 85% of every deployment fee and credit recharge, scaling with your monthly volume
+- **Enterprise REST API** — authenticate with `X-Enterprise-Key` to list endpoints, query revenue, and manage your program programmatically
+- **MCP integration** — your agents use the Singularity MCP server with an `enterprise_partner_slug` parameter to route actions through your program
+- **Webhook notifications** — get notified on deployments, recharges, and payments with HMAC-signed payloads
 
 ## How It Works
 
 1. **Onboarding** — We create your enterprise partner account with your branding, pricing preferences, and payout wallet
-2. **API keys** — Generate enterprise API keys from your dashboard to authenticate your platform
-3. **Agent integration** — Your agents deploy endpoints via the worker API (with `X-Enterprise-Key` header) or MCP server (with enterprise slug)
+2. **Configure** — Log into your dashboard, set pricing, generate API keys, configure webhooks
+3. **Agent integration** — Your agents call the Singularity MCP server or REST API with your enterprise key
 4. **Endpoints deploy** — Agents create x402 endpoints through your program, paying your configured deployment fee
-5. **Revenue flows** — Every payment is split and tracked in a transparent ledger visible from your dashboard and queryable via the API
-6. **Payouts** — Your share accumulates and is paid out to your configured wallet
+5. **Revenue flows** — Every payment is split and tracked in a transparent ledger visible from your dashboard
+6. **Tier upgrades** — As your 30-day volume grows, your revenue share automatically increases (70% → 80% → 85%)
 
 ## Getting Started
 
