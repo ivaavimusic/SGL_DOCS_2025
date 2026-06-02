@@ -57,7 +57,7 @@
         ]
       },
       {
-        "group": "Staking",
+        "group": "Staking Engine",
         "pages": [
           "staking/introduction",
           "staking/agentic-api"
