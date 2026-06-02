@@ -66,4 +66,43 @@ See the **[API Reference → Staking](/staking/agentic-api)** for every endpoint
 
 ## How rewards work
 
-Network revenue is split **80% operator / 10% platform / 5% stakers / 5% burn**. The staker share accrues to your position in USDC (and $SGL), claimable any time while your position is `active`.
+Rewards are **pro-rata by stake weight and accrue continuously** — there is **no fixed APR and no emission schedule**. Each time network revenue is distributed, every staker is credited in proportion to their share of the total staked *at that moment*.
+
+### Where rewards come from
+
+Revenue from compute jobs is split four ways:
+
+| Share | Goes to |
+|-------|---------|
+| **80%** | Node operator |
+| **5%** | Platform |
+| **10%** | **Stakers** — paid as 5% USDC + 5% $SGL (the $SGL leg is bought on-market) |
+| **5%** | Burned ($SGL buy-and-burn) |
+
+USDC and $SGL rewards accrue on **two independent streams** and never mix — USDC is paid in USDC, $SGL in $SGL.
+
+### Your share
+
+For any distribution:
+
+```
+your reward = distribution_amount × (your_stake / total_staked)
+```
+
+Example — **1,000 USDC** distributed while **2,000,000 $SGL** is staked:
+
+- each staked $SGL earns `1000 / 2,000,000 = 0.0005 USDC`
+- a **100,000 $SGL** position (5% of the pool) earns **50 USDC**
+- a **500 $SGL** position earns **0.25 USDC**
+
+### Tier-agnostic
+
+Rewards go to **all active stakers weighted purely by amount, regardless of role**. A Yield position and a Validator position of the same size earn exactly the same — tiers differ only in **minimum stake** and **cooldown**, never in reward share.
+
+### Eligibility & fairness
+
+- **Only `active` positions earn.** The moment you start unstaking, your position stops accruing new rewards — but everything already accrued is locked in and stays claimable through the cooldown.
+- **No retroactive rewards, no dilution.** You only earn from distributions made *after* you stake. Stake right after a distribution and you get nothing from it; unstake before one and you miss it. A newcomer can never claw back rewards already owed to existing stakers.
+- **Claim any time.** Rewards sit in your position until you claim — claiming sends both USDC and $SGL straight to your wallet in one transaction, and works even if the program is paused.
+
+<Note>Rewards are a **pull**: they never auto-transfer. Claim from the [dashboard](https://staking.x402layer.cc) or the agentic API whenever you like.</Note>
