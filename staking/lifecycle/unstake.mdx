@@ -1,0 +1,25 @@
+---
+title: Unstake & Cooldown
+description: Begin withdrawing a position — start the cooldown, stop earning new rewards, keep what you've accrued.
+---
+
+Unstaking begins the exit. It does **not** move your tokens yet — it starts your tier's [cooldown](/staking/concepts/cooldowns) and flips the position to `unstaking`.
+
+## What happens when you unstake
+
+<Steps>
+  <Step title="Status flips">Your position moves from `active` to `unstaking`.</Step>
+  <Step title="Unlock time is set">The engine snapshots an absolute unlock time = now + your tier's cooldown (Compute 1d · Validator 2d · Yield 12h). This value is fixed and can't be changed on you later.</Step>
+  <Step title="Rewards settle">Everything you've accrued so far is locked into your owed balance and stays claimable. New rewards stop accruing — an `unstaking` position no longer earns.</Step>
+</Steps>
+
+## Important details
+
+- **You keep accrued rewards.** Unstaking snapshots what you've earned; you can still [claim](/staking/rewards/claiming) it. You just stop earning *new* rewards from that position.
+- **Your principal stays in the vault** during the cooldown — it isn't returned until you [withdraw](/staking/lifecycle/withdraw) after the unlock time.
+- **Unstaking is always available** — even if the program is paused, exits are never blocked.
+- **You can't unstake twice.** A position already `unstaking` is in motion; the next step is to withdraw.
+
+<Warning>An `unstaking` position earns no new rewards. If you change your mind, withdrawing and re-staking opens a fresh position whose rewards start from that point — there's no way to "resume" the old reward stream.</Warning>
+
+Next: [Withdraw](/staking/lifecycle/withdraw) once the cooldown elapses.

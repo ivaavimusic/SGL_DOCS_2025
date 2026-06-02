@@ -1,0 +1,27 @@
+---
+title: Slashing
+description: What slashing is, the one thing it penalizes, and the hard limits that bound it.
+---
+
+Slashing is the penalty mechanism that gives staking its teeth. It exists so that bonded operators and validators have something real at risk — but it is **narrowly scoped and strictly bounded**.
+
+## What can be slashed — tampering only
+
+Slashing penalizes **proven protocol violations** — specifically, **tampering** with confidential-compute results. It is not a general-purpose lever:
+
+- **Honest downtime is never slashed.** A node going offline simply stops receiving jobs; its stake is untouched.
+- **Maintenance / being unavailable is not a violation.** Only provable tampering is.
+
+## Hard limits the program enforces
+
+- **Yield positions are never slashable** — a hard guard rejects it outright. See [What's Never Slashed](/staking/safety/protections).
+- **Can't slash a position that's already unstaking** — once you've begun exiting, you can't be slashed.
+- **Capped, and routed to a penalty vault.** Slashed `$SGL` moves to a separate penalty vault (and can later be burned). It is **not** paid to the platform as profit.
+- **Performed by a dedicated slasher key** with no other powers — it can only slash, it can never move or steal your principal.
+
+## What this means for you
+
+- If you stake **Yield**, slashing simply does not apply to you.
+- If you run a **Compute node** or act as a **Validator**, behave honestly and you have nothing to fear — only tampering is penalized, and downtime never is.
+
+<Warning>Slashing is reserved for provable misbehavior that harms the network's integrity. It is deliberately limited so honest participants are never at risk of losing principal for ordinary operational issues.</Warning>

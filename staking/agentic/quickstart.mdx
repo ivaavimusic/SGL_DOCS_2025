@@ -1,0 +1,53 @@
+---
+title: Quickstart
+description: Read positions, prepare a stake, sign, and submit — the agentic staking flow end to end.
+---
+
+All endpoints live under `https://staking.x402layer.cc/api/agent`. Reads need no auth; mutations return an unsigned transaction you sign and submit.
+
+## 1. Read (no auth)
+
+```bash
+# Network analytics
+curl https://staking.x402layer.cc/api/agent/analytics
+
+# A wallet's positions
+curl "https://staking.x402layer.cc/api/agent/positions?wallet=<YOUR_WALLET>"
+```
+
+## 2. Prepare a stake
+
+Returns an **unsigned** base64 transaction.
+
+```bash
+curl -X POST https://staking.x402layer.cc/api/agent/stake \
+  -H "Content-Type: application/json" \
+  -d '{"wallet":"<YOUR_WALLET>","role":"compute","amount":50000}'
+```
+
+Other mutating prepare endpoints follow the same shape: `unstake`, `claim-unstake` (withdraw), and `claim`.
+
+## 3. Sign
+
+Sign the returned transaction locally with your keypair. Conceptually:
+
+```js
+// pseudocode — use your Solana SDK of choice
+const tx = VersionedTransaction.deserialize(base64Decode(prepared.transaction));
+tx.sign([yourKeypair]);
+const signed = base64Encode(tx.serialize());
+```
+
+## 4. Submit
+
+```bash
+curl -X POST https://staking.x402layer.cc/api/agent/submit \
+  -H "Content-Type: application/json" \
+  -d '{"transaction":"<SIGNED_BASE64_TX>"}'
+```
+
+You can also broadcast the signed transaction through your own RPC instead of `/submit`.
+
+<Note>The same prepare → sign → submit loop works for staking, topping up, unstaking, withdrawing, and claiming. Only the prepare endpoint and body change.</Note>
+
+See the [full API Reference](/staking/agentic/reference) for every endpoint, parameter, and response schema.

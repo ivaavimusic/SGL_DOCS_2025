@@ -1,0 +1,23 @@
+---
+title: Top Up
+description: Add more $SGL to an existing position without opening a new one or resetting your rewards.
+---
+
+A **top-up** adds `$SGL` to a position you already hold in a given role. It's the same action as staking, applied to an existing account.
+
+## How it works
+
+- The added amount is transferred into the stake vault and your position's `amount` increases.
+- The **50,000 $SGL minimum applies to opening a position**, not to each top-up — once a position exists, you can add smaller increments.
+- Your position stays `active` and keeps the same cooldown rules.
+
+## What happens to your rewards
+
+Topping up is safe for your pending rewards. Before increasing your stake, the engine **settles what you've already earned** into your position's owed balance and advances your reward checkpoint. In other words:
+
+- Rewards accrued **before** the top-up are calculated against your **old** stake amount — they are not diluted.
+- Rewards accrued **after** the top-up are calculated against your **new, larger** stake amount.
+
+So adding more never costs you anything you'd already earned, and immediately increases your share of future distributions.
+
+<Note>You can top up from the [dashboard](https://staking.x402layer.cc) or the [agentic API](/staking/agentic/quickstart) — it's the same `stake` action on an existing role.</Note>

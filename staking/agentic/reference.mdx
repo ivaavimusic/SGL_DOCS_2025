@@ -1,0 +1,25 @@
+---
+title: API Reference
+description: Every agentic staking endpoint, with request/response schemas and a try-it console.
+---
+
+The complete, OpenAPI-rendered reference for the agentic staking API lives in the **API Reference** tab, with full request/response schemas and an interactive try-it console for each endpoint.
+
+<Card title="Open the Staking API Reference" icon="code" href="/staking/agentic/quickstart">
+  Browse every endpoint — manifest, analytics, positions, stake, unstake, claim-unstake, claim, and submit.
+</Card>
+
+## Endpoint summary
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/agent/manifest` | GET | Program metadata (IDs, mints, parameters) |
+| `/api/agent/analytics` | GET | Network-wide staking + reward stats |
+| `/api/agent/positions` | GET | A wallet's positions and claimable rewards |
+| `/api/agent/stake` | POST | Prepare a stake / top-up transaction |
+| `/api/agent/unstake` | POST | Prepare an unstake (start cooldown) |
+| `/api/agent/claim-unstake` | POST | Prepare a withdrawal after cooldown |
+| `/api/agent/claim` | POST | Prepare a rewards claim (USDC + $SGL) |
+| `/api/agent/submit` | POST | Broadcast a signed transaction |
+
+<Note>Reads (`GET`) need no auth. Mutations (`POST` prepare endpoints) return an unsigned transaction — sign it and send it to `/api/agent/submit`. See the [Quickstart](/staking/agentic/quickstart) and [Prepare → Sign → Submit](/staking/agentic/overview).</Note>

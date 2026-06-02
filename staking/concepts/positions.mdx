@@ -1,0 +1,44 @@
+---
+title: Positions & Accounts
+description: How stake positions, vaults, and on-chain accounts are structured in the Singularity Engine.
+---
+
+Everything in the Singularity Engine is on-chain Anchor state. Understanding the accounts makes the rest of the docs click.
+
+## A "position" = one stake account per role
+
+Each wallet has **one position per role** — a Program-Derived Address (PDA) seeded by your wallet and the role:
+
+```
+stake account PDA = ["stake", your_wallet, role]
+```
+
+So a single wallet can hold up to three positions at once — Compute, Validator, and Yield — each tracked independently with its own amount, status, and reward checkpoints.
+
+| Field | Meaning |
+|-------|---------|
+| `amount` | $SGL currently staked in this position |
+| `status` | `active`, `unstaking`, or `slashed` |
+| `staked_at` | When the position was opened |
+| `unlock_at` | Absolute time you can withdraw (set when you unstake) |
+| `reward_per_token_paid` | Your USDC reward checkpoint |
+| `sgl_reward_per_token_paid` | Your $SGL reward checkpoint |
+
+The reward checkpoints are how the engine pays you only for distributions made **after** you staked — see [How Rewards Work](/staking/rewards/overview).
+
+## The vaults
+
+Staked tokens never sit in a wallet the platform controls. They live in **program-owned vaults** whose authority is a PDA, so only the program can move them — and only back to you:
+
+| Vault | Holds |
+|-------|-------|
+| **Stake vault** | All staked $SGL principal |
+| **Reward vault (USDC)** | USDC rewards waiting to be claimed |
+| **Reward vault ($SGL)** | $SGL rewards waiting to be claimed |
+| **Penalty vault** | Slashed $SGL (tamper penalties), pending burn |
+
+This separation is what makes staking [non-custodial](/staking/safety/non-custodial): your principal and the platform's reward deposits are distinct, and the program only releases principal to the original staker after a cooldown.
+
+## Config
+
+A single `StakingConfig` account holds the live parameters — minimums, cooldowns, and the authority keys. These are adjustable on-chain (no redeploy), so the network can tune economics over time. The current values are listed on each [Staker Type](/staking/types/overview) page.

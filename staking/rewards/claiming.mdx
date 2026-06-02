@@ -1,0 +1,35 @@
+---
+title: Claiming
+description: How to claim your accrued USDC + $SGL rewards — a pull that sends both tokens to your wallet in one transaction.
+---
+
+Rewards **accrue to your position but don't auto-transfer**. Claiming is a **pull**: you (or your agent) call claim, and the program sends your accrued rewards to your wallet.
+
+## What a claim does
+
+- Pays out **both** your accrued **USDC and $SGL** in a single transaction.
+- Resets your position's reward checkpoint so you continue earning cleanly from the next distribution.
+- Sends tokens **only to you** — claiming is signed by the staker.
+
+## When you can claim
+
+- **Anytime** there's something accrued — there's no schedule or vesting.
+- **Even while the program is paused.** Claiming already-earned rewards is never blocked by an emergency pause.
+- **While `unstaking`.** A position that's in cooldown can still claim what it accrued before unstaking.
+
+## One claim, both tokens
+
+The on-chain claim instruction always settles **both** reward streams together — there is no separate "USDC-only" or "$SGL-only" claim. However much USDC and $SGL you've accrued is paid out in the same transaction.
+
+## How to claim
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="browser" href="https://staking.x402layer.cc">
+    Open the Claim page and confirm — your USDC + $SGL land in your wallet.
+  </Card>
+  <Card title="Agentic API" icon="robot" href="/staking/agentic/quickstart">
+    Prepare a claim transaction, sign it, and submit. See the quickstart.
+  </Card>
+</CardGroup>
+
+<Note>Unclaimed rewards are safe — they sit in the reward vault earmarked for your position until you claim them. There's no expiry.</Note>

@@ -1,0 +1,32 @@
+---
+title: Revenue Split
+description: How network revenue is divided between operators, the platform, stakers, and the \$SGL buy-and-burn.
+---
+
+Every paid compute job on the network is split four ways. This is where the staker reward pool is funded.
+
+| Share | Goes to | Notes |
+|-------|---------|-------|
+| **80%** | **Node operator** | Paid to the operator whose node served the job |
+| **5%** | **Platform** | Funds platform operations |
+| **10%** | **Stakers** | The reward pool — paid as **5% USDC + 5% $SGL** |
+| **5%** | **Burn** | $SGL bought on-market and permanently burned |
+
+## The staker 10%, in detail
+
+The staker share is funded as two streams:
+
+- **5% in USDC** is deposited directly into the USDC reward pool.
+- **The remaining staker portion is bought as $SGL on the open market** and deposited into the $SGL reward pool. The same buy-and-burn flow also burns **5%** of revenue worth of $SGL — reducing supply.
+
+So stakers receive **both** USDC and $SGL, and the network continuously buys and burns $SGL from real revenue.
+
+## Why this matters
+
+- **Stakers are paid from genuine usage**, not inflation — there's no emission schedule minting new tokens for rewards.
+- **The burn is deflationary** and funded by the same revenue, aligning stakers and holders.
+- **Operators keep the lion's share (80%)** for doing the actual work, on top of earning staking rewards on their bonded $SGL.
+
+<Note>These percentages are network parameters. The current live split is **80 / 5 / 10 / 5** (operator / platform / staker / burn).</Note>
+
+Next: [Your Share](/staking/rewards/your-share) — how the 10% pool is divided among stakers.

@@ -1,0 +1,31 @@
+---
+title: How Rewards Work
+description: The reward model behind the Singularity Engine — pro-rata by stake weight, accruing continuously, paid in USDC + \$SGL.
+---
+
+Rewards are **pro-rata by stake weight and accrue continuously** — there is **no fixed APR and no emission schedule**. Each time network revenue is distributed, every staker is credited in proportion to their share of the total staked *at that moment*.
+
+## The model in one line
+
+> Your reward from a distribution = `distribution_amount × (your_stake / total_staked)`
+
+That's it. No tiers, no lockup multipliers, no bonus curves — just your fraction of the pool.
+
+## Two independent streams
+
+Rewards come in **two currencies that never mix**:
+
+- **USDC** — paid in USDC
+- **$SGL** — paid in $SGL
+
+Each has its own running accumulator, so a USDC distribution and a $SGL distribution are tracked and claimed independently (you claim both together — see [Claiming](/staking/rewards/claiming)).
+
+## Continuous, not scheduled
+
+There's no weekly "rewards day." As the network earns revenue, the staker share is deposited into the reward pool, and that deposit is split across whoever is staked at that instant. Stake more, or stay staked longer through more distributions, and you earn more.
+
+<CardGroup cols={3}>
+  <Card title="Revenue Split" icon="chart-pie" href="/staking/rewards/split">Where the money comes from: 80 / 5 / 10 / 5.</Card>
+  <Card title="Your Share" icon="calculator" href="/staking/rewards/your-share">The math, a worked example, and the fairness rules.</Card>
+  <Card title="Claiming" icon="hand-holding-dollar" href="/staking/rewards/claiming">How to pull your USDC + $SGL to your wallet.</Card>
+</CardGroup>

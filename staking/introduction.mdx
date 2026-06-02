@@ -1,11 +1,9 @@
 ---
-title: Staking Engine
-description: Stake \$SGL to secure the network — earn USDC + \$SGL rewards, run nodes, and validate. Use the dashboard or the agentic API.
+title: Staking Overview
+description: Stake \$SGL to secure the network — run compute nodes, validate the marketplace, or earn yield. Live on Solana mainnet.
 ---
 
-# $SGL Staking
-
-Staking `$SGL` puts skin-in-the-game behind the Singularity network. Stakers earn a share of network revenue, and staking is what lets you **run a compute node**, **validate the marketplace**, or simply **earn yield**.
+The **Singularity Engine** is our staking, validation, and compute-node engine, powered by `$SGL`. It puts skin-in-the-game behind the Singularity network: staking is what lets you **run a compute node**, **validate the marketplace**, or simply **earn yield** — and every staker earns a share of network revenue.
 
 - **Live on Solana mainnet** — program `3zChiHHFxbT3qQJBrwyQgTohfX8jS91bUGT8gpyB7aBC`
 - **Token** — `$SGL` mint `5c4HyD2rSShqnTsf5z3SaoD2H3GE452u2CUuYjviBAGS` (9 decimals)
@@ -13,20 +11,10 @@ Staking `$SGL` puts skin-in-the-game behind the Singularity network. Stakers ear
 - **Minimum** — 50,000 $SGL per position
 
 <CardGroup cols={3}>
-  <Card title="Compute" icon="server">Stake to run a compute node.</Card>
-  <Card title="Validator" icon="shield-check">Stake to validate marketplace products.</Card>
-  <Card title="Yield" icon="coins">Stake purely to earn rewards.</Card>
+  <Card title="Compute Node" icon="server" href="/staking/types/compute">Stake to run a confidential-compute node.</Card>
+  <Card title="Validator" icon="shield-check" href="/staking/types/validator">Stake to validate marketplace products.</Card>
+  <Card title="Yield Enjoyer" icon="coins" href="/staking/types/yield">Stake purely to earn rewards.</Card>
 </CardGroup>
-
-## Roles (stake types)
-
-| Role | Use | Cooldown |
-|------|-----|----------|
-| `compute` | Run a compute node | 1 day |
-| `validator` | Validate marketplace / ERC-8004 | 2 days |
-| `yield` | Earn rewards only | 12 hours |
-
-Each wallet has one position per role. Unstaking starts a cooldown; after it elapses you withdraw.
 
 ## Two ways to use it
 
@@ -34,75 +22,30 @@ Each wallet has one position per role. Unstaking starts a cooldown; after it ela
   <Card title="Dashboard" icon="browser" href="https://staking.x402layer.cc">
     Connect a wallet at **staking.x402layer.cc** to stake, claim, and view analytics.
   </Card>
-  <Card title="Agentic API" icon="robot" href="/staking/agentic-api">
-    Agents stake, claim, and read positions programmatically with only a wallet keypair. See the API Reference.
+  <Card title="Agentic API" icon="robot" href="/staking/agentic/overview">
+    Agents stake, claim, and read positions programmatically with only a wallet keypair.
   </Card>
 </CardGroup>
 
-## Agentic access: prepare → sign → submit
+## Start here
 
-Staking is an on-chain Anchor program, so we never custody your stake. Mutating actions return an **unsigned** transaction you sign locally with your keypair — the signature *is* the proof of ownership (the program rejects any signer that isn't the staker). Reads are public on-chain data.
-
-<Steps>
-  <Step title="Prepare">POST a prepare endpoint with your wallet → get an unsigned base64 transaction.</Step>
-  <Step title="Sign">Sign it with your wallet keypair.</Step>
-  <Step title="Submit">POST it to `/api/agent/submit` (or broadcast via your own RPC).</Step>
-</Steps>
-
-<Note>This is **not** x402. x402 moves a token to a payee; staking locks your *own* tokens in a contract only you control, which requires your signature.</Note>
-
-```bash
-# Read (no auth)
-curl https://staking.x402layer.cc/api/agent/analytics
-curl "https://staking.x402layer.cc/api/agent/positions?wallet=<YOUR_WALLET>"
-
-# Prepare a stake (returns an unsigned tx to sign + submit)
-curl -X POST https://staking.x402layer.cc/api/agent/stake \
-  -H "Content-Type: application/json" \
-  -d '{"wallet":"<YOUR_WALLET>","role":"compute","amount":50000}'
-```
-
-See the **[API Reference → Staking](/staking/agentic-api)** for every endpoint, request/response schema, and a try-it console.
-
-## How rewards work
-
-Rewards are **pro-rata by stake weight and accrue continuously** — there is **no fixed APR and no emission schedule**. Each time network revenue is distributed, every staker is credited in proportion to their share of the total staked *at that moment*.
-
-### Where rewards come from
-
-Revenue from compute jobs is split four ways:
-
-| Share | Goes to |
-|-------|---------|
-| **80%** | Node operator |
-| **5%** | Platform |
-| **10%** | **Stakers** — paid as 5% USDC + 5% $SGL (the $SGL leg is bought on-market) |
-| **5%** | Burned ($SGL buy-and-burn) |
-
-USDC and $SGL rewards accrue on **two independent streams** and never mix — USDC is paid in USDC, $SGL in $SGL.
-
-### Your share
-
-For any distribution:
-
-```
-your reward = distribution_amount × (your_stake / total_staked)
-```
-
-Example — **1,000 USDC** distributed while **2,000,000 $SGL** is staked:
-
-- each staked $SGL earns `1000 / 2,000,000 = 0.0005 USDC`
-- a **100,000 $SGL** position (5% of the pool) earns **50 USDC**
-- a **500 $SGL** position earns **0.25 USDC**
-
-### Tier-agnostic
-
-Rewards go to **all active stakers weighted purely by amount, regardless of role**. A Yield position and a Validator position of the same size earn exactly the same — tiers differ only in **minimum stake** and **cooldown**, never in reward share.
-
-### Eligibility & fairness
-
-- **Only `active` positions earn.** The moment you start unstaking, your position stops accruing new rewards — but everything already accrued is locked in and stays claimable through the cooldown.
-- **No retroactive rewards, no dilution.** You only earn from distributions made *after* you stake. Stake right after a distribution and you get nothing from it; unstake before one and you miss it. A newcomer can never claw back rewards already owed to existing stakers.
-- **Claim any time.** Rewards sit in your position until you claim — claiming sends both USDC and $SGL straight to your wallet in one transaction, and works even if the program is paused.
-
-<Note>Rewards are a **pull**: they never auto-transfer. Claim from the [dashboard](https://staking.x402layer.cc) or the agentic API whenever you like.</Note>
+<CardGroup cols={2}>
+  <Card title="Why stake $SGL" icon="circle-question" href="/staking/concepts/why-stake">
+    What staking secures and why it has economic weight.
+  </Card>
+  <Card title="Staker Types" icon="layer-group" href="/staking/types/overview">
+    Compute, Validator, and Yield — pick the tier that fits you.
+  </Card>
+  <Card title="Staking & Unstaking" icon="arrow-right-arrow-left" href="/staking/lifecycle/stake">
+    The full lifecycle: stake, top up, unstake, cooldown, withdraw.
+  </Card>
+  <Card title="Rewards" icon="coins" href="/staking/rewards/overview">
+    How the staker share is calculated, split, and claimed.
+  </Card>
+  <Card title="Slashing & Safety" icon="shield-halved" href="/staking/safety/non-custodial">
+    Non-custodial design, what can be slashed, and what never can.
+  </Card>
+  <Card title="Agentic Access" icon="robot" href="/staking/agentic/overview">
+    Stake and claim from code with prepare → sign → submit.
+  </Card>
+</CardGroup>

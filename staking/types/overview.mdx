@@ -1,0 +1,30 @@
+---
+title: Choosing a Tier
+description: The three staker types in the Singularity Engine — Compute Node, Validator, and Yield Enjoyer — and how to pick one.
+---
+
+The Singularity Engine has **three staker types** (tiers). You choose a tier when you open a position, and a single wallet can hold one of each at the same time.
+
+| Tier | For | Min stake | Cooldown | Slashable? |
+|------|-----|-----------|----------|------------|
+| [Compute Node](/staking/types/compute) | Operators serving confidential-compute jobs | 50,000 $SGL | 1 day | Yes (tamper only) |
+| [Validator](/staking/types/validator) | Backing marketplace / reputation attestations | 50,000 $SGL | 2 days | Yes (tamper only) |
+| [Yield Enjoyer](/staking/types/yield) | Earning rewards with no operational duties | 50,000 $SGL | 12 hours | **Never** |
+
+## The key thing to understand
+
+**Rewards are identical across tiers.** Distribution is purely proportional to how much $SGL you stake — a Yield position and a Validator position of the same size earn exactly the same. Tiers differ only in:
+
+- **What they unlock** — running a node, validating, or nothing operational
+- **Cooldown length** — how long unstaking takes
+- **Slashing exposure** — only Compute and Validator can ever be slashed (and only for proven tampering); Yield never can
+
+So picking a tier is about **what you want to do**, not about chasing a better yield.
+
+<CardGroup cols={3}>
+  <Card title="Compute Node" icon="server" href="/staking/types/compute">Run hardware, serve jobs, earn operator revenue on top of staking rewards.</Card>
+  <Card title="Validator" icon="shield-check" href="/staking/types/validator">Back products and reputation with your stake.</Card>
+  <Card title="Yield Enjoyer" icon="coins" href="/staking/types/yield">Passive. Stake, earn, claim. Never slashable.</Card>
+</CardGroup>
+
+<Note>Not sure? **Yield Enjoyer** is the simplest starting point — no operations, shortest cooldown, zero slashing exposure. You can always open a Compute or Validator position later.</Note>

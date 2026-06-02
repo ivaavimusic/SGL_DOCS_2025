@@ -1,0 +1,39 @@
+---
+title: Your Share
+description: How a distribution is split among stakers — the formula, a worked example, and the fairness guarantees.
+---
+
+When the staker pool receives a distribution, it's divided **purely by stake weight**.
+
+## The formula
+
+```
+your reward = distribution_amount × (your_stake / total_staked)
+```
+
+Every active staker is credited their fraction of the pool, in proportion to how much $SGL they have staked at the moment of the distribution.
+
+## Worked example
+
+Suppose **1,000 USDC** is distributed while **2,000,000 $SGL** is staked network-wide:
+
+- Each staked $SGL earns `1,000 / 2,000,000 = 0.0005 USDC`
+- A **100,000 $SGL** position (5% of the pool) earns **50 USDC**
+- A **500 $SGL** position earns **0.25 USDC**
+
+The identical math runs separately for $SGL distributions, against the $SGL accumulator.
+
+## Tier-agnostic
+
+Your **role doesn't change your rate**. A Yield position and a Validator position of the same size earn exactly the same from any distribution. Tiers differ only in minimum stake, cooldown, and slashing exposure — never in reward share. (See [Choosing a Tier](/staking/types/overview).)
+
+## Fairness guarantees
+
+These rules are enforced by the program, not by policy:
+
+- **Only `active` positions earn.** The instant you [unstake](/staking/lifecycle/unstake), the position stops accruing new rewards — but everything already accrued is locked in and stays claimable.
+- **No retroactive rewards.** You only earn from distributions made **after** you staked. Stake right after a distribution and you get nothing from it.
+- **No dilution of existing stakers.** A newcomer's stake only affects how **future** distributions are split. It can never claw back rewards already owed to people who staked earlier.
+- **Empty pool can't be funded.** A distribution can't be made when nothing is staked.
+
+<Note>Timing of *stake vs distribution* is the only thing that matters — not how long you've held, and not your tier. Stake before a distribution to share in it.</Note>

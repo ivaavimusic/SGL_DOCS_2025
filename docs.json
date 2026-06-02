@@ -60,7 +60,57 @@
         "group": "Staking Engine",
         "pages": [
           "staking/introduction",
-          "staking/agentic-api"
+          {
+            "group": "Concepts",
+            "pages": [
+              "staking/concepts/why-stake",
+              "staking/concepts/positions",
+              "staking/concepts/cooldowns"
+            ]
+          },
+          {
+            "group": "Staker Types",
+            "pages": [
+              "staking/types/overview",
+              "staking/types/compute",
+              "staking/types/validator",
+              "staking/types/yield"
+            ]
+          },
+          {
+            "group": "Staking & Unstaking",
+            "pages": [
+              "staking/lifecycle/stake",
+              "staking/lifecycle/top-up",
+              "staking/lifecycle/unstake",
+              "staking/lifecycle/withdraw"
+            ]
+          },
+          {
+            "group": "Rewards",
+            "pages": [
+              "staking/rewards/overview",
+              "staking/rewards/split",
+              "staking/rewards/your-share",
+              "staking/rewards/claiming"
+            ]
+          },
+          {
+            "group": "Slashing & Safety",
+            "pages": [
+              "staking/safety/non-custodial",
+              "staking/safety/slashing",
+              "staking/safety/protections"
+            ]
+          },
+          {
+            "group": "Agentic Access",
+            "pages": [
+              "staking/agentic/overview",
+              "staking/agentic/quickstart",
+              "staking/agentic/reference"
+            ]
+          }
         ]
       },
       {

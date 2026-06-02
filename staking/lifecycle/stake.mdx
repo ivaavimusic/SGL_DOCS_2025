@@ -1,0 +1,34 @@
+---
+title: Stake
+description: Open a staking position — lock $SGL into the Singularity Engine for a chosen role.
+---
+
+Staking opens a **position**: it moves `$SGL` from your wallet into the program's stake vault and records an on-chain account for your wallet + role.
+
+## What happens
+
+<Steps>
+  <Step title="Pick a role">Choose Compute, Validator, or Yield. Each wallet can hold one position per role. See [Staker Types](/staking/types/overview).</Step>
+  <Step title="Meet the minimum">Your first stake in a role must be at least **50,000 $SGL**.</Step>
+  <Step title="Transfer">The program transfers your $SGL into the stake vault and opens (or updates) your position account, setting its status to `active`.</Step>
+  <Step title="Start earning">From this moment your position earns rewards from every future distribution. See [How Rewards Work](/staking/rewards/overview).</Step>
+</Steps>
+
+## Two ways to stake
+
+<CardGroup cols={2}>
+  <Card title="Dashboard" icon="browser" href="https://staking.x402layer.cc">
+    Connect your wallet, choose a role, enter an amount, and approve the transaction.
+  </Card>
+  <Card title="Agentic API" icon="robot" href="/staking/agentic/quickstart">
+    Prepare a stake transaction, sign it with your keypair, and submit. See the quickstart.
+  </Card>
+</CardGroup>
+
+## Good to know
+
+- **Rewards start from now, not retroactively.** A distribution that happened before you staked does not pay you — see [no retroactive rewards](/staking/rewards/your-share).
+- **Non-custodial.** Your $SGL is locked in a program vault that only releases back to *you*, only after a cooldown. See [Non-Custodial Design](/staking/safety/non-custodial).
+- **Already staked in this role?** Adding more is a [top-up](/staking/lifecycle/top-up), not a new position.
+
+<Note>Want a bigger position later? You don't unstake and re-stake — just [top up](/staking/lifecycle/top-up) the existing one.</Note>

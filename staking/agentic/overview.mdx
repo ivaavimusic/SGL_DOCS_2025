@@ -1,0 +1,32 @@
+---
+title: Prepare → Sign → Submit
+description: The non-custodial model behind agentic staking — how agents stake and claim with only a wallet keypair.
+---
+
+Everything in the Singularity Engine is an on-chain Anchor program, so agents can stake, claim, and read positions **programmatically** — with no custody and no API keys for mutations. The only credential a mutating action needs is your **wallet signature**.
+
+## The model
+
+<Steps>
+  <Step title="Prepare">POST to a prepare endpoint with your wallet address. The server builds and returns an **unsigned** base64 transaction.</Step>
+  <Step title="Sign">Sign the transaction locally with your wallet keypair. The signature *is* the proof of ownership.</Step>
+  <Step title="Submit">POST the signed transaction back to `/api/agent/submit` (or broadcast it via your own RPC).</Step>
+</Steps>
+
+## Why it's safe
+
+- The server never holds your keys and never has custody — it only **assembles** transactions.
+- The program **rejects any signer that isn't the staker**, so a prepared transaction is useless to anyone but you.
+- **Reads are public** on-chain data and need no auth at all.
+
+<Note>This is **not** x402. x402 moves a token to a payee. Staking locks your *own* tokens in a contract only you control, which fundamentally requires *your* signature — so it uses prepare → sign → submit, not a payment flow.</Note>
+
+## What agents can do
+
+- **Read** — analytics, a wallet's positions, the reward pool, the program manifest.
+- **Stake / top up** — open or grow a position.
+- **Unstake** — begin a cooldown.
+- **Withdraw** — reclaim principal after cooldown.
+- **Claim** — pull accrued USDC + $SGL.
+
+Next: the [Quickstart](/staking/agentic/quickstart) and the [API Reference](/staking/agentic/reference).

@@ -1,0 +1,31 @@
+---
+title: What's Never Slashed
+description: The protections the program guarantees — the cases where your stake can never be touched.
+---
+
+Slashing is bounded by guarantees enforced in the program itself. These are the situations where your stake **cannot** be reduced.
+
+## Never slashable
+
+- **Yield Enjoyer positions.** A hard guard in the program rejects any attempt to slash a Yield position — even by the platform. Pure-yield stake is fully protected.
+- **Positions that are unstaking.** Once you've started your [cooldown](/staking/concepts/cooldowns), the position can no longer be slashed.
+- **Honest downtime.** Going offline or undergoing maintenance is not a violation and never triggers a penalty.
+
+## Always protected
+
+- **Your principal can only return to you.** No instruction lets the platform move staked principal to itself — see [Non-Custodial Design](/staking/safety/non-custodial).
+- **Your exit is never blocked.** Unstaking, withdrawing, and claiming work even during an emergency pause.
+- **In-progress cooldowns are fixed.** A parameter change can't retroactively lengthen an unstake you've already started.
+- **Accrued rewards are yours.** Unstaking snapshots what you've earned; you keep it and can still claim it.
+
+## Summary
+
+| Situation | Can it be slashed? |
+|-----------|--------------------|
+| Yield position | **Never** |
+| Compute / Validator, honest | No (only tampering is penalized) |
+| Compute / Validator, offline | No |
+| Any position already unstaking | No |
+| Compute / Validator, proven tampering | Yes — see [Slashing](/staking/safety/slashing) |
+
+<Note>The design principle: honest participants never lose principal. Slashing exists only to penalize provable tampering by bonded operators and validators.</Note>

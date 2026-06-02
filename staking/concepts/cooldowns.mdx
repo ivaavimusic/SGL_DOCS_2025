@@ -1,0 +1,32 @@
+---
+title: Cooldowns
+description: How the unstaking cooldown works, why it exists, and why it can never be changed retroactively.
+---
+
+Unstaking is not instant. When you request to unstake, your position enters a **cooldown** — a waiting period before you can withdraw your principal.
+
+## Cooldown by tier
+
+| Role | Cooldown |
+|------|----------|
+| Compute Node | 1 day (24h) |
+| Validator | 2 days (48h) |
+| Yield Enjoyer | 12 hours |
+
+Validators have the longest cooldown because their attestations back other participants; compute nodes sit in the middle; pure-yield positions have the shortest.
+
+## How it works
+
+<Steps>
+  <Step title="Unstake">You call unstake. The position flips to `unstaking` and the engine snapshots an **absolute unlock time** = now + your tier's cooldown.</Step>
+  <Step title="Wait">Your principal stays locked in the vault for the cooldown window. The position no longer earns new rewards (already-accrued rewards remain claimable).</Step>
+  <Step title="Withdraw">After the unlock time passes, you withdraw your principal back to your wallet.</Step>
+</Steps>
+
+## Why it can't be changed on you
+
+The unlock time is **snapshotted at the moment you unstake** and stored on your position. Even if the network later changes the cooldown parameter, an in-progress unstake uses the value captured when you started — it can never be retroactively extended (or shortened). What you signed up for is what you get.
+
+<Note>Cooldowns protect the network from instant mass-exits and give validators/operators a predictable window. They are enforced on-chain by comparing the current time against your stored unlock time — there is no off-chain trust involved.</Note>
+
+See the full flow in [Unstake & Cooldown](/staking/lifecycle/unstake).

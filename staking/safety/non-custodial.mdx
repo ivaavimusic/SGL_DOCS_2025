@@ -1,0 +1,30 @@
+---
+title: Non-Custodial Design
+description: Why your staked $SGL can only ever return to you — the program-owned vault model behind the Singularity Engine.
+---
+
+Staking is **non-custodial**. Your principal is locked in an on-chain program, not in a wallet the platform controls, and the program will only ever release it back to **you**.
+
+## How it works
+
+- Staked `$SGL` lives in a **program-owned vault** whose authority is a Program-Derived Address (PDA) — not a private key anyone holds.
+- Only the staking program can move tokens out of the vault, and the only path that returns principal sends it to the **original staker**, after the [cooldown](/staking/concepts/cooldowns).
+- There is **no instruction** that lets the platform sweep your principal to itself.
+
+## What the platform *can* do
+
+To be precise about trust boundaries, the privileged keys can:
+
+- **Deposit rewards** (funding the pool from the platform's own funds — additive only).
+- **Update parameters** like minimums and cooldowns (which can't retroactively extend an in-progress unstake — see [Cooldowns](/staking/concepts/cooldowns)).
+- **Pause** the program in an emergency — but pausing **never blocks** unstaking, withdrawing, or claiming.
+- **Slash** — and only under strict limits. See [Slashing](/staking/safety/slashing) and [What's Never Slashed](/staking/safety/protections).
+
+## What the platform *cannot* do
+
+- It cannot transfer your staked principal to itself or any third party.
+- It cannot block your exit or your claims.
+- It cannot retroactively change the cooldown on a position already unstaking.
+- It cannot slash a Yield position, or slash anything beyond the rules in [Slashing](/staking/safety/slashing).
+
+<Note>Ownership is proven by your signature. Every mutating action on your position must be signed by your wallet — the program rejects any other signer. This is also what makes [agentic access](/staking/agentic/overview) safe: an agent acts with your keypair, never with custody.</Note>

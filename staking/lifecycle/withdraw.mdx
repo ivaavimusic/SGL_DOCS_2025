@@ -1,0 +1,25 @@
+---
+title: Withdraw
+description: Reclaim your staked $SGL after the cooldown elapses, and recover the position's rent.
+---
+
+Withdrawing is the final step — it returns your staked `$SGL` to your wallet after the [cooldown](/staking/concepts/cooldowns) has elapsed.
+
+## Requirements
+
+- Your position must be in the `unstaking` state (you've already [unstaked](/staking/lifecycle/unstake)).
+- The current time must be **past the unlock time** snapshotted when you unstaked. The program enforces this on-chain — an early withdrawal is rejected.
+
+## What happens
+
+<Steps>
+  <Step title="Principal returns">The program transfers your staked $SGL from the vault back to your wallet.</Step>
+  <Step title="Position closes">The position account is closed and its rent is refunded to you.</Step>
+  <Step title="Totals update">Network total-staked and staker count decrease accordingly.</Step>
+</Steps>
+
+## Don't forget your rewards
+
+Withdrawing returns your **principal**. Any rewards you accrued are separate — make sure you've [claimed](/staking/rewards/claiming) your USDC + $SGL. Claiming works at any time, including while a position is `unstaking` or during a pause.
+
+<Note>Want back in afterward? Staking again opens a **fresh** position; its rewards start from that moment (no retroactive credit). See [Stake](/staking/lifecycle/stake).</Note>
