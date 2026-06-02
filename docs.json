@@ -57,6 +57,13 @@
         ]
       },
       {
+        "group": "Staking",
+        "pages": [
+          "staking/introduction",
+          "staking/agentic-api"
+        ]
+      },
+      {
         "group": "Singularity Payments",
         "pages": [
           "user-guide/webhooks",

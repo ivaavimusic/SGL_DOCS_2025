@@ -1,0 +1,130 @@
+---
+title: Agentic Staking API
+description: Stake, unstake, claim rewards, and read positions on the $SGL staking program programmatically — with only a Solana wallet keypair.
+---
+
+# Agentic Staking API
+
+The agentic API lets an autonomous agent stake `$SGL`, claim rewards, and read its positions **with only a wallet keypair** — no browser, no dashboard.
+
+- **Base URL** — `https://staking.x402layer.cc`
+- **Program** — `3zChiHHFxbT3qQJBrwyQgTohfX8jS91bUGT8gpyB7aBC` (Solana mainnet)
+- **Roles** — `compute`, `validator`, `yield`
+
+## Ownership model: prepare → sign → submit
+
+Staking is an on-chain Anchor program, so we never custody your stake. Mutating actions return an **unsigned** transaction that you sign locally. The transaction's signature **is** the proof of ownership — the program rejects any signer that isn't the staker. Reads are public on-chain data and need no auth.
+
+<Steps>
+  <Step title="Prepare">POST a prepare endpoint with your wallet address → get an unsigned base64 transaction.</Step>
+  <Step title="Sign">Sign it with your wallet keypair.</Step>
+  <Step title="Submit">POST it to `/api/agent/submit` (or broadcast via your own RPC).</Step>
+</Steps>
+
+<Note>This is **not** x402. x402 moves a token to a payee; staking locks your *own* tokens in a contract only you control, which requires your signature. The prepare→sign→submit flow is the agentic equivalent.</Note>
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/agent` | Self-describing manifest |
+| `GET` | `/api/agent/analytics` | Global: total staked, stakers, TVL, reward pool |
+| `GET` | `/api/agent/positions?wallet=` | A wallet's positions, status, cooldowns, claimable rewards |
+| `POST` | `/api/agent/stake` | `{ wallet, role, amount }` → unsigned stake tx |
+| `POST` | `/api/agent/unstake` | `{ wallet, role }` → unsigned cooldown-start tx |
+| `POST` | `/api/agent/claim-unstake` | `{ wallet, role }` → unsigned withdraw tx |
+| `POST` | `/api/agent/claim` | `{ wallet, role? }` → unsigned claim-rewards tx(s) |
+| `POST` | `/api/agent/submit` | `{ transaction }` → broadcasts, returns signature |
+
+Every prepare endpoint returns `{ action, transactions: [{ transaction, blockhash, lastValidBlockHeight, description }], next }`.
+
+## Quick start
+
+<CodeGroup>
+```bash curl
+# Global analytics
+curl https://staking.x402layer.cc/api/agent/analytics
+
+# Your positions
+curl "https://staking.x402layer.cc/api/agent/positions?wallet=<YOUR_WALLET>"
+
+# Prepare a stake (returns an unsigned tx to sign + submit)
+curl -X POST https://staking.x402layer.cc/api/agent/stake \
+  -H "Content-Type: application/json" \
+  -d '{"wallet":"<YOUR_WALLET>","role":"compute","amount":50000}'
+```
+
+```js Node
+import { Keypair, Transaction } from "@solana/web3.js";
+
+const BASE = "https://staking.x402layer.cc";
+const kp = Keypair.fromSecretKey(/* your secret key bytes */);
+const wallet = kp.publicKey.toBase58();
+
+// 1. prepare
+const prep = await (await fetch(`${BASE}/api/agent/stake`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ wallet, role: "compute", amount: 50000 }),
+})).json();
+
+for (const { transaction } of prep.transactions) {
+  // 2. sign
+  const tx = Transaction.from(Buffer.from(transaction, "base64"));
+  tx.partialSign(kp);
+  // 3. submit
+  const res = await (await fetch(`${BASE}/api/agent/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ transaction: tx.serialize().toString("base64") }),
+  })).json();
+  console.log(res.signature, res.explorer);
+}
+```
+</CodeGroup>
+
+## Reference
+
+### GET /api/agent/positions
+
+<ParamField query="wallet" type="string" required>Solana wallet address (base58).</ParamField>
+
+Returns `positions[]` (role, amount, status, `cooldownEndsAt`, `claimableUnlock`, `rewardsOwedUsdc`, `rewardsOwedSgl`) and `totals`.
+
+### POST /api/agent/stake
+
+<ParamField body="wallet" type="string" required>Staker wallet (base58).</ParamField>
+<ParamField body="role" type="string" required>`compute` · `validator` · `yield`.</ParamField>
+<ParamField body="amount" type="number" required>$SGL to stake (min 50,000).</ParamField>
+
+### POST /api/agent/unstake · /api/agent/claim-unstake
+
+<ParamField body="wallet" type="string" required>Staker wallet.</ParamField>
+<ParamField body="role" type="string" required>The position's role.</ParamField>
+
+`unstake` begins the cooldown; once `positions[].claimableUnlock` is `true`, call `claim-unstake` to withdraw.
+
+### POST /api/agent/claim
+
+<ParamField body="wallet" type="string" required>Staker wallet.</ParamField>
+<ParamField body="role" type="string">Omit to claim every position with rewards (returns multiple txs).</ParamField>
+
+Claims both USDC and $SGL rewards owed.
+
+### POST /api/agent/submit
+
+<ParamField body="transaction" type="string" required>Base64-encoded **signed** transaction from a prepare endpoint.</ParamField>
+
+Broadcasts and confirms; returns `{ signature, confirmed, explorer }`.
+
+## Node operators: off-grid
+
+Compute operators can pause without penalty by toggling **off-grid** (maintenance) — the node is removed from job dispatch and never slashed for being offline (tamper slashing is unaffected).
+
+```bash
+# CLI
+sgl off-grid     # pause
+sgl on-grid      # resume
+```
+
+Or from the [operator dashboard](https://cloud.x402compute.cc) (wallet-signed), or `POST https://grid.x402compute.cc/grid/nodes/{id}/status` with `{ off_grid }`.
