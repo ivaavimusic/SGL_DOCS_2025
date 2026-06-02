@@ -1,34 +1,28 @@
 ---
 title: Staking Overview
-description: Stake $SGL to secure the Singularity compute network — earn USDC + $SGL rewards, run nodes, and validate.
+description: Stake $SGL to secure the network — earn USDC + $SGL rewards, run nodes, and validate. Use the dashboard or the agentic API.
 ---
 
 # $SGL Staking
 
-Staking `$SGL` puts skin-in-the-game behind the Singularity compute network. Stakers earn a share of network revenue, and staking is what lets you **run a compute node**, **validate the marketplace**, or simply **earn yield**.
+Staking `$SGL` puts skin-in-the-game behind the Singularity network. Stakers earn a share of network revenue, and staking is what lets you **run a compute node**, **validate the marketplace**, or simply **earn yield**.
 
 - **Live on Solana mainnet** — program `3zChiHHFxbT3qQJBrwyQgTohfX8jS91bUGT8gpyB7aBC`
 - **Token** — `$SGL` mint `5c4HyD2rSShqnTsf5z3SaoD2H3GE452u2CUuYjviBAGS` (9 decimals)
-- **Rewards** — paid in **USDC + $SGL** (stakers earn 10% of compute revenue)
+- **Rewards** — paid in **USDC + $SGL** (stakers earn 10% of network revenue)
 - **Minimum** — 50,000 $SGL per position
 
 <CardGroup cols={3}>
-  <Card title="Compute" icon="server">
-    Stake to run a compute node and serve confidential AI inference.
-  </Card>
-  <Card title="Validator" icon="shield-check">
-    Stake to validate marketplace products and earn the SGL Verified badge.
-  </Card>
-  <Card title="Yield" icon="coins">
-    Stake purely to earn a share of network rewards.
-  </Card>
+  <Card title="Compute" icon="server">Stake to run a compute node.</Card>
+  <Card title="Validator" icon="shield-check">Stake to validate marketplace products.</Card>
+  <Card title="Yield" icon="coins">Stake purely to earn rewards.</Card>
 </CardGroup>
 
 ## Roles (stake types)
 
 | Role | Use | Cooldown |
 |------|-----|----------|
-| `compute` | Run a compute node on the grid | 1 day |
+| `compute` | Run a compute node | 1 day |
 | `validator` | Validate marketplace / ERC-8004 | 2 days |
 | `yield` | Earn rewards only | 12 hours |
 
@@ -41,14 +35,35 @@ Each wallet has one position per role. Unstaking starts a cooldown; after it ela
     Connect a wallet at **staking.x402layer.cc** to stake, claim, and view analytics.
   </Card>
   <Card title="Agentic API" icon="robot" href="/staking/agentic-api">
-    Agents stake, claim, and read positions programmatically with only a wallet keypair — no browser.
+    Agents stake, claim, and read positions programmatically with only a wallet keypair. See the API Reference.
   </Card>
 </CardGroup>
 
+## Agentic access: prepare → sign → submit
+
+Staking is an on-chain Anchor program, so we never custody your stake. Mutating actions return an **unsigned** transaction you sign locally with your keypair — the signature *is* the proof of ownership (the program rejects any signer that isn't the staker). Reads are public on-chain data.
+
+<Steps>
+  <Step title="Prepare">POST a prepare endpoint with your wallet → get an unsigned base64 transaction.</Step>
+  <Step title="Sign">Sign it with your wallet keypair.</Step>
+  <Step title="Submit">POST it to `/api/agent/submit` (or broadcast via your own RPC).</Step>
+</Steps>
+
+<Note>This is **not** x402. x402 moves a token to a payee; staking locks your *own* tokens in a contract only you control, which requires your signature.</Note>
+
+```bash
+# Read (no auth)
+curl https://staking.x402layer.cc/api/agent/analytics
+curl "https://staking.x402layer.cc/api/agent/positions?wallet=<YOUR_WALLET>"
+
+# Prepare a stake (returns an unsigned tx to sign + submit)
+curl -X POST https://staking.x402layer.cc/api/agent/stake \
+  -H "Content-Type: application/json" \
+  -d '{"wallet":"<YOUR_WALLET>","role":"compute","amount":50000}'
+```
+
+See the **[API Reference → Staking](/staking/agentic-api)** for every endpoint, request/response schema, and a try-it console.
+
 ## How rewards work
 
-Network compute revenue is split **80% operator / 10% platform / 5% stakers / 5% burn**. The staker share accrues to your position in USDC (and $SGL), claimable any time while your position is `active`.
-
-## Slashing & off-grid
-
-Slashing is reserved for **tampering** (a node serving manipulated results) — not for being offline. Compute operators who need planned downtime can flip their node **off-grid** (maintenance) from the dashboard or CLI: it's removed from job dispatch and never penalized for being offline. See [Run a node](https://cloud.x402compute.cc).
+Network revenue is split **80% operator / 10% platform / 5% stakers / 5% burn**. The staker share accrues to your position in USDC (and $SGL), claimable any time while your position is `active`.

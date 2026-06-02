@@ -117,14 +117,3 @@ Claims both USDC and $SGL rewards owed.
 
 Broadcasts and confirms; returns `{ signature, confirmed, explorer }`.
 
-## Node operators: off-grid
-
-Compute operators can pause without penalty by toggling **off-grid** (maintenance) — the node is removed from job dispatch and never slashed for being offline (tamper slashing is unaffected).
-
-```bash
-# CLI
-sgl off-grid     # pause
-sgl on-grid      # resume
-```
-
-Or from the [operator dashboard](https://cloud.x402compute.cc) (wallet-signed), or `POST https://grid.x402compute.cc/grid/nodes/{id}/status` with `{ off_grid }`.
