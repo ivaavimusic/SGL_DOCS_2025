@@ -1,0 +1,28 @@
+---
+title: Models
+description: Browse the models served on SGL Grid, see live pricing, and choose the right one for your workload.
+---
+
+Models on SGL Grid are served by independent TEE nodes. Availability is **live** — a model is callable whenever at least one attested node is serving it.
+
+## Browsing models
+
+The dashboard's **Models** view lists every model currently served, with its provider, size, and per-request price. You can search and sort (e.g. cheapest first). Programmatically, list models via the API:
+
+```bash
+curl https://grid.x402compute.cc/grid/models
+```
+
+Each entry includes the model id (use it as `model` in your request), how many nodes serve it, and its price.
+
+## Choosing a model
+
+- **Smaller models** (e.g. 3B-class) are cheapest and fastest — great for classification, extraction, drafting, and agent steps.
+- **Larger models** trade cost/latency for capability.
+- **Availability matters** — a model with more serving nodes is more resilient. Prefer models with redundancy for production.
+
+## OpenAI compatibility
+
+Model ids are passed exactly like OpenAI's `model` field. If your code already targets the OpenAI API, switching a model is just changing that string (and the base URL — see the [API guide](/cloud/grid/api)).
+
+<Note>The catalog grows as operators bring more models online. Want a model served? [Run a node](/cloud/provide/overview) and serve it, or ask the community.</Note>

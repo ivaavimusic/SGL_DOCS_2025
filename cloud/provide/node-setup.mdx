@@ -1,0 +1,32 @@
+---
+title: Node Setup
+description: Install the node software, attest your enclave, register on the grid, and start serving.
+---
+
+Running a node turns your TEE-capable hardware into a serving member of the grid. The node software is **open source** and handles attestation, registration, and serving.
+
+## Prerequisites
+
+- **TEE-capable hardware** (a supported Trusted Execution Environment).
+- A **wallet with the minimum $SGL stake** (see [Staking](/cloud/provide/staking)).
+- For model serving, a local inference runtime + the model weights you want to serve.
+
+## Steps
+
+<Steps>
+  <Step title="Install">Install the node CLI from the official open-source release.</Step>
+  <Step title="Log in / link your wallet">Authorize the node with your operator wallet (browser-approved link flow) — this binds the node to the wallet that holds your stake.</Step>
+  <Step title="Attest">The node produces a hardware attestation proving it's a genuine enclave running approved software. Only attestation-verified nodes receive work.</Step>
+  <Step title="Serve">Start the service with the model(s) you want to serve and the share of resources to allocate. The node registers, advertises its models, and begins receiving jobs.</Step>
+</Steps>
+
+## Staying online
+
+- The node sends regular **heartbeats**; if it stops, the network marks it offline and routes around it (no penalty for honest downtime).
+- Going down for maintenance? Use the node's **off-grid / maintenance** mode so you stop receiving new jobs cleanly without failing any in flight.
+
+## Confidentiality
+
+Your node runs workloads **inside the TEE**, so you serve user prompts without ever being able to read them — the platform's confidentiality guarantee depends on this, and attestation enforces it.
+
+<Note>The node software is public and audited. Follow the official repo's README for exact install commands and supported platforms.</Note>

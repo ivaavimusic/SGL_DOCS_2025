@@ -1,0 +1,44 @@
+---
+title: Billing — Credits & x402
+description: Pay for compute per use — prepaid credits or x402 per-call payments in USDC, with no subscription or KYC.
+---
+
+The Singularity Cloud Network is **pay-per-use**. There's no subscription and no KYC — you pay with crypto, either from prepaid **credits** or per request with **x402**.
+
+## Two ways to pay
+
+<CardGroup cols={2}>
+  <Card title="Credits" icon="wallet">
+    Top up a balance once, then spend it across Grid inference and Machines. Best for apps, agents, and frequent use — one top-up, many calls.
+  </Card>
+  <Card title="x402 (per-call)" icon="bolt">
+    Pay for each request at the moment you make it, straight from your wallet in USDC. No balance to manage. Great for occasional use and agents that pay as they go.
+  </Card>
+</CardGroup>
+
+## Credits
+
+- Top up from your wallet; the balance is billed to that wallet.
+- **Grid inference** deducts the exact cost after each request (based on real token usage).
+- Check your balance and usage anytime in the dashboard or via the API usage view.
+
+## x402 (pay-per-request)
+
+[x402](https://www.x402.org) is an open standard for paying for an HTTP request with a stablecoin. With x402:
+
+- Your client signs a small USDC payment alongside the request.
+- The network verifies payment and serves the response — no account needed.
+- Supported chains include **Solana** and **Base** (more over time).
+
+## API keys
+
+For programmatic use, create an **API key** (scoped per product) and pass it as `X-API-Key`. Key-billed requests draw from the key's wallet credits. Manage keys and view usage in the dashboard.
+
+```bash
+curl https://grid.x402compute.cc/v1/chat/completions \
+  -H "X-API-Key: <YOUR_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"<model>","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+See [Pricing](/cloud/grid/pricing) for how inference cost is calculated, and the [API guide](/cloud/grid/api) for the full request flow.

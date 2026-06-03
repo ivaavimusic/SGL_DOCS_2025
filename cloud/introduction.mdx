@@ -1,0 +1,47 @@
+---
+title: Singularity Cloud Network
+description: Decentralized, confidential compute — private AI inference, cloud machines, and serverless TEE functions, paid per use in crypto.
+---
+
+The **Singularity Cloud Network** is decentralized **confidential compute**: independent operators run hardware-attested **Trusted Execution Environments (TEEs)**, and you rent that compute by the request or by the hour — paying in crypto, with no account required.
+
+What makes it different from a normal cloud: every workload runs inside a **verifiable enclave**, and for AI inference your prompts are **end-to-end encrypted** — the network relays only ciphertext, so not even the operator (or us) can read them.
+
+## Three surfaces
+
+<CardGroup cols={3}>
+  <Card title="SGL Grid" icon="bolt" href="/cloud/grid/overview">
+    Decentralized, confidential AI inference. OpenAI-compatible, pay-per-call.
+  </Card>
+  <Card title="SGL Machines" icon="server" href="/cloud/machines/overview">
+    On-demand cloud compute instances, deployed in minutes.
+  </Card>
+  <Card title="SGL Processors" icon="function" href="/cloud/processors/overview">
+    Serverless functions inside a TEE. (Coming soon.)
+  </Card>
+</CardGroup>
+
+## Why it's different
+
+- **Confidential by default** — workloads run in hardware TEEs; AI prompts are end-to-end encrypted (see [Confidential compute](/cloud/concepts/confidential-compute)).
+- **Verifiable** — each node is hardware-attested; inference responses carry an attestation you can check.
+- **Pay per use, in crypto** — per-request or hourly, via x402 (USDC) or prepaid credits. No subscription, no KYC. See [Billing](/cloud/concepts/billing).
+- **Decentralized** — compute is served by independent, staked operators, not a single provider.
+- **Open & compatible** — the Grid speaks the **OpenAI API**, so existing SDKs work by changing a base URL.
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Use the Grid" icon="bolt" href="/cloud/grid/api">
+    Send your first inference with the OpenAI-compatible API.
+  </Card>
+  <Card title="Deploy a machine" icon="server" href="/cloud/machines/deploy">
+    Spin up a cloud instance from the catalog.
+  </Card>
+  <Card title="Provide compute" icon="hand-holding-dollar" href="/cloud/provide/overview">
+    Run a node, serve workloads, and earn.
+  </Card>
+  <Card title="How billing works" icon="credit-card" href="/cloud/concepts/billing">
+    Credits, x402 pay-per-call, and API keys.
+  </Card>
+</CardGroup>

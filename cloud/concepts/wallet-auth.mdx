@@ -1,0 +1,36 @@
+---
+title: Wallet & Authentication
+description: Connect a wallet to use the network — sign once for a session, or authenticate each request with a signature or API key.
+---
+
+The network is **wallet-first**: your wallet is your identity and your payment method. There are no email/password accounts.
+
+## Connecting
+
+In the dashboard, connect a **Solana** wallet (Phantom, Solflare, Backpack — detected automatically) or an **EVM** wallet (for Base / EVM payments). Your wallet address identifies you and is what credits and usage are billed to.
+
+## Three ways to authenticate
+
+<CardGroup cols={3}>
+  <Card title="Sign-once session" icon="signature">
+    Sign one message to get a short-lived session token, reused for every request that session. Best UX for the dashboard.
+  </Card>
+  <Card title="Per-request signature" icon="key">
+    Sign each request. Maximal statelessness; good for scripts and agents.
+  </Card>
+  <Card title="API key" icon="lock">
+    Create a scoped <code>X-API-Key</code> for programmatic access. Best for servers and agents.
+  </Card>
+</CardGroup>
+
+## Why wallet-based
+
+- **No custody** — the network never holds your keys; you sign actions yourself.
+- **No KYC / no accounts** — your wallet is the only identity needed.
+- **Portable** — the same wallet works across Grid, Machines, credits, and (for operators) staking.
+
+## Sessions
+
+A session token is issued after you sign a challenge and is valid for a limited time. It authorizes reads and credit-billed requests without re-signing each call. Reconnecting or signing again refreshes it.
+
+<Note>For confidential Grid inference, wallet auth is separate from the **encryption** keys: your prompt is sealed to the node with ephemeral keys regardless of how you authenticate. See [Confidential compute](/cloud/concepts/confidential-compute).</Note>

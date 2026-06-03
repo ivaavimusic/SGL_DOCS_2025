@@ -1,0 +1,35 @@
+---
+title: Confidential Inference
+description: How SGL Grid keeps your prompts private end-to-end and lets you verify the enclave that served them.
+---
+
+SGL Grid inference is **confidential end-to-end**: your prompt is encrypted before it leaves your device, decrypted only inside a hardware enclave, and the reply is sealed back to you. The network relays only ciphertext.
+
+## The flow
+
+<Steps>
+  <Step title="Reserve">Your client reserves a serving node and receives that node's public encryption key + its attestation info.</Step>
+  <Step title="Seal">Your client encrypts the prompt **in the browser/app**, sealed to that specific enclave's key.</Step>
+  <Step title="Relay">The network forwards only the ciphertext — it cannot read the prompt.</Step>
+  <Step title="Compute">The node decrypts **inside the TEE**, runs the model, and seals the reply to your key.</Step>
+  <Step title="Open">Your client decrypts the reply locally.</Step>
+</Steps>
+
+The encryption uses ephemeral X25519 key exchange with HKDF-derived keys and authenticated encryption (AEAD) that binds the response to your session — so a relay can't redirect or tamper with the reply.
+
+## Verifying the enclave
+
+Every reserved node is **attestation-verified** before it can serve. Inference responses are tagged with the serving node's TEE type and signing identity, surfaced as an **attestation badge** (e.g. "🔒 Verified TEE · Apple Secure Enclave") in the Playground. For programmatic use, the reservation includes the node's attestation fields so you can check them yourself.
+
+## What this guarantees
+
+- **The operator can't read your prompt** — plaintext only exists inside the enclave.
+- **The platform can't read it** — the orchestrator only ever holds ciphertext, which is why **no chat history is stored server-side**.
+- **No in-transit exposure** — the wire carries ciphertext only.
+
+## Good practices
+
+- For sensitive workloads, confirm the **attestation is verified** before trusting a response.
+- Keep any conversation history **client-side** (encrypted at rest if you persist it) — the network deliberately doesn't store it for you.
+
+See the underlying model in [Confidential compute](/cloud/concepts/confidential-compute).

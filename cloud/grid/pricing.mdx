@@ -1,0 +1,41 @@
+---
+title: Pricing
+description: How SGL Grid inference is priced — per-token, per-model, pay only for what you use.
+---
+
+SGL Grid is **usage-based**: you pay per request, priced by the model and the tokens it processes. No subscription, no minimums.
+
+## How cost is calculated
+
+- Each model has a **per-token price** (input and output).
+- Cost for a request = `tokens × the model's rate`.
+- **Credits** are charged the **exact** amount after inference (on real token usage). **x402** charges at request time based on the model and your `max_tokens`.
+
+The live per-model price is shown in the [Models](/cloud/grid/models) view and the models API:
+
+```bash
+curl https://grid.x402compute.cc/grid/models
+```
+
+## Where the money goes
+
+Each paid inference is split across the people who make the network work:
+
+| Share | Goes to |
+|-------|---------|
+| **80%** | The node operator who served your request |
+| **5%** | Platform |
+| **10%** | $SGL stakers (paid as USDC + $SGL) |
+| **5%** | $SGL buy-and-burn |
+
+So usage directly rewards operators and stakers, and continuously buys + burns $SGL.
+
+## Keeping costs down
+
+- Pick the **smallest model** that does the job (see [Models](/cloud/grid/models)).
+- Set a sensible `max_tokens`.
+- Use **credits** for steady usage (exact billing) and **x402** for occasional/agent use.
+
+## Tracking spend
+
+The dashboard's **API usage** view shows your requests, tokens, spend, and a per-model breakdown over time. See [Billing](/cloud/concepts/billing).

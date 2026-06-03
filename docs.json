@@ -114,6 +114,55 @@
         ]
       },
       {
+        "group": "Singularity Cloud Network",
+        "pages": [
+          "cloud/introduction",
+          {
+            "group": "Concepts",
+            "pages": [
+              "cloud/concepts/confidential-compute",
+              "cloud/concepts/billing",
+              "cloud/concepts/wallet-auth"
+            ]
+          },
+          {
+            "group": "SGL Grid",
+            "pages": [
+              "cloud/grid/overview",
+              "cloud/grid/models",
+              "cloud/grid/playground",
+              "cloud/grid/api",
+              "cloud/grid/confidential-inference",
+              "cloud/grid/pricing"
+            ]
+          },
+          {
+            "group": "SGL Machines",
+            "pages": [
+              "cloud/machines/overview",
+              "cloud/machines/catalog",
+              "cloud/machines/deploy",
+              "cloud/machines/manage"
+            ]
+          },
+          {
+            "group": "SGL Processors",
+            "pages": [
+              "cloud/processors/overview"
+            ]
+          },
+          {
+            "group": "Provide Compute",
+            "pages": [
+              "cloud/provide/overview",
+              "cloud/provide/node-setup",
+              "cloud/provide/staking",
+              "cloud/provide/earnings"
+            ]
+          }
+        ]
+      },
+      {
         "group": "Singularity Payments",
         "pages": [
           "user-guide/webhooks",

@@ -1,0 +1,75 @@
+---
+title: API (OpenAI-compatible)
+description: Call SGL Grid with the OpenAI Chat Completions API — change the base URL and key, keep your existing SDK.
+---
+
+SGL Grid implements the **OpenAI Chat Completions API**. If your code already uses the OpenAI SDK, point it at the Grid and it works.
+
+**Base URL:** `https://grid.x402compute.cc/v1`
+
+## Quickstart (cURL)
+
+```bash
+curl https://grid.x402compute.cc/v1/chat/completions \
+  -H "X-API-Key: <YOUR_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "<model-id>",
+    "messages": [{"role": "user", "content": "Explain confidential compute in one line."}],
+    "max_tokens": 256
+  }'
+```
+
+## Drop-in with the OpenAI SDK
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://grid.x402compute.cc/v1",
+    api_key="<YOUR_KEY>",           # an SGL Grid API key
+)
+
+resp = client.chat.completions.create(
+    model="<model-id>",
+    messages=[{"role": "user", "content": "Hello from the Grid"}],
+)
+print(resp.choices[0].message.content)
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://grid.x402compute.cc/v1",
+  apiKey: process.env.SGL_API_KEY,
+});
+
+const r = await client.chat.completions.create({
+  model: "<model-id>",
+  messages: [{ role: "user", content: "Hello from the Grid" }],
+});
+console.log(r.choices[0].message.content);
+```
+
+## Authentication
+
+Pass one of:
+- `X-API-Key: <key>` — scoped API key (recommended for servers/agents)
+- a session bearer token (dashboard)
+- a per-request wallet signature
+
+See [Wallet & auth](/cloud/concepts/wallet-auth).
+
+## Paying
+
+- **API key / credits** — billed to the key's wallet at exact token cost.
+- **x402** — sign a USDC payment per request (Solana or Base). See [Billing](/cloud/concepts/billing).
+
+## Notes
+
+- Request/response shapes match OpenAI Chat Completions (`model`, `messages`, `max_tokens`, `temperature`, `usage`).
+- For maximum privacy (browser-side end-to-end encryption), use the dashboard/SDK confidential path — see [Confidential inference](/cloud/grid/confidential-inference).
+- **Streaming** (`stream: true`) is on the roadmap; today set `stream: false`.
+
+<Note>List available models with `GET https://grid.x402compute.cc/grid/models` — see [Models](/cloud/grid/models).</Note>

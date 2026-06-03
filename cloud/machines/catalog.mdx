@@ -1,0 +1,38 @@
+---
+title: Server Catalog
+description: Browse available machine plans, regions, and OS images before you deploy.
+---
+
+The **catalog** lists every machine plan you can deploy, with specs, region, and hourly price. Browse it in the dashboard under **Machines → Server Catalog**, or via the API.
+
+## What a plan includes
+
+- **Compute** — vCPU and RAM.
+- **Storage** — disk size.
+- **Region** — where the instance runs.
+- **Price** — hourly rate (paid in credits or x402 USDC).
+
+## OS images
+
+Each deploy lets you pick an **OS image** (common Linux distributions). The image is installed at launch; you get SSH access once it's ready.
+
+## Browsing programmatically
+
+```bash
+# Plans
+curl https://grid.x402compute.cc/compute/plans
+# Regions
+curl https://grid.x402compute.cc/compute/regions
+# OS images
+curl https://grid.x402compute.cc/compute/os
+```
+
+(Exact paths and fields are shown in the dashboard; plans and availability change over time.)
+
+## Choosing a plan
+
+- Match vCPU/RAM to your workload; start small and resize/redeploy as needed.
+- Pick a **region** close to your users or data.
+- Confirm the **hourly price** and your billing method before deploying.
+
+Next: [Deploy](/cloud/machines/deploy).

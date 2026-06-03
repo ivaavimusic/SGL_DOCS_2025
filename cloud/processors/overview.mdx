@@ -1,0 +1,25 @@
+---
+title: SGL Processors — Overview
+description: Serverless functions that run inside a TEE — deploy code, invoke on demand, pay per call. Coming soon.
+---
+
+<Note>**SGL Processors are coming soon.** This page previews the direction; details may change before launch.</Note>
+
+**SGL Processors** bring serverless functions to confidential compute: deploy a function once, invoke it on demand, and have it run **inside a hardware TEE** — so your code and its data stay private from the host.
+
+## The idea
+
+- **Deploy a function** to the network (no servers to manage).
+- **Invoke it on demand** — it cold-starts in an enclave, runs, returns.
+- **Pay per call** — credits or x402, like the rest of the network.
+- **Confidential** — execution happens in a TEE; inputs/outputs can be end-to-end encrypted.
+
+## How it complements the rest of the network
+
+- **Grid** = managed model inference.
+- **Machines** = full instances you control.
+- **Processors** = lightweight, event-driven functions for glue logic, pre/post-processing, private data transforms, and agent tools — without running a whole machine.
+
+## Status
+
+Processors are in development. Follow the dashboard (**Processors**) for availability. In the meantime, use [Grid](/cloud/grid/overview) for inference and [Machines](/cloud/machines/overview) for general compute.

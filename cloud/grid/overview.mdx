@@ -1,0 +1,32 @@
+---
+title: SGL Grid — Overview
+description: Decentralized, confidential AI inference. OpenAI-compatible, pay-per-call, end-to-end encrypted.
+---
+
+**SGL Grid** is decentralized, confidential AI inference — think "OpenRouter, but decentralized and private." Models are served by independent, hardware-attested TEE nodes; you call them through an **OpenAI-compatible API** and pay per request.
+
+## Why the Grid
+
+- **OpenAI-compatible** — `/v1/chat/completions`; existing SDKs work by changing the base URL.
+- **Confidential** — prompts are end-to-end encrypted and run inside a TEE; responses carry an attestation. See [Confidential inference](/cloud/grid/confidential-inference).
+- **Pay-per-call** — credits or x402 USDC, no subscription. See [Pricing](/cloud/grid/pricing).
+- **Decentralized** — served by staked operators, not one provider.
+
+## How a request flows
+
+<Steps>
+  <Step title="Pick a model">Browse [models](/cloud/grid/models) served on the network.</Step>
+  <Step title="Authenticate">API key, session, or per-request signature — see [Wallet & auth](/cloud/concepts/wallet-auth).</Step>
+  <Step title="Send">Call the OpenAI-compatible endpoint (or use the [playground](/cloud/grid/playground)).</Step>
+  <Step title="Get a verifiable, private reply">The job runs in a TEE; the response is sealed to you and tagged with the node's attestation.</Step>
+</Steps>
+
+## In this section
+
+<CardGroup cols={2}>
+  <Card title="Models" icon="cubes" href="/cloud/grid/models">What's served, and how to choose.</Card>
+  <Card title="Playground" icon="message" href="/cloud/grid/playground">Try models in the browser.</Card>
+  <Card title="API" icon="code" href="/cloud/grid/api">OpenAI-compatible quickstart.</Card>
+  <Card title="Confidential inference" icon="shield-halved" href="/cloud/grid/confidential-inference">E2E encryption + attestation.</Card>
+  <Card title="Pricing" icon="credit-card" href="/cloud/grid/pricing">How cost is calculated.</Card>
+</CardGroup>

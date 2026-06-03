@@ -1,0 +1,41 @@
+---
+title: Confidential Compute
+description: How TEEs, attestation, and end-to-end encryption keep your workloads private and verifiable on the Singularity Cloud Network.
+---
+
+Confidential compute means your data stays private **even from the machine running it**. The Singularity Cloud Network achieves this with hardware **Trusted Execution Environments (TEEs)**, **remote attestation**, and **end-to-end encryption** for AI inference.
+
+## Trusted Execution Environments (TEEs)
+
+A TEE is a hardware-isolated enclave (e.g. Apple Secure Enclave, Intel TDX/SGX, AMD SEV-SNP, AWS Nitro) where code and data are protected from the host OS, the operator, and other processes. Memory is encrypted and access-controlled by the CPU itself.
+
+On the network, every compute node runs inside a TEE — so the operator hosting your workload cannot inspect it.
+
+## Remote attestation
+
+Before a node can serve, it produces a hardware **attestation** — a signed proof, rooted in the CPU vendor, that it is a genuine enclave running the expected software. The network verifies this; only **attestation-verified** nodes receive work.
+
+When you run inference, the response is tagged with the serving node's attestation so you can confirm it ran in a real enclave (see [Confidential inference](/cloud/grid/confidential-inference)).
+
+## End-to-end encryption (AI inference)
+
+For Grid inference, privacy goes one step further than "TEE on the server":
+
+- Your client fetches the serving node's public key and **encrypts the prompt in your browser/app**, sealed to that specific enclave.
+- The network **relays only ciphertext** — the orchestrator never sees your prompt or the response in the clear.
+- The node decrypts **inside the enclave**, runs the model, and **seals the reply back to your key**.
+
+So the plaintext exists only in two places: your device, and the hardware enclave. Not in transit, not in any database, not with the platform.
+
+<Note>This is why Grid chat history is never stored server-side — the platform cannot read it by design. Any history is kept client-side.</Note>
+
+## What this protects against
+
+- A malicious or compromised **operator** reading your prompts.
+- The **platform** logging or training on your data.
+- **In-transit** interception (the relay only ever holds ciphertext).
+
+## What to still consider
+
+- The **model output** is only as private as where you send it next.
+- Attestation proves the enclave is genuine and running approved software; always verify the attestation badge for sensitive workloads.

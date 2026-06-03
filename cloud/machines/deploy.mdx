@@ -1,0 +1,34 @@
+---
+title: Deploy a Machine
+description: Launch a cloud instance in minutes — pick a plan, add an SSH key, and pay per hour.
+---
+
+Deploying a machine takes a minute. Do it from the dashboard under **Machines → Deploy**.
+
+## Steps
+
+<Steps>
+  <Step title="Pick a plan + OS">Choose a server plan and OS image from the [catalog](/cloud/machines/catalog).</Step>
+  <Step title="Add an SSH key">Bring your own public key (BYOK) or generate a new keypair in the browser. You'll use this to SSH in.</Step>
+  <Step title="Choose how to pay">Credits or x402 USDC (pick the chain). You're billed hourly.</Step>
+  <Step title="Launch">Confirm and deploy. The instance provisions and becomes reachable shortly after.</Step>
+</Steps>
+
+## SSH keys
+
+- **BYOK** — paste your existing public key; you keep the private key.
+- **Generate** — create an Ed25519 keypair in the browser; download the private key immediately (it isn't stored for you).
+
+Your public key is installed on the instance at launch so you can connect:
+
+```bash
+ssh root@<instance-ip>
+```
+
+## After launch
+
+- The instance IP appears in **My Instances**.
+- Need a root password instead of a key? Fetch a **one-time password** (see [Manage](/cloud/machines/manage)).
+- Don't need it anymore? **Destroy** it to stop billing.
+
+<Note>Billing is hourly from launch until you destroy the instance. Destroy machines you're done with to avoid ongoing charges.</Note>

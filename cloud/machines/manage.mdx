@@ -1,0 +1,36 @@
+---
+title: Manage Instances
+description: SSH in, fetch a one-time root password, extend runtime, or destroy your machines.
+---
+
+Manage running machines in the dashboard under **Machines → My Instances**. Each instance shows its IP, plan, region, and status.
+
+## Connect (SSH)
+
+Use the key you provided at deploy time:
+
+```bash
+ssh root@<instance-ip>
+```
+
+The IP is shown on the instance card (copyable).
+
+## One-time root password
+
+If you need password access (e.g. console login), request a **one-time password** from the instance's actions. It's generated on demand and shown once — copy it immediately.
+
+## Extend runtime
+
+Instances bill hourly. **Extend** to add more hours of runtime; you'll be charged for the added time from credits or via x402.
+
+## Destroy
+
+When you're done, **Destroy** the instance to stop billing. For safety, destroy asks you to **type the confirmation** (e.g. `DELETE`) before it proceeds — this is irreversible and wipes the instance.
+
+<Warning>Destroying a machine is permanent — back up anything you need first. Billing continues until the instance is destroyed.</Warning>
+
+## Tips
+
+- Treat instances as disposable: keep state in storage/buckets, redeploy freely.
+- Destroy idle machines to avoid hourly charges.
+- Lost your SSH key? Use the one-time password to get back in, then add a new key.
