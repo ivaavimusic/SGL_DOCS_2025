@@ -17,7 +17,8 @@
       {
         "group": "Home",
         "pages": [
-          "index"
+          "index",
+          "sdks"
         ]
       },
       {
@@ -117,6 +118,7 @@
         "group": "Singularity Cloud Network",
         "pages": [
           "cloud/introduction",
+          "cloud/resources",
           {
             "group": "Concepts",
             "pages": [
@@ -152,10 +154,20 @@
             ]
           },
           {
+            "group": "SDKs",
+            "pages": [
+              "cloud/sdk/overview",
+              "cloud/sdk/typescript",
+              "cloud/sdk/python"
+            ]
+          },
+          {
             "group": "Provide Compute",
             "pages": [
               "cloud/provide/overview",
+              "cloud/provide/requirements",
               "cloud/provide/node-setup",
+              "cloud/provide/cli",
               "cloud/provide/staking",
               "cloud/provide/earnings"
             ]

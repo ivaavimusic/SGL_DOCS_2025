@@ -1,32 +1,91 @@
 ---
 title: Node Setup
-description: Install the node software, attest your enclave, register on the grid, and start serving.
+description: Step-by-step — install the open-source node, log in with your staked wallet, attest your enclave, and start serving.
 ---
 
-Running a node turns your TEE-capable hardware into a serving member of the grid. The node software is **open source** and handles attestation, registration, and serving.
+This walks you through bringing a node online end to end. Make sure you meet the [requirements](/cloud/provide/requirements) first.
 
-## Prerequisites
+The node software is **open source**: [github.com/Singularity-Layer/sgl-network-node](https://github.com/Singularity-Layer/sgl-network-node). Full command details are in the [CLI reference](/cloud/provide/cli).
 
-- **TEE-capable hardware** (a supported Trusted Execution Environment).
-- A **wallet with the minimum $SGL stake** (see [Staking](/cloud/provide/staking)).
-- For model serving, a local inference runtime + the model weights you want to serve.
+## 1. Install the node CLI
 
-## Steps
+Install `sgl` from the official release (see the repo README for per-platform instructions). Verify it's available:
 
-<Steps>
-  <Step title="Install">Install the node CLI from the official open-source release.</Step>
-  <Step title="Log in / link your wallet">Authorize the node with your operator wallet (browser-approved link flow) — this binds the node to the wallet that holds your stake.</Step>
-  <Step title="Attest">The node produces a hardware attestation proving it's a genuine enclave running approved software. Only attestation-verified nodes receive work.</Step>
-  <Step title="Serve">Start the service with the model(s) you want to serve and the share of resources to allocate. The node registers, advertises its models, and begins receiving jobs.</Step>
-</Steps>
+```bash
+sgl --help
+```
 
-## Staying online
+You also need a local inference runtime (llama-server) and a **GGUF model file** to serve, e.g.:
 
-- The node sends regular **heartbeats**; if it stops, the network marks it offline and routes around it (no penalty for honest downtime).
-- Going down for maintenance? Use the node's **off-grid / maintenance** mode so you stop receiving new jobs cleanly without failing any in flight.
+```bash
+# example: a small instruct model
+~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf
+```
+
+## 2. Log in & register (with your staked wallet)
+
+`sgl login` opens a browser flow to approve the node with the wallet that holds your stake. This binds the node to that wallet.
+
+```bash
+sgl login --tee-type apple_se --models llama-3.2-3b
+```
+
+- `--tee-type` — the TEE on your machine (default `apple_se`).
+- `--models` — comma-separated models you'll advertise.
+
+<Note>Prefer no browser? `sgl init --wallet <STAKED_WALLET>` registers directly. `login` is recommended.</Note>
+
+## 3. Attest your enclave
+
+Produce and submit the hardware attestation. Only **attestation-verified** nodes receive jobs — and you must re-attest after any binary update.
+
+```bash
+sgl attest
+```
+
+## 4. Start serving
+
+For production, run as a background service so the node survives reboots, logout, crashes, and idle sleep:
+
+```bash
+sgl service install \
+  --model-path ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf \
+  --model-name llama-3.2-3b \
+  --resource-percent 50
+```
+
+To test in the foreground first:
+
+```bash
+sgl start --model-path ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf --model-name llama-3.2-3b
+```
+
+Check it's healthy:
+
+```bash
+sgl status            # node + hardware + orchestrator
+sgl service status    # background service state
+```
+
+Your node now registers, advertises its model(s), heartbeats, and starts receiving jobs.
+
+## 5. Maintenance
+
+Going down on purpose? Use maintenance mode so you stop receiving **new** jobs cleanly (in-flight jobs finish; no penalty):
+
+```bash
+sgl off-grid          # before planned downtime
+sgl on-grid           # resume
+```
+
+Honest downtime is never penalized — it just means no new jobs while you're offline. Only **proven tampering** is slashable (see [Staking to operate](/cloud/provide/staking)).
 
 ## Confidentiality
 
-Your node runs workloads **inside the TEE**, so you serve user prompts without ever being able to read them — the platform's confidentiality guarantee depends on this, and attestation enforces it.
+Your node runs every workload **inside the TEE**, so you serve user prompts without being able to read them. Attestation enforces this — it's the basis of the network's [confidential-compute](/cloud/concepts/confidential-compute) guarantee.
 
-<Note>The node software is public and audited. Follow the official repo's README for exact install commands and supported platforms.</Note>
+## Next
+
+- [CLI reference](/cloud/provide/cli) — every command and flag.
+- [Earnings & payouts](/cloud/provide/earnings) — how you get paid.
+- [Staking to operate](/cloud/provide/staking) — the bond required.

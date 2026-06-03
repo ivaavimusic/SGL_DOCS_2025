@@ -1,0 +1,122 @@
+---
+title: TypeScript SDK
+description: "@singularity-layer/grid — the official TypeScript/JavaScript client: chat, models, pricing, jobs, and attestation."
+---
+
+`@singularity-layer/grid` is the official **TypeScript/JavaScript** client for SGL Grid. Typed methods over the grid's HTTP API; zero dependencies; native `fetch` (Node ≥ 18, modern browsers, edge runtimes).
+
+| | |
+|---|---|
+| **npm** | [`@singularity-layer/grid`](https://www.npmjs.com/package/@singularity-layer/grid) |
+| **Source** | [github.com/Singularity-Layer/sgl-network-sdk-ts](https://github.com/Singularity-Layer/sgl-network-sdk-ts) |
+| **License** | MIT |
+
+## Install
+
+```bash
+npm install @singularity-layer/grid
+# pnpm add @singularity-layer/grid · yarn add @singularity-layer/grid
+```
+
+## Quick start
+
+```typescript
+import { GridClient } from "@singularity-layer/grid";
+
+const grid = new GridClient();              // public reads need no key
+
+const res = await grid.chatCompletions({
+  model: "<model-id>",                       // see grid.models()
+  messages: [{ role: "user", content: "What is confidential compute?" }],
+});
+
+console.log(res.choices[0].message.content);
+```
+
+## Configuration
+
+```typescript
+const grid = new GridClient({
+  apiKey: "scg_...",                          // required for job submission / billed calls
+  baseUrl: "https://grid.x402compute.cc",     // override the orchestrator URL
+  timeout: 30_000,                            // request timeout in ms (default 60000)
+});
+```
+
+- **No key** → public reads (`capacity`, `models`, `pricing`) work.
+- **API key** → required for `submitJob`, `getJob`, `getAttestation`, and billed chat. Create keys in the dashboard (see [Billing](/cloud/concepts/billing)).
+
+## Discovery (no auth)
+
+```typescript
+const cap = await grid.capacity();
+console.log(`${cap.active_nodes} nodes online`);
+
+const models = await grid.models();
+models.forEach((m) => console.log(`${m.id} — ${m.sgl_node_count} nodes`));
+
+const pricing = await grid.pricing();
+pricing.forEach((p) => console.log(`${p.model}: $${p.price_per_1k_input_tokens_usd}/1k input`));
+```
+
+## Chat completions
+
+```typescript
+const grid = new GridClient({ apiKey: "scg_..." });
+
+const res = await grid.chatCompletions({
+  model: "<model-id>",
+  messages: [
+    { role: "system", content: "You are concise." },
+    { role: "user", content: "Summarize TEEs in one sentence." },
+  ],
+  max_tokens: 256,
+  temperature: 0.7,
+});
+```
+
+## Jobs + attestation
+
+```typescript
+const grid = new GridClient({ apiKey: "scg_..." });
+
+const job = await grid.submitJob("<model-id>", {
+  messages: [{ role: "user", content: "Summarize quantum computing" }],
+});
+
+const result = await grid.getJob(job.job_id);
+if (result.status === "completed") console.log(result.result);
+
+const att = await grid.getAttestation(job.job_id);   // verify the enclave
+console.log(`Verified: ${att.verified}, TEE: ${att.tee_type}`);
+```
+
+See [Confidential inference](/cloud/grid/confidential-inference) for what the attestation proves.
+
+## Error handling
+
+```typescript
+import {
+  GridClient, SGLAPIError, SGLAuthError, SGLConnectionError, SGLNotFoundError,
+} from "@singularity-layer/grid";
+
+try {
+  await grid.getJob("nonexistent");
+} catch (err) {
+  if (err instanceof SGLNotFoundError) { /* 404 */ }
+  else if (err instanceof SGLAuthError) { /* 401/403 — bad/missing key */ }
+  else if (err instanceof SGLConnectionError) { /* unreachable / timeout */ }
+  else if (err instanceof SGLAPIError) { console.log(err.statusCode, err.message); }
+}
+```
+
+## Or use the OpenAI SDK
+
+The grid is OpenAI-compatible — skip this client if you just want drop-in chat:
+
+```typescript
+import OpenAI from "openai";
+const client = new OpenAI({ baseURL: "https://grid.x402compute.cc/v1", apiKey: "scg_..." });
+```
+
+Use `@singularity-layer/grid` for grid-native features (capacity, pricing, jobs, attestation). See the [API guide](/cloud/grid/api) and the [Python SDK](/cloud/sdk/python).

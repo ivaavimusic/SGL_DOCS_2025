@@ -1,0 +1,51 @@
+---
+title: Resources & Links
+description: Every public repository, package, endpoint, and dashboard for the Singularity Cloud Network in one place.
+---
+
+Everything you need to build on, or operate, the Singularity Cloud Network. For the platform-wide package catalog (including the payments SDK), see **[SDKs & Packages](/sdks)**.
+
+## Open-source repositories
+
+| Project | What it is | Repository |
+|---|---|---|
+| **Node** | The operator node software (`sgl` CLI) | [Singularity-Layer/sgl-network-node](https://github.com/Singularity-Layer/sgl-network-node) |
+| **TypeScript SDK** | Grid client for JS/TS | [Singularity-Layer/sgl-network-sdk-ts](https://github.com/Singularity-Layer/sgl-network-sdk-ts) |
+| **Python SDK** | Grid client for Python | [Singularity-Layer/sgl-network-sdk](https://github.com/Singularity-Layer/sgl-network-sdk) |
+| **Staking program** | On-chain Anchor staking program | [Singularity-Layer/sgl-staking](https://github.com/Singularity-Layer/sgl-staking) |
+
+All MIT-licensed.
+
+## Packages
+
+<CodeGroup>
+```bash npm (TypeScript)
+npm install @singularity-layer/grid
+```
+```bash pip (Python)
+pip install singularity-grid
+# OpenAI helper:
+pip install "singularity-grid[openai]"
+```
+</CodeGroup>
+
+- npm: [`@singularity-layer/grid`](https://www.npmjs.com/package/@singularity-layer/grid)
+- PyPI: [`singularity-grid`](https://pypi.org/project/singularity-grid/)
+
+## Endpoints & apps
+
+| Surface | URL |
+|---|---|
+| **Dashboard** (Machines, Grid, API keys, credits, operator) | [cloud.x402compute.cc](https://cloud.x402compute.cc) |
+| **Grid API** (OpenAI-compatible) | `https://grid.x402compute.cc/v1` |
+| **Grid discovery** (models, capacity, pricing) | `https://grid.x402compute.cc/grid/*` |
+| **Machines API** (provisioning) | `https://compute.x402layer.cc` |
+
+## Quick links by goal
+
+<CardGroup cols={2}>
+  <Card title="Call the Grid" icon="bolt" href="/cloud/grid/api">OpenAI-compatible API + SDKs.</Card>
+  <Card title="Deploy a machine" icon="server" href="/cloud/machines/deploy">Spin up an instance.</Card>
+  <Card title="Run a node" icon="hand-holding-dollar" href="/cloud/provide/overview">Provide compute and earn.</Card>
+  <Card title="Node CLI reference" icon="terminal" href="/cloud/provide/cli">Every <code>sgl</code> command.</Card>
+</CardGroup>

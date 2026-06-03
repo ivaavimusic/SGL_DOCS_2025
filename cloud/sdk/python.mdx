@@ -1,0 +1,116 @@
+---
+title: Python SDK
+description: "singularity-grid — the official Python client: chat, models, pricing, jobs, and TEE attestation."
+---
+
+`singularity-grid` is the official **Python** client for SGL Grid. Submit inference to TEE-verified nodes, check capacity, read pricing, and verify attestation — from one package.
+
+| | |
+|---|---|
+| **PyPI** | [`singularity-grid`](https://pypi.org/project/singularity-grid/) |
+| **Source** | [github.com/Singularity-Layer/sgl-network-sdk](https://github.com/Singularity-Layer/sgl-network-sdk) |
+| **License** | MIT |
+
+## Install
+
+```bash
+pip install singularity-grid
+# OpenAI compatibility helper:
+pip install "singularity-grid[openai]"
+```
+
+## Quick start
+
+```python
+from singularity_grid import GridClient
+
+grid = GridClient()                       # public endpoints — no auth
+cap = grid.capacity()
+print(f"Active nodes: {cap.active_nodes}/{cap.total_nodes}")
+for m in grid.models():
+    print(f"  {m.id} — {m.sgl_node_count} nodes")
+```
+
+## Configuration
+
+| Parameter | Default | Description |
+|---|---|---|
+| `api_key` | `None` | Bearer token for authenticated endpoints |
+| `base_url` | orchestrator URL | Override the orchestrator URL |
+| `timeout` | `60.0` | Request timeout in seconds |
+
+```python
+grid = GridClient(api_key="scg_your_api_key", timeout=30.0)
+```
+
+## Submit a job + verify attestation
+
+```python
+from singularity_grid import GridClient
+
+grid = GridClient(api_key="scg_your_api_key")
+
+job = grid.submit_job(
+    model="<model-id>",
+    input_payload={"messages": [{"role": "user", "content": "Analyze this data"}]},
+    submitter_wallet="<your-wallet>",
+    submitter_chain="base",          # or "solana"
+)
+
+result = grid.get_job(job.job_id)
+attestation = grid.get_attestation(job.job_id)
+print(f"TEE verified: {attestation.verified}, type: {attestation.tee_type}")
+```
+
+## OpenAI-compatible usage
+
+```python
+# Direct
+from openai import OpenAI
+client = OpenAI(base_url="https://grid.x402compute.cc/v1", api_key="scg_your_api_key")
+
+# Or via the bundled helper (no need to copy the URL)
+from singularity_grid import create_openai_client
+client = create_openai_client(api_key="scg_your_api_key")
+
+resp = client.chat.completions.create(
+    model="<model-id>",
+    messages=[{"role": "user", "content": "Hello from the grid"}],
+)
+print(resp.choices[0].message.content)
+```
+
+## API reference
+
+| Method | Auth | Description |
+|---|---|---|
+| `capacity()` | No | Grid-wide capacity summary |
+| `models()` | No | Available models with pricing + TEE info |
+| `pricing()` | No | Pricing table for all models |
+| `submit_job(model, input_payload, ...)` | Yes | Submit a compute job |
+| `get_job(job_id)` | Yes | Job status + result |
+| `get_attestation(job_id)` | Yes | TEE attestation proof |
+| `create_openai_client(api_key=...)` | — | Helper returning a configured OpenAI client |
+
+## Exceptions
+
+| Exception | When |
+|---|---|
+| `SGLError` | Base class for all SDK errors |
+| `SGLAPIError` | Non-2xx response |
+| `SGLAuthError` | 401 / 403 (bad or missing key) |
+| `SGLNotFoundError` | 404 |
+| `SGLConnectionError` | Orchestrator unreachable / timeout |
+
+```python
+from singularity_grid import GridClient, SGLAuthError, SGLNotFoundError
+
+try:
+    grid.get_job("nonexistent")
+except SGLNotFoundError:
+    ...
+except SGLAuthError:
+    ...
+```
+
+See [Confidential inference](/cloud/grid/confidential-inference) for attestation details and the [TypeScript SDK](/cloud/sdk/typescript) for the JS/TS client.

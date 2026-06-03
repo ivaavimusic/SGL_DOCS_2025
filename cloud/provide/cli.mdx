@@ -1,0 +1,106 @@
+---
+title: Node CLI Reference
+description: The sgl command-line tool — every command and flag to register, run, and manage a Singularity compute node.
+---
+
+`sgl` is the open-source node operator CLI. It generates your node's keys, registers it on the grid, runs inference, manages the background service, and toggles maintenance mode. This is the complete command reference.
+
+<Note>Install `sgl` from the official open-source release (see [Node setup](/cloud/provide/node-setup)). You also need a local inference runtime (llama-server) and a GGUF model file to serve.</Note>
+
+## Typical first run
+
+```bash
+sgl login                                  # browser-approve with your staked wallet
+sgl attest                                 # produce + submit the hardware attestation
+sgl service install \                       # run as a background service, serving a model
+  --model-path ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf \
+  --model-name llama-3.2-3b \
+  --resource-percent 50
+```
+
+---
+
+## Commands
+
+### `sgl login`
+Log in via the browser and register this node (recommended — binds the node to the wallet that holds your stake).
+
+| Flag | Default | Description |
+|---|---|---|
+| `--tee-type` | `apple_se` | TEE type on this machine (e.g. `apple_se`) |
+| `--models` | — | Comma-separated models to advertise |
+
+### `sgl init`
+Initialize the node without the browser flow: generate keys and register directly under a wallet.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--wallet` | *(required)* | Staked Solana wallet address this node operates under |
+| `--tee-type` | `apple_se` | TEE type on this machine |
+| `--models` | — | Comma-separated models to advertise |
+
+### `sgl attest`
+Verify attestation — sign the orchestrator's challenge and submit the hardware attestation proof. Only attestation-verified nodes receive jobs. Run after login/init and after any binary update.
+
+### `sgl start`
+Run the node in the foreground: start the local inference server, begin heartbeating, and process jobs.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--model-path` | — | Path to the GGUF model file |
+| `--model-name` | — | Model name to advertise (e.g. `llama-3.2-3b`) |
+| `--inference-port` | `8081` | Port for the local llama-server |
+| `--resource-percent` | `100` | Quick preset (1–100): sets threads, GPU layers, and concurrency proportionally |
+| `--threads` | auto | CPU threads for inference (overrides the preset) |
+| `--gpu-layers` | auto | GPU layers to offload (0 = CPU only, 99 = all) |
+| `--context-size` | `4096` | Context window in tokens |
+| `--max-jobs` | `1` | Max concurrent jobs to accept |
+| `--batch-size` | `512` | Prompt batch size |
+| `--heartbeat-interval` | `5` | Heartbeat seconds (lower = faster pickup, more traffic) |
+
+<Note>Use `sgl start` to test in the foreground; use `sgl service install` for production so the node survives reboots, logout, crashes, and idle sleep.</Note>
+
+### `sgl status`
+Show node status, hardware capabilities, and orchestrator connection info.
+
+### `sgl off-grid`
+Go off-grid (maintenance): stop receiving **new** jobs without penalty, for planned downtime. In-flight jobs finish cleanly. Tamper slashing is unaffected — off-grid only pauses job routing, it can't dodge a tamper penalty.
+
+### `sgl on-grid`
+Come back on-grid: resume receiving jobs.
+
+---
+
+## `sgl service` — background service
+
+Runs the node as a managed OS service (launchd on macOS / systemd on Linux) so it keeps serving across reboots, logout, crashes, and idle sleep.
+
+### `sgl service install`
+Install and start the background service.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--model-path` | — | Path to the GGUF model file |
+| `--model-name` | — | Model name to advertise |
+| `--resource-percent` | `50` | Percentage of system resources to dedicate (1–100) |
+| `--inference-port` | `8081` | Port for the local llama-server |
+| `--max-jobs` | `1` | Max concurrent jobs |
+| `--heartbeat-interval` | `5` | Heartbeat seconds |
+
+### `sgl service stop`
+Stop and remove the background service.
+
+### `sgl service status`
+Show whether the service is installed and running.
+
+---
+
+## Maintenance workflow
+
+```bash
+sgl off-grid          # before planned downtime — stop new jobs
+# ... do maintenance ...
+sgl on-grid           # resume serving
+```
+
+After updating the node binary, re-run `sgl attest` so the network re-verifies your enclave. See [Node setup](/cloud/provide/node-setup) and [Earnings](/cloud/provide/earnings).

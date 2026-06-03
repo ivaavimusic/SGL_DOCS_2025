@@ -1,0 +1,47 @@
+---
+title: SDKs & Packages
+description: Every official Singularity SDK, package, and CLI in one place — install commands and source repositories.
+---
+
+One catalog of every official package across the Singularity platform — pick what you need.
+
+## Grid inference
+
+Clients for [SGL Grid](/cloud/grid/overview) (decentralized confidential inference). OpenAI-compatible.
+
+| Language | Install | Package | Source | Guide |
+|---|---|---|---|---|
+| TypeScript | `npm install @singularity-layer/grid` | [npm](https://www.npmjs.com/package/@singularity-layer/grid) | [sgl-network-sdk-ts](https://github.com/Singularity-Layer/sgl-network-sdk-ts) | [TS SDK](/cloud/sdk/typescript) |
+| Python | `pip install singularity-grid` | [PyPI](https://pypi.org/project/singularity-grid/) | [sgl-network-sdk](https://github.com/Singularity-Layer/sgl-network-sdk) | [Python SDK](/cloud/sdk/python) |
+| Any | — | OpenAI SDK (drop-in) | — | [API guide](/cloud/grid/api) |
+
+## Payments & receipts
+
+The **Singularity Payments SDK** verifies x402 payment receipts (signed JWTs) server-side — gate content, confirm purchases, audit payments.
+
+| Language | Install | Source | Guide |
+|---|---|---|---|
+| Node.js | `npm install x402sgl` | [Singularity-SDK](https://github.com/ivaavimusic/Singularity-SDK) | [Singularity-SDK](https://github.com/ivaavimusic/Singularity-SDK) |
+| Python | `pip install git+https://github.com/ivaavimusic/Singularity-SDK.git#subdirectory=python` | [Singularity-SDK](https://github.com/ivaavimusic/Singularity-SDK) | [Singularity-SDK](https://github.com/ivaavimusic/Singularity-SDK) |
+
+## Operators (run a node)
+
+| Tool | Source | Guide |
+|---|---|---|
+| **`sgl` node CLI** | [sgl-network-node](https://github.com/Singularity-Layer/sgl-network-node) | [CLI reference](/cloud/provide/cli) · [Node setup](/cloud/provide/node-setup) |
+
+## On-chain
+
+| Program | Source | Guide |
+|---|---|---|
+| **$SGL staking** (Anchor) | [sgl-staking](https://github.com/Singularity-Layer/sgl-staking) | [Staking Engine](/staking/introduction) |
+
+## Endpoints
+
+| Surface | URL |
+|---|---|
+| Grid API (OpenAI-compatible) | `https://grid.x402compute.cc/v1` |
+| Machines API (provisioning) | `https://compute.x402layer.cc` |
+| Cloud dashboard | [cloud.x402compute.cc](https://cloud.x402compute.cc) |
+
+<Note>Building agents? There are also installable **skills** (not SDKs) — see the **Skills** section.</Note>

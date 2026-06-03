@@ -1,0 +1,54 @@
+---
+title: SDKs — Overview
+description: Official TypeScript and Python clients for the Singularity Cloud Network, plus the OpenAI-compatible option.
+---
+
+The Singularity Cloud Network ships official **TypeScript** and **Python** SDKs, plus full **OpenAI-API compatibility**.
+
+<Note>Looking for *every* package across the platform (payments SDK, node CLI, on-chain program)? See the single **[SDKs & Packages](/sdks)** catalog.</Note>
+
+## What the SDKs cover today
+
+The current SDKs are **Grid inference clients** — chat completions, model/capacity/pricing discovery, explicit job submission, and TEE attestation. They're named for the grid (`@singularity-layer/grid`, `singularity-grid`).
+
+| Product | How to access today |
+|---|---|
+| **SGL Grid** (inference) | These SDKs, or the OpenAI SDK (drop-in) |
+| **SGL Machines** (instances) | The provisioning API + the `x402-compute` skill |
+| **SGL Processors** | Coming soon — client support will land here when it ships |
+
+<Note>As Processors launch and Machines client helpers are added, they'll live in this **SDKs** section alongside the Grid clients — so this is the one place to look for libraries.</Note>
+
+## Pick your client
+
+<CardGroup cols={3}>
+  <Card title="TypeScript SDK" icon="js" href="/cloud/sdk/typescript">
+    <code>@singularity-layer/grid</code> — typed, zero-dependency, native fetch.
+  </Card>
+  <Card title="Python SDK" icon="python" href="/cloud/sdk/python">
+    <code>singularity-grid</code> — jobs, attestation, OpenAI helper.
+  </Card>
+  <Card title="OpenAI-compatible" icon="code" href="/cloud/grid/api">
+    Already using the OpenAI SDK? Just change the base URL.
+  </Card>
+</CardGroup>
+
+## Install
+
+<CodeGroup>
+```bash npm
+npm install @singularity-layer/grid
+```
+```bash pip
+pip install singularity-grid          # add [openai] for the OpenAI helper
+```
+</CodeGroup>
+
+## Source & packages
+
+| | Package | Repository |
+|---|---|---|
+| TypeScript | [`@singularity-layer/grid`](https://www.npmjs.com/package/@singularity-layer/grid) (npm) | [Singularity-Layer/sgl-network-sdk-ts](https://github.com/Singularity-Layer/sgl-network-sdk-ts) |
+| Python | [`singularity-grid`](https://pypi.org/project/singularity-grid/) (PyPI) | [Singularity-Layer/sgl-network-sdk](https://github.com/Singularity-Layer/sgl-network-sdk) |
+
+Both are **MIT-licensed and open source**. See also the [node software](https://github.com/Singularity-Layer/sgl-network-node) (for operators) and all links on the [Resources](/cloud/resources) page.

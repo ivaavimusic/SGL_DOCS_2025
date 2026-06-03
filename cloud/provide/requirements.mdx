@@ -1,0 +1,39 @@
+---
+title: Requirements
+description: What you need before running a Singularity compute node — hardware, TEE, stake, software, and network.
+---
+
+Before you [set up a node](/cloud/provide/node-setup), make sure you meet these requirements.
+
+## Hardware & TEE
+
+- **A machine with a supported Trusted Execution Environment (TEE).** The enclave is what lets you serve confidential workloads without being able to read them — it's mandatory.
+  - Examples: Apple Secure Enclave (`apple_se`), Intel TDX/SGX, AMD SEV-SNP, AWS Nitro.
+- **Enough compute for the model you'll serve** — CPU/RAM (and GPU/Metal where available). Smaller models (3B-class) run on modest hardware; larger models need more.
+- **Reliable power + network** — uptime is how you get matched to jobs (see [Earnings](/cloud/provide/earnings)).
+
+## Stake
+
+- **$SGL stake** bonded to your operator wallet, at least the minimum required to register a compute node (shown in the staking app). This is your skin in the game.
+- Staking is **non-custodial** and only slashable for **proven tampering** — never for honest downtime. See [Staking to operate](/cloud/provide/staking) and the [Staking Engine docs](/staking/introduction).
+
+## Software
+
+- **The `sgl` node CLI** — [github.com/Singularity-Layer/sgl-network-node](https://github.com/Singularity-Layer/sgl-network-node) (open source). See the repo README for install per platform.
+- **A local inference runtime** (llama-server) for serving models.
+- **A model file** (GGUF) for the model you intend to serve.
+
+## Wallet
+
+- A **Solana wallet** holding your stake, used to authorize the node (browser-approved `sgl login`).
+
+## Checklist
+
+<Steps>
+  <Step title="TEE-capable machine">Confirm your hardware has a supported enclave.</Step>
+  <Step title="Stake $SGL">Bond at least the minimum in the staking app.</Step>
+  <Step title="Install the CLI + runtime">Get `sgl` and llama-server; download your model.</Step>
+  <Step title="Wallet ready">Have your staked wallet available to approve login.</Step>
+</Steps>
+
+Ready? Continue to [Node setup](/cloud/provide/node-setup).
