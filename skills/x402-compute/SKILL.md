@@ -1,20 +1,23 @@
 ---
 name: x402-compute
-version: 1.4.1
+version: 1.5.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "extend compute instance", "resize compute instance", "destroy server instance", "check instance status",
-  "list my instances", "top up compute credits", "check credit balance", or manage x402 Singularity Compute / x402Compute
-  infrastructure. Handles GPU and VPS provisioning across Vultr and DigitalOcean
-  with USDC payment on Base or Solana, USDm payment on MegaETH via x402,
-  optional MPP/Mppx payment flows, or pre-loaded USD credits for payment-free
-  provisioning and extending. Includes optional OWS-backed auth and management flows.
-homepage: https://studio.x402layer.cc/docs/agentic-access/x402-compute
+  "list my instances", "top up compute credits", "check credit balance",
+  "run inference on the grid", "decentralized inference", "OpenAI-compatible API",
+  "confidential / TEE inference", "list grid models", "check grid capacity",
+  or manage Singularity Cloud Network compute. Two products: SGL Machines
+  (GPU/VPS provisioning across Vultr & DigitalOcean) and SGL Grid (decentralized,
+  confidential, OpenAI-compatible inference). Pay with USDC on Base or Solana,
+  USDm on MegaETH via x402, optional MPP/Mppx, or pre-loaded USD credits. Includes
+  optional OWS-backed auth and management flows.
+homepage: https://docs.x402layer.cc/agentic-access/x402-compute
 metadata:
   clawdbot:
     emoji: "🖥️"
-    homepage: https://compute.x402layer.cc
+    homepage: https://cloud.x402compute.cc
     os:
       - linux
       - darwin
@@ -55,17 +58,24 @@ allowed-tools:
 ---
 
 
-# x402 Singularity Compute
+# Singularity Cloud Network — Compute & Grid
 
-Provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean paid with x402, MPP, or pre-loaded credits.
+Two products, one credit balance, one set of wallet/API-key auth:
 
-**Base URL:** `https://compute.x402layer.cc`
-**Providers:** Vultr • DigitalOcean
+- **SGL Machines** — provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean. **API base:** `https://compute.x402layer.cc`
+- **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
+- **SGL Processors** — serverless TEE functions. *Coming soon.*
+
+Pay with x402, MPP, or pre-loaded credits — the same `x402c_…` API key and prepaid credit balance work across Machines and Grid.
+
 **x402 Networks:** Base (EVM) • Solana • MegaETH
 **x402 Currency:** USDC (Base/Solana) • USDm (MegaETH)
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
-**Credits:** Pre-load USD via x402 topup, then provision/extend with `use_credits: true`
+**Credits:** Pre-load USD via x402 topup, then provision/extend (`use_credits: true`) or call the Grid with `X-API-Key`
 **Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
+**$SGL:** native token, live on Solana — mint `5c4HyD2rSShqnTsf5z3SaoD2H3GE452u2CUuYjviBAGS` (staking secures the grid; see [staking.x402layer.cc](https://staking.x402layer.cc))
+
+This section below (Machines) covers provisioning. Jump to **[SGL Grid — Inference](#sgl-grid--inference)** for the OpenAI-compatible inference API.
 
 **Access Note:** Preferred access is SSH public key. If no SSH key is provided, a one-time password fallback can be fetched once via API.
 **DigitalOcean Note:** DigitalOcean instances require SSH key access because one-time root passwords are not exposed through the DigitalOcean API.
@@ -350,6 +360,44 @@ Notes:
 
 ---
 
+## SGL Grid — Inference
+
+Decentralized, confidential inference across attested TEE nodes — **OpenAI-compatible**, so any OpenAI SDK works by pointing `base_url` at the grid. Requests are end-to-end encrypted and can stream token-by-token.
+
+**API base:** `https://grid.x402compute.cc`
+**Auth:** `X-API-Key: x402c_…` (billed to your prepaid credits — same key/credits as Machines) **or** per-request x402 via `X-Payment`.
+**Billing:** pay-per-token in USDC (credits or x402). No subscription.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET`  | `/v1/models` | List models currently served by active attested nodes |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible chat (set `"stream": true` to stream) |
+| `GET`  | `/grid/capacity` | Live capacity: active nodes, TEE types, served models, `at_capacity` |
+
+```bash
+# 1) Reuse your compute API key (x402c_…) + prepaid credits, or create one:
+python {baseDir}/scripts/create_api_key.py --label "my-agent"   # → x402c_...
+# Top up credits in the dashboard: Settings → Credits (cloud.x402compute.cc).
+
+# 2) Check what's being served + whether the grid has capacity
+curl https://grid.x402compute.cc/v1/models -H "X-API-Key: $COMPUTE_API_KEY"
+curl https://grid.x402compute.cc/grid/capacity            # active_nodes, models, at_capacity
+
+# 3) OpenAI-compatible chat (billed to credits)
+curl -X POST https://grid.x402compute.cc/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
+
+# Streaming: add "stream": true and read the SSE token chunks.
+# Pay-per-request with x402 instead of credits: send the X-Payment header
+# (same 402 → sign → resend flow as provision/extend) and omit X-API-Key.
+```
+
+Use any **OpenAI SDK** by setting `base_url=https://grid.x402compute.cc/v1` and `api_key=$COMPUTE_API_KEY`. Before a large batch, check `/grid/capacity` and back off / retry if `at_capacity` is true.
+
+---
+
 ## Plan Types
 
 | Type | Plan Prefix | Description |
@@ -389,9 +437,11 @@ For full endpoint details, see:
 
 ## Resources
 
-- 📖 **Documentation:** [studio.x402layer.cc/docs/agentic-access/x402-compute](https://studio.x402layer.cc/docs/agentic-access/x402-compute)
-- 🖥️ **Compute Dashboard:** [compute.x402layer.cc](https://compute.x402layer.cc)
-- 🌐 **x402 Studio:** [studio.x402layer.cc](https://studio.x402layer.cc)
+- 📖 **Documentation:** [docs.x402layer.cc/agentic-access/x402-compute](https://docs.x402layer.cc/agentic-access/x402-compute)
+- 🖥️ **Cloud Network app:** [cloud.x402compute.cc](https://cloud.x402compute.cc) (Machines, Grid, API keys, credits)
+- 🌐 **Singularity Compute:** [x402compute.cc](https://x402compute.cc)
+- 🔑 **Staking:** [staking.x402layer.cc](https://staking.x402layer.cc) — stake $SGL (min 50,000) to run a node / validate; rewards in USDC + SGL
+- **API bases:** Machines `https://compute.x402layer.cc` · Grid `https://grid.x402compute.cc`
 
 ---
 

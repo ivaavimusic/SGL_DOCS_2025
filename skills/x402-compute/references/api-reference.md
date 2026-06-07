@@ -413,3 +413,38 @@ List API keys for your wallet.
 ### DELETE /compute/api-keys/:id
 
 Revoke an API key (signature auth required).
+
+---
+
+## SGL Grid — Inference (base: `https://grid.x402compute.cc`)
+
+Decentralized, confidential, **OpenAI-compatible** inference. Auth with `X-API-Key: x402c_…` (billed to prepaid credits — same key/credits as Machines) or per-request x402 via `X-Payment`. Pay-per-token in USDC.
+
+### GET /v1/models
+
+List models currently served by active attested nodes.
+
+```bash
+curl https://grid.x402compute.cc/v1/models -H "X-API-Key: x402c_..."
+```
+
+### POST /v1/chat/completions
+
+OpenAI-compatible chat completion. Set `"stream": true` for token streaming (SSE; each chunk is end-to-end encrypted). Body matches the OpenAI schema (`model`, `messages`, optional `temperature`, `max_tokens`, `stream`). Works with any OpenAI SDK via `base_url=https://grid.x402compute.cc/v1`.
+
+```bash
+curl -X POST https://grid.x402compute.cc/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: x402c_..." \
+  -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
+```
+
+Errors: `401` invalid/revoked API key · `402` payment required (resend with `X-Payment`) or insufficient credits (top up in Settings → Credits).
+
+### GET /grid/capacity
+
+Live grid capacity — active node count, TEE types, served models, and an `at_capacity` flag. No auth. Check before a large batch and back off if `at_capacity` is true.
+
+```bash
+curl https://grid.x402compute.cc/grid/capacity
+```
