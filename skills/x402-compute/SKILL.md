@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.5.0
+version: 1.6.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -8,11 +8,14 @@ description: |
   "list my instances", "top up compute credits", "check credit balance",
   "run inference on the grid", "decentralized inference", "OpenAI-compatible API",
   "confidential / TEE inference", "list grid models", "check grid capacity",
-  or manage Singularity Cloud Network compute. Two products: SGL Machines
-  (GPU/VPS provisioning across Vultr & DigitalOcean) and SGL Grid (decentralized,
-  confidential, OpenAI-compatible inference). Pay with USDC on Base or Solana,
-  USDm on MegaETH via x402, optional MPP/Mppx, or pre-loaded USD credits. Includes
-  optional OWS-backed auth and management flows.
+  "run a node", "provide compute", "become a grid node", "node operator", "join the grid",
+  "stake to run a node", "serve a model on the grid", "earn from compute",
+  or manage Singularity Cloud Network compute. Three jobs: SGL Machines
+  (GPU/VPS provisioning across Vultr & DigitalOcean), SGL Grid (decentralized,
+  confidential, OpenAI-compatible inference — consume it), and Provide Compute
+  (run a TEE node on the grid to serve inference and earn USDC + SGL). Pay with
+  USDC on Base or Solana, USDm on MegaETH via x402, optional MPP/Mppx, or
+  pre-loaded USD credits. Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
 metadata:
   clawdbot:
@@ -64,6 +67,7 @@ Two products, one credit balance, one set of wallet/API-key auth:
 
 - **SGL Machines** — provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean. **API base:** `https://compute.x402layer.cc`
 - **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
+- **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
 - **SGL Processors** — serverless TEE functions. *Coming soon.*
 
 Pay with x402, MPP, or pre-loaded credits — the same `x402c_…` API key and prepaid credit balance work across Machines and Grid.
@@ -395,6 +399,49 @@ curl -X POST https://grid.x402compute.cc/v1/chat/completions \
 ```
 
 Use any **OpenAI SDK** by setting `base_url=https://grid.x402compute.cc/v1` and `api_key=$COMPUTE_API_KEY`. Before a large batch, check `/grid/capacity` and back off / retry if `at_capacity` is true.
+
+---
+
+## Provide Compute (run a node)
+
+The other side of the grid: turn a **TEE-capable machine** into a node that serves confidential,
+OpenAI-compatible inference and **earns USDC + SGL** per settled job. Fully agentic — the installer
+and the `sgl` CLI are shell commands. Full runbook (requirements, flags, maintenance, slashing,
+earnings) → **`references/node-operator.md`**.
+
+**Prerequisites:** a supported TEE (e.g. Apple Secure Enclave `apple_se`, Intel TDX/SGX, AMD SEV-SNP,
+AWS Nitro), `llama.cpp` + a GGUF model, and **≥ 50,000 $SGL staked** to your operator (Solana) wallet.
+
+```bash
+# 1. Stake ≥50,000 SGL to your operator wallet (agentic via the x402-layer skill / Staking Engine API,
+#    or at https://staking.x402layer.cc). Non-custodial; slashable only for proven tampering.
+
+# 2. Install the node CLI + runtime, get a model
+curl -sSf https://grid.x402compute.cc/install.sh | sh     # installs `sgl` (Singularity-Layer/sgl-network-node)
+brew install llama.cpp                                     # local inference runtime (macOS)
+#   download a GGUF, e.g. ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf
+
+# 3. Register the node under the staked wallet (headless / agentic)
+sgl init --wallet <STAKED_WALLET> --tee-type apple_se --models llama-3.2-3b
+#   (interactive alternative: `sgl login`)
+
+# 4. Attest the enclave (required before jobs; re-run after any binary update)
+sgl attest
+
+# 5. Serve as a background service (production)
+sgl service install \
+  --model-path ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf \
+  --model-name llama-3.2-3b \
+  --resource-percent 50
+
+# verify
+sgl status
+curl https://grid.x402compute.cc/grid/capacity            # your node raises active_nodes / models
+```
+
+**Maintenance:** `sgl off-grid` (stop new jobs cleanly for planned downtime — no penalty) / `sgl on-grid`
+(resume). Honest downtime is never slashed; only proven tampering is. Re-run `sgl attest` after binary
+updates. Docs: `https://docs.x402layer.cc/cloud/provide/node-setup`.
 
 ---
 
