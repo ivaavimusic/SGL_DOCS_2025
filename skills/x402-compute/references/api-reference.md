@@ -459,6 +459,8 @@ curl "https://grid.x402compute.cc/v1/providers?model=llama-3.2-3b"
 #   {"node_id":"…","input_per_m":0.004,"output_per_m":0.004,"blended_per_1k":4e-06,"is_custom":true,"online":true}, …]}
 ```
 
+**Price cap (`max_price`):** instead of picking a node, add `"max_price": <USD per 1M tokens, blended>` to your `/v1/chat/completions` (or `/v1/reserve`) request — the grid routes only to nodes at/under that rate and never bills above it. Returns `price_cap_unmet` if none qualify. Available as `max_price` (Python) / `maxPrice` (TS) in the SDKs.
+
 ### GET /grid/nodes/:id/prices
 
 Public. A node's per-model prices: the `reference` (suggested) rate, the allowed `floor`/`ceiling` band, the operator's `custom` price (or `null`), and the `effective` price billed.
