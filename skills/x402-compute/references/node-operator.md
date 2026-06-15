@@ -143,12 +143,40 @@ sgl on-grid           # resume receiving jobs
 | `sgl service stop` / `service status` | Manage the background service |
 | `sgl status` | Node + hardware + orchestrator status |
 | `sgl off-grid` / `on-grid` | Maintenance mode toggle |
+| `sgl price show` | Show your per-model price, the suggested rate, and the allowed band |
+| `sgl price set --model <M> --input <USD/1M> --output <USD/1M>` | Set a custom per-token price (within the band) |
+| `sgl price reset --model <M>` | Revert a model to the platform suggested price |
 
 `sgl start` / `sgl service install` flags: `--model-path`, `--model-name`, `--resource-percent`
 (1–100 preset), `--threads`, `--gpu-layers`, `--context-size`, `--max-jobs`, `--inference-port`
-(default 8081), `--heartbeat-interval` (default 5s).
+(default 8081), `--heartbeat-interval` (default 5s). `sgl service install --sandbox` (macOS)
+runs the node under a Seatbelt sandbox that walls off SSH keys / wallets / keychains / browser
+data from the inference process; on Linux equivalent systemd hardening is always applied.
 
 ---
+
+## Pricing (set your own per-token price)
+
+By default your node bills the platform **suggested rate** (~OpenRouter ÷ 10) and you keep 80%.
+You may optionally set your **own** per-token price within an allowed band around that suggested
+rate: **floor = suggested × 0.5**, **ceiling = suggested × 5**. Prices are USD per 1M tokens,
+split into input (prompt) and output (completion). You always earn 80% of whatever you charge.
+
+```bash
+sgl price show
+# llama-3.2-3b   in $0.005000 / out $0.005000  [suggested]   (band: in $0.0025–$0.025 ...)
+
+sgl price set --model llama-3.2-3b --input 0.004 --output 0.004   # undercut to win more jobs
+sgl price reset --model llama-3.2-3b                              # back to suggested
+```
+
+Notes:
+- The server enforces the band and that the model is one you actually advertise; out-of-band
+  prices are rejected. There's a short anti-flap cooldown between changes to the same model.
+- A model with no custom price simply bills at the suggested rate — nothing changes for you.
+- You can also set prices from the operator dashboard (`cloud.x402compute.cc` → Provide → your node)
+  or via the API (`POST /grid/nodes/:id/prices`); callers can compare providers at
+  `GET /v1/providers?model=<M>`.
 
 ## Earnings
 

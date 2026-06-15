@@ -448,3 +448,31 @@ Live grid capacity — active node count, TEE types, served models, and an `at_c
 ```bash
 curl https://grid.x402compute.cc/grid/capacity
 ```
+
+### GET /v1/providers
+
+Compare the nodes serving a model, with each node's effective per-token price (custom if the operator set one, else the suggested reference), sorted cheapest-first. No auth. Optional `cluster` filter. Pass a chosen `node` to `/v1/chat/completions` (or the `node=` arg in the SDKs) to pin that provider; omit it to let the grid route.
+
+```bash
+curl "https://grid.x402compute.cc/v1/providers?model=llama-3.2-3b"
+# {"model":"llama-3.2-3b","count":2,"providers":[
+#   {"node_id":"…","input_per_m":0.004,"output_per_m":0.004,"blended_per_1k":4e-06,"is_custom":true,"online":true}, …]}
+```
+
+### GET /grid/nodes/:id/prices
+
+Public. A node's per-model prices: the `reference` (suggested) rate, the allowed `floor`/`ceiling` band, the operator's `custom` price (or `null`), and the `effective` price billed.
+
+```bash
+curl https://grid.x402compute.cc/grid/nodes/<NODE_ID>/prices
+```
+
+### POST /grid/nodes/:id/prices
+
+Operator-only — set or reset a model's price. Auth with the node token (`X-Node-Auth`, used by `sgl price …`) **or** an owner wallet signature. Band-enforced (suggested × 0.5 … × 5), the model must be one the node advertises, and there's a short cooldown between changes. Body: `{ "model": "...", "input_per_m": 0.004, "output_per_m": 0.004 }` (or `{ "model": "...", "reset": true }`).
+
+```bash
+curl -X POST https://grid.x402compute.cc/grid/nodes/<NODE_ID>/prices \
+  -H "X-Node-Auth: <node-token>" -H "Content-Type: application/json" \
+  -d '{"model":"llama-3.2-3b","input_per_m":0.004,"output_per_m":0.004}'
+```
