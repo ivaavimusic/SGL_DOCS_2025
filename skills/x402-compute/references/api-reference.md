@@ -418,7 +418,7 @@ Revoke an API key (signature auth required).
 
 ## SGL Grid — Inference (base: `https://grid.x402compute.cc`)
 
-Decentralized, confidential, **OpenAI-compatible** inference. Auth with `X-API-Key: x402c_…` (billed to prepaid credits — same key/credits as Machines) or per-request x402 via `X-Payment`. Pay-per-token in USDC.
+Decentralized, confidential, **OpenAI-compatible** inference. Auth with your API key as **either** `Authorization: Bearer x402c_…` (standard OpenAI style — works with the OpenAI SDK, Cursor, opencode, LibreChat, etc.) **or** `X-API-Key: x402c_…` (billed to prepaid credits — same key/credits as Machines), or per-request x402 via `X-Payment`. Pay-per-token in USDC.
 
 ### GET /v1/models
 

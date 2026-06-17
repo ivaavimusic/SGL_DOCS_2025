@@ -54,10 +54,17 @@ console.log(r.choices[0].message.content);
 
 ## Authentication
 
-Pass one of:
-- `X-API-Key: <key>` — scoped API key (recommended for servers/agents)
-- a session bearer token (dashboard)
-- a per-request wallet signature
+Pass your API key as **either** header — both are accepted, so any OpenAI-compatible
+client works out of the box:
+
+- `Authorization: Bearer <key>` — standard OpenAI style. Works with the OpenAI SDK and
+  drop-in tools like **Cursor, opencode, LibreChat, Continue**, etc. (just set the base
+  URL above and paste your key).
+- `X-API-Key: <key>` — equivalent; handy when a client lets you set custom headers.
+
+Other accepted credentials:
+- a session bearer token (issued in the dashboard)
+- a per-request wallet signature (x402)
 
 See [Wallet & auth](/cloud/concepts/wallet-auth).
 
