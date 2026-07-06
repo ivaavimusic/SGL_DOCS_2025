@@ -1,0 +1,207 @@
+---
+title: AI Machines
+description: One-click deploy a GPU running an LLM — get your own OpenAI-compatible endpoint, or join the grid and earn. Standard tier.
+---
+
+**AI Machines** are one-click deploys of a GPU running an LLM. Pick a model, pick a mode, and the machine comes up serving inference. You choose one of two modes at deploy time.
+
+<Note>
+  AI Machines are the **Standard tier**. They are not confidential/TEE machines — for confidential (TEE) inference, use [SGL Grid confidential inference](/cloud/grid/confidential-inference).
+</Note>
+
+## Two modes
+
+<CardGroup cols={2}>
+  <Card title="Private" icon="lock">
+    Your own OpenAI-compatible endpoint. Just for you. The UI shows an endpoint URL (`http://<ip>:8080/v1`) and an API key.
+  </Card>
+  <Card title="Join the grid & earn" icon="server">
+    Serve the network as a node and earn **USDC + SGL**. Requires **50,000 SGL staked**.
+  </Card>
+</CardGroup>
+
+### Private mode
+
+The machine runs `llama-server` (llama.cpp), which auto-exposes an OpenAI-compatible API on port `8080`. You get:
+
+- **Endpoint URL** — `http://<ip>:8080/v1` (for VM providers, derived from the instance IP)
+- **API key** — shown in the UI; sent as `Authorization: Bearer <api_key>`
+
+Both `/v1/chat/completions` and `/v1/models` are served. That makes the endpoint **OpenRouter-ready** and compatible with **any OpenAI-compatible client, app, agent, or router** — point your existing SDK at the base URL and key.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://<ip>:8080/v1",     # from the UI
+    api_key="<your-ai-machine-key>",     # from the UI
+)
+
+resp = client.chat.completions.create(
+    model="<model-id>",
+    messages=[{"role": "user", "content": "Hello from my AI Machine"}],
+)
+print(resp.choices[0].message.content)
+```
+
+```bash
+# Discover the served model
+curl http://<ip>:8080/v1/models -H "Authorization: Bearer <your-ai-machine-key>"
+
+# Chat
+curl http://<ip>:8080/v1/chat/completions \
+  -H "Authorization: Bearer <your-ai-machine-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "<model-id>", "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+<Note>
+  Your endpoint works with any OpenAI-compatible client today. Listing it on **OpenRouter** as a public provider is a separate approval via OpenRouter's own form — roadmap, not automatic.
+</Note>
+
+### Join the grid & earn
+
+Deploy the machine as a network node instead of a private endpoint. It serves grid traffic and earns **USDC + SGL**. This mode requires **50,000 SGL staked**. See [Provide Compute](/cloud/provide/overview) for the full node-operator path.
+
+## GPU machines & regions
+
+AI Machines run on GPU machines across multiple cloud providers and regions. You pick the plan and region at deploy time from the [catalog](/cloud/machines/catalog); the network places the workload.
+
+## Fully managed
+
+- **Auto-update** — deployed machines keep themselves current (allowlist-gated, roughly every 6 hours).
+- **Kept alive** — the serving process is supervised and restarted (systemd) if it exits.
+- **SSH access** — you can still SSH in with the instance IP and a one-time root password from the UI/API. See [Manage](/cloud/machines/manage).
+
+## Billing
+
+AI Machines bill by **prepaid hours**. The machine runs while it has prepaid time; **extend** it to keep it alive, or **destroy** it to stop billing. Payment is **x402-native** (also MPP and prepaid USD credits) — an agent with a funded wallet can deploy and manage with no human in the loop.
+
+## Deploy via the control API
+
+Base URL: `https://compute.x402layer.cc`
+
+AI Machines use the same control API as [SGL Machines](/cloud/machines/overview). On `POST /compute/provision` you add **one nested object** that selects the mode. The two modes are mutually exclusive:
+
+- **Private endpoint** — `"ai_machine": { "model_id": "<model-id>", "mode": "private" }`. `mode` must be `"private"`.
+- **Join the grid** — `"deploy_node": { "model_id": "<model-id>" }`. This self-installs the box as a grid node owned by the paying wallet (Solana x402, stake-gated).
+
+`os_id` is the provider GPU image id from the machine [catalog](/cloud/machines/catalog) (it varies by provider). `prepaid_hours` is an integer of at least 24.
+
+<Warning>
+  Private AI Machines require an **x402 wallet payment** — prepaid USD credits (`"use_credits": true`) are **not** accepted for `ai_machine`. Bare and grid machines can use credits.
+</Warning>
+
+```bash
+curl -X POST https://compute.x402layer.cc/compute/provision \
+  -H "Content-Type: application/json" \
+  -H "X-Payment: <base64-signed-payment-payload>" \
+  -d '{
+    "plan": "<gpu-plan-id>",
+    "region": "<region>",
+    "os_id": <provider-gpu-image-id>,
+    "prepaid_hours": 720,
+    "network": "base",
+    "ai_machine": { "model_id": "<model-id>", "mode": "private" }
+  }'
+```
+
+The response includes an `ai` object with your endpoint details:
+
+```json
+{
+  "ai": {
+    "model_id": "<model-id>",
+    "api_key": "<your-ai-machine-key>",
+    "port": 8080,
+    "endpoint": "<endpoint>"
+  }
+}
+```
+
+The private endpoint is OpenAI-compatible at `<endpoint>/v1`. For VM providers `endpoint` derives from the instance IP and port (`http://<ip>:8080/v1`) once the IP lands. Authenticate with `Authorization: Bearer <api_key>`.
+
+The most important lifecycle call is **extend** — it keeps a running machine alive. Extend uses **`extend_hours`** (not `prepaid_hours`):
+
+```bash
+curl -X POST https://compute.x402layer.cc/compute/instances/<id>/extend \
+  -H "Content-Type: application/json" \
+  -H "X-Payment: <base64-signed-payment-payload>" \
+  -d '{ "extend_hours": 24, "network": "base" }'
+```
+
+See the [Control API reference](/api-reference/compute-provision) for every endpoint and field.
+
+## An agent deploys + extends a machine via x402
+
+The whole compute API is x402-native, so an agent with a funded wallet can run the full lifecycle with no human. When you call a paid endpoint **without** payment, the server answers `402` with a payment challenge; you settle and retry with an `X-Payment` header.
+
+<Steps>
+  <Step title="Call without payment → 402">
+    ```bash
+    curl -i -X POST https://compute.x402layer.cc/compute/provision \
+      -H "Content-Type: application/json" \
+      -d '{
+        "plan": "<gpu-plan-id>",
+        "region": "<region>",
+        "os_id": <provider-gpu-image-id>,
+        "prepaid_hours": 720,
+        "network": "base",
+        "ai_machine": { "model_id": "<model-id>", "mode": "private" }
+      }'
+    ```
+
+    ```http
+    HTTP/1.1 402 Payment Required
+    Content-Type: application/json
+
+    { "x402": { "network": "base", "amount": "...", "payTo": "...", "asset": "..." } }
+    ```
+  </Step>
+  <Step title="Sign the payment, retry with X-Payment → provisioned">
+    The agent builds and signs the payment from the 402 challenge, then retries the same request with the `X-Payment` header:
+
+    ```bash
+    curl -X POST https://compute.x402layer.cc/compute/provision \
+      -H "Content-Type: application/json" \
+      -H "X-Payment: <base64-signed-payment-payload>" \
+      -d '{
+        "plan": "<gpu-plan-id>",
+        "region": "<region>",
+        "os_id": <provider-gpu-image-id>,
+        "prepaid_hours": 720,
+        "network": "base",
+        "ai_machine": { "model_id": "<model-id>", "mode": "private" }
+      }'
+    # → 201 Created — provisioning started
+    ```
+  </Step>
+  <Step title="Keep it alive — extend (same 402 → X-Payment flow)">
+    Extend uses **`extend_hours`** (not `prepaid_hours`):
+
+    ```bash
+    # 1) 402 challenge
+    curl -i -X POST https://compute.x402layer.cc/compute/instances/<id>/extend \
+      -H "Content-Type: application/json" \
+      -d '{ "extend_hours": 24, "network": "base" }'
+
+    # 2) settle + retry
+    curl -X POST https://compute.x402layer.cc/compute/instances/<id>/extend \
+      -H "Content-Type: application/json" \
+      -H "X-Payment: <base64-signed-payment-payload>" \
+      -d '{ "extend_hours": 24, "network": "base" }'
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  MPP clients use `Authorization: Payment` instead of the x402 `X-Payment` header. Bare and grid machines can also pay from **prepaid credits** — top up once (`POST /compute/credits/topup`) and pass `"use_credits": true`. Private **AI Machines** do not accept credits; they require an x402 wallet payment.
+</Note>
+
+## Related
+
+<CardGroup cols={3}>
+  <Card title="Deploy" icon="rocket" href="/cloud/machines/deploy">Launch a machine.</Card>
+  <Card title="Manage" icon="sliders" href="/cloud/machines/manage">Extend, SSH, password, destroy.</Card>
+  <Card title="Control API" icon="code" href="/api-reference/compute-provision">Every compute endpoint.</Card>
+</CardGroup>

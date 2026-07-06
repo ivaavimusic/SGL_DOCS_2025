@@ -144,6 +144,7 @@
               "cloud/machines/overview",
               "cloud/machines/catalog",
               "cloud/machines/deploy",
+              "cloud/machines/ai-machines",
               "cloud/machines/manage"
             ]
           },
