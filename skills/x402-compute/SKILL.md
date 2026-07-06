@@ -1,19 +1,22 @@
 ---
 name: x402-compute
-version: 1.8.1
+version: 1.9.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
+  "deploy AI machine", "one-click GPU running an LLM", "deploy a private LLM endpoint",
+  "OpenRouter-ready endpoint", "agent deploy GPU", "spin up my own OpenAI-compatible endpoint",
   "extend compute instance", "resize compute instance", "destroy server instance", "check instance status",
   "list my instances", "top up compute credits", "check credit balance",
   "run inference on the grid", "decentralized inference", "OpenAI-compatible API",
   "confidential / TEE inference", "list grid models", "check grid capacity",
   "run a node", "provide compute", "become a grid node", "node operator", "join the grid",
   "stake to run a node", "serve a model on the grid", "earn from compute",
-  or manage Singularity Cloud Network compute. Three jobs: SGL Machines
-  (GPU/VPS provisioning across Vultr & DigitalOcean), SGL Grid (decentralized,
-  confidential, OpenAI-compatible inference — consume it), and Provide Compute
-  (run a TEE node on the grid to serve inference and earn USDC + SGL). Pay with
+  or manage Singularity Cloud Network compute. Four jobs: SGL Machines
+  (GPU/VPS provisioning across Vultr & DigitalOcean), AI Machines (one-click GPU
+  running an LLM — deploy a private OpenAI-compatible endpoint, or join the grid & earn),
+  SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it), and
+  Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL). Pay with
   USDC on Base or Solana, USDm on MegaETH via x402, optional MPP/Mppx, or
   pre-loaded USD credits. Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
@@ -63,9 +66,10 @@ allowed-tools:
 
 # Singularity Cloud Network — Compute & Grid
 
-Two products, one credit balance, one set of wallet/API-key auth:
+Products share one credit balance and one set of wallet/API-key auth:
 
 - **SGL Machines** — provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean. **API base:** `https://compute.x402layer.cc`
+- **AI Machines** — one-click deploy of a **GPU already running an LLM**, mode chosen at deploy: `private` (your own **OpenAI-compatible** endpoint — returns URL + API key) or `grid` (serve as a node & earn USDC + SGL, needs 50k SGL staked). Same x402 lifecycle as Machines; add `model_id` + `mode` to provision. **Standard tier (not confidential).** See [AI Machines](#ai-machines--one-click-llm-gpu) below and `references/ai-machines.md`.
 - **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
 - **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. Operators can set a **custom per-token price** within a band (`sgl price set`, suggested × 0.5–× 5); callers compare nodes via `GET /v1/providers`. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
 - **SGL Processors** — serverless TEE functions. *Coming soon.*
@@ -149,7 +153,7 @@ Resize is a management action, not a second payment flow. The API preserves rema
 |--------|---------|
 | `browse_plans.py` | List available GPU/VPS plans with pricing |
 | `browse_regions.py` | List deployment regions |
-| `provision.py` | Provision a new instance (x402 payment, `--months` or `--days`) |
+| `provision.py` | Provision a new instance (x402 payment, `--months` or `--days`). Add `--model-id` + `--mode private\|grid` to deploy an **AI Machine** (GPU running an LLM). |
 | `create_api_key.py` | Create an API key for agent access (optional) |
 | `list_instances.py` | List your active instances |
 | `instance_details.py` | Get details for a specific instance |
@@ -364,6 +368,51 @@ Notes:
 
 ---
 
+## AI Machines — One-Click LLM GPU
+
+One-click deploy of a **GPU that comes up already running an LLM**. Same x402 lifecycle as any
+Machine (provision / extend / resize / destroy) — you just add `model_id` + `mode` to provision.
+Two modes, chosen at deploy:
+
+- **`private`** — your own **OpenAI-compatible** endpoint. The box runs `llama-server` exposing
+  `POST /v1/chat/completions` and `GET /v1/models`; the provision response returns the **endpoint URL
+  + API key**. Works with any OpenAI-compatible client/agent/router → **OpenRouter-ready**. (Listing it
+  *as an OpenRouter provider* is a separate OpenRouter approval — roadmap only.)
+- **`grid`** — serve as a grid node and **earn USDC + SGL** (requires **≥ 50,000 $SGL staked**).
+
+**Tier:** Standard (**not** confidential/TEE — for confidential inference use the Grid below or a TEE
+node). **Managed:** kept alive, auto-updates (allowlist-gated), SSH available. An **agent with a
+funded wallet can deploy + extend + destroy entirely via x402.**
+
+```bash
+# Deploy a PRIVATE OpenAI-compatible LLM endpoint (returns endpoint + API key)
+python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --days 1 --label "my-llm" \
+    --model-id llama-3.2-3b --mode private
+
+# Deploy a GRID node (join the grid & earn; wallet needs 50k SGL staked)
+python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "grid-node" \
+    --model-id llama-3.2-3b --mode grid
+
+# Use a private endpoint (OpenAI-compatible)
+curl -X POST <ENDPOINT>/v1/chat/completions \
+  -H "Content-Type: application/json" -H "Authorization: Bearer <RETURNED_API_KEY>" \
+  -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
+
+# Extend runtime before it expires (most-used lifecycle action)
+python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720
+
+# Destroy when done
+python {baseDir}/scripts/destroy_instance.py <instance_id>
+```
+
+Control API: `POST /compute/provision` (add `model_id`+`mode`; base fields `plan`,`region`,`os_id`),
+`GET /compute/instances`, `GET /compute/instances/:id`, `POST /compute/instances/:id/extend`,
+`POST /compute/instances/:id/resize`, `POST /compute/instances/:id/password`,
+`DELETE /compute/instances/:id`, `POST /compute/credits/topup`. Full detail + the end-to-end agent
+deploy example → **`references/ai-machines.md`**.
+
+---
+
 ## SGL Grid — Inference
 
 Decentralized, confidential inference across attested TEE nodes — **OpenAI-compatible**, so any OpenAI SDK works by pointing `base_url` at the grid. Requests are end-to-end encrypted and can stream token-by-token.
@@ -478,6 +527,8 @@ updates. Docs: `https://docs.x402layer.cc/cloud/provide/node-setup`.
 
 For full endpoint details, see:
 - [references/api-reference.md](references/api-reference.md)
+- [references/ai-machines.md](references/ai-machines.md) — AI Machines (one-click LLM GPU: modes, endpoint+key, control API, agent x402 deploy)
+- [references/node-operator.md](references/node-operator.md) — run a grid node (provide compute, earn)
 - [references/openwallet-ows.md](references/openwallet-ows.md)
 
 ---

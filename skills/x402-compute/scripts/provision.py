@@ -8,11 +8,21 @@ Handles the full x402 payment flow:
 3. Resend with X-Payment header → instance provisioned
 
 Usage:
-  python provision.py <plan_id> <region> [--months N | --days N] [--os-id ID] [--label NAME] [--network base|solana] [--ssh-public-key KEY | --ssh-key-file PATH]
+  python provision.py <plan_id> <region> [--months N | --days N] [--os-id ID] [--label NAME] [--network base|solana] [--ssh-public-key KEY | --ssh-key-file PATH] [--model-id ID --mode private|grid]
 
 Example:
   python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "my-gpu"
   python provision.py vc2-1c-1gb ewr --days 1 --label "test-daily"
+
+AI Machine (one-click GPU running an LLM). Add --model-id and --mode:
+  # Private OpenAI-compatible endpoint (returns endpoint URL + API key)
+  python provision.py vcg-a100-1c-2g-6gb lax --days 1 --label "my-llm" \
+      --model-id llama-3.2-3b --mode private
+  # Join the grid & earn (serve as a node; requires 50k SGL staked to the wallet)
+  python provision.py vcg-a100-1c-2g-6gb lax --months 1 --label "grid-node" \
+      --model-id llama-3.2-3b --mode grid
+
+AI Machines are the Standard tier (not confidential/TEE). See references/ai-machines.md.
 """
 
 import argparse
@@ -51,9 +61,20 @@ def provision_instance(
     label: str = "x402-instance",
     network: str = "base",
     ssh_public_key: Optional[str] = None,
+    model_id: Optional[str] = None,
+    mode: Optional[str] = None,
     skip_confirm: bool = False,
 ) -> dict:
-    """Provision a compute instance with x402 payment."""
+    """Provision a compute instance with x402 payment.
+
+    Pass model_id + mode to deploy an AI Machine (one-click GPU running an LLM):
+      - mode="private": your own OpenAI-compatible endpoint (URL + API key returned).
+                        Sent as the nested ai_machine object {model_id, mode:"private"}.
+                        Requires an x402 wallet payment (credits are not accepted).
+      - mode="grid":    serve on the grid and earn (requires 50k SGL staked to the wallet).
+                        Sent as the nested deploy_node object {model_id}.
+    ai_machine and deploy_node are mutually exclusive.
+    """
     if days > 0:
         prepaid_hours = days * 24
         duration_label = f"{days} day(s)"
@@ -70,6 +91,17 @@ def provision_instance(
     }
     if ssh_public_key:
         body["ssh_public_key"] = ssh_public_key.strip()
+    # AI Machine: both model_id and mode are required together. The server takes a
+    # NESTED object (not top-level model_id/mode):
+    #   private -> ai_machine: {model_id, mode:"private"}   (x402 wallet payment; no credits)
+    #   grid    -> deploy_node: {model_id}                  (self-installs a grid node)
+    if model_id or mode:
+        if not (model_id and mode):
+            return {"error": "AI machine requires BOTH --model-id and --mode (private|grid)."}
+        if mode.strip() == "private":
+            body["ai_machine"] = {"model_id": model_id.strip(), "mode": "private"}
+        else:  # grid
+            body["deploy_node"] = {"model_id": model_id.strip()}
     body_json = json.dumps(body, separators=(",", ":"))
     auth_chain = load_compute_chain()
 
@@ -114,6 +146,8 @@ def provision_instance(
     print(f"  Plan:        {plan}")
     print(f"  Region:      {region}")
     print(f"  Duration:    {duration_label}")
+    if model_id and mode:
+        print(f"  AI Machine:  {model_id} ({mode})")
     print(f"  Network:     {network}")
     print(f"  Cost:        ${cost_usd:.2f} USDC")
     print(f"  Pay to:      {pay_to}")
@@ -157,6 +191,23 @@ def provision_instance(
         print(f"   IP:      {order.get('ip_address', 'pending')}")
         print(f"   Plan:    {order.get('plan', plan)}")
         print(f"   Expires: {order.get('expires_at', 'N/A')}")
+        # AI Machine (private mode): the endpoint + key live in the ai object on the
+        # order metadata: order.metadata.ai = {model_id, api_key, port:8080, endpoint}.
+        # For VM providers the endpoint derives from the instance IP + port once the IP
+        # lands (http://<ip>:8080/v1); fetch GET /compute/instances/:id to read it back.
+        ai = (order.get("metadata") or {}).get("ai") or data.get("ai") or {}
+        endpoint = ai.get("endpoint")
+        api_key = ai.get("api_key")
+        port = ai.get("port", 8080)
+        ip = order.get("ip_address")
+        if not endpoint and ip and ip != "pending":
+            endpoint = f"http://{ip}:{port}/v1"
+        if endpoint:
+            print(f"   Endpoint: {endpoint}  (OpenAI-compatible: /v1/chat/completions, /v1/models; auth: Authorization: Bearer <API_KEY>)")
+        elif api_key:
+            print(f"   Endpoint: http://<ip>:{port}/v1  (once the instance IP lands — GET /compute/instances/{order.get('id','<id>')})")
+        if api_key:
+            print(f"   API Key:  {api_key}  (shown once — store it securely)")
         if data.get("tx_hash"):
             print(f"   TX:      {data['tx_hash']}")
         return data
@@ -176,11 +227,14 @@ if __name__ == "__main__":
     parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
     parser.add_argument("--ssh-public-key", help="SSH public key contents (recommended)")
     parser.add_argument("--ssh-key-file", help="Path to SSH public key file (e.g. ~/.ssh/id_ed25519.pub)")
+    parser.add_argument("--model-id", help="AI Machine: LLM to deploy (e.g. llama-3.2-3b). Requires --mode.")
+    parser.add_argument("--mode", choices=["private", "grid"],
+                        help="AI Machine mode: 'private' = your own OpenAI-compatible endpoint; "
+                             "'grid' = join the grid & earn (needs 50k SGL staked). Requires --model-id.")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip payment confirmation prompt")
     parser.add_argument("--max-spend", type=float, help="Max USD spend limit (default: $500 or COMPUTE_MAX_SPEND_USD)")
     args = parser.parse_args()
     if args.max_spend is not None:
-        global MAX_SPEND_USD
         MAX_SPEND_USD = args.max_spend
     if args.ssh_public_key and args.ssh_key_file:
         print("Error: provide either --ssh-public-key or --ssh-key-file, not both.")
@@ -208,6 +262,8 @@ if __name__ == "__main__":
         label=args.label,
         network=args.network,
         ssh_public_key=ssh_public_key,
+        model_id=args.model_id,
+        mode=args.mode,
         skip_confirm=args.yes,
     )
     if "error" in result:
