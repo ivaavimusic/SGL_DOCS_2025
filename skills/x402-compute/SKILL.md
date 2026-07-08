@@ -394,7 +394,7 @@ python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label 
     --model-id llama-3.2-3b --mode grid
 
 # Use a private endpoint (OpenAI-compatible)
-curl -X POST <ENDPOINT>/v1/chat/completions \
+curl -X POST <ENDPOINT>/chat/completions \
   -H "Content-Type: application/json" -H "Authorization: Bearer <RETURNED_API_KEY>" \
   -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
 

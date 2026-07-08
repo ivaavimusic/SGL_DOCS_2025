@@ -70,7 +70,7 @@ def provision_instance(
     Pass model_id + mode to deploy an AI Machine (one-click GPU running an LLM):
       - mode="private": your own OpenAI-compatible endpoint (URL + API key returned).
                         Sent as the nested ai_machine object {model_id, mode:"private"}.
-                        Requires an x402 wallet payment (credits are not accepted).
+                        Supports x402, MPP, or prepaid credits.
       - mode="grid":    serve on the grid and earn (requires 50k SGL staked to the wallet).
                         Sent as the nested deploy_node object {model_id}.
     ai_machine and deploy_node are mutually exclusive.
@@ -93,8 +93,8 @@ def provision_instance(
         body["ssh_public_key"] = ssh_public_key.strip()
     # AI Machine: both model_id and mode are required together. The server takes a
     # NESTED object (not top-level model_id/mode):
-    #   private -> ai_machine: {model_id, mode:"private"}   (x402 wallet payment; no credits)
-    #   grid    -> deploy_node: {model_id}                  (self-installs a grid node)
+    #   private -> ai_machine: {model_id, mode:"private"}   (x402/MPP/credits)
+    #   grid    -> deploy_node: {model_id}                  (Solana x402; self-installs a grid node)
     if model_id or mode:
         if not (model_id and mode):
             return {"error": "AI machine requires BOTH --model-id and --mode (private|grid)."}
@@ -191,21 +191,17 @@ def provision_instance(
         print(f"   IP:      {order.get('ip_address', 'pending')}")
         print(f"   Plan:    {order.get('plan', plan)}")
         print(f"   Expires: {order.get('expires_at', 'N/A')}")
-        # AI Machine (private mode): the endpoint + key live in the ai object on the
-        # order metadata: order.metadata.ai = {model_id, api_key, port:8080, endpoint}.
-        # For VM providers the endpoint derives from the instance IP + port once the IP
-        # lands (http://<ip>:8080/v1); fetch GET /compute/instances/:id to read it back.
-        ai = (order.get("metadata") or {}).get("ai") or data.get("ai") or {}
+        # AI Machine (private mode): the endpoint + key live in the ai object.
+        # VM providers return a branded HTTPS endpoint; RunPod returns its TLS proxy.
+        ai = order.get("ai") or (order.get("metadata") or {}).get("ai") or data.get("ai") or {}
         endpoint = ai.get("endpoint")
         api_key = ai.get("api_key")
         port = ai.get("port", 8080)
         ip = order.get("ip_address")
-        if not endpoint and ip and ip != "pending":
-            endpoint = f"http://{ip}:{port}/v1"
         if endpoint:
             print(f"   Endpoint: {endpoint}  (OpenAI-compatible: /v1/chat/completions, /v1/models; auth: Authorization: Bearer <API_KEY>)")
         elif api_key:
-            print(f"   Endpoint: http://<ip>:{port}/v1  (once the instance IP lands — GET /compute/instances/{order.get('id','<id>')})")
+            print(f"   Endpoint: pending  (GET /compute/instances/{order.get('id','<id>')} once provisioning finishes)")
         if api_key:
             print(f"   API Key:  {api_key}  (shown once — store it securely)")
         if data.get("tx_hash"):
