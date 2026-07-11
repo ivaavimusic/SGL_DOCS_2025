@@ -46,6 +46,8 @@ def _find_accept_option(challenge: dict, requested_network: str) -> dict:
             return option
         if requested_network == "solana" and (network == "solana" or network.startswith("solana:")):
             return option
+        if requested_network == "robinhood" and (network == "robinhood" or "4663" in network):
+            return option
     raise ValueError(f"No {requested_network} payment option found in 402 challenge")
 
 
@@ -70,7 +72,7 @@ def provision_instance(
     Pass model_id + mode to deploy an AI Machine (one-click GPU running an LLM):
       - mode="private": your own OpenAI-compatible endpoint (URL + API key returned).
                         Sent as the nested ai_machine object {model_id, mode:"private"}.
-                        Supports x402, MPP, or prepaid credits.
+                        Requires an x402 wallet payment (credits are not accepted).
       - mode="grid":    serve on the grid and earn (requires 50k SGL staked to the wallet).
                         Sent as the nested deploy_node object {model_id}.
     ai_machine and deploy_node are mutually exclusive.
@@ -93,8 +95,8 @@ def provision_instance(
         body["ssh_public_key"] = ssh_public_key.strip()
     # AI Machine: both model_id and mode are required together. The server takes a
     # NESTED object (not top-level model_id/mode):
-    #   private -> ai_machine: {model_id, mode:"private"}   (x402/MPP/credits)
-    #   grid    -> deploy_node: {model_id}                  (Solana x402; self-installs a grid node)
+    #   private -> ai_machine: {model_id, mode:"private"}   (x402 wallet payment; no credits)
+    #   grid    -> deploy_node: {model_id}                  (self-installs a grid node)
     if model_id or mode:
         if not (model_id and mode):
             return {"error": "AI machine requires BOTH --model-id and --mode (private|grid)."}
@@ -148,8 +150,9 @@ def provision_instance(
     print(f"  Duration:    {duration_label}")
     if model_id and mode:
         print(f"  AI Machine:  {model_id} ({mode})")
+    stablecoin = {"base": "USDC", "solana": "USDC", "robinhood": "USDG"}.get(network, "USDC")
     print(f"  Network:     {network}")
-    print(f"  Cost:        ${cost_usd:.2f} USDC")
+    print(f"  Cost:        ${cost_usd:.2f} {stablecoin}")
     print(f"  Pay to:      {pay_to}")
 
     if not skip_confirm:
@@ -157,12 +160,13 @@ def provision_instance(
         if confirm not in ("y", "yes"):
             return {"error": "Payment cancelled by user"}
 
-    if network == "base":
+    if network in ("base", "robinhood"):
+        # Both are EVM EIP-3009 transferWithAuthorization; only the EIP-712 domain differs.
         try:
             signer = load_payment_signer()
         except Exception as exc:
             return {"error": str(exc)}
-        x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)
+        x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount, network=network)
     else:
         ensure_solana_destination_ready(option)
         x_payment = create_solana_xpayment_from_accept(option)
@@ -191,17 +195,21 @@ def provision_instance(
         print(f"   IP:      {order.get('ip_address', 'pending')}")
         print(f"   Plan:    {order.get('plan', plan)}")
         print(f"   Expires: {order.get('expires_at', 'N/A')}")
-        # AI Machine (private mode): the endpoint + key live in the ai object.
-        # VM providers return a branded HTTPS endpoint; RunPod returns its TLS proxy.
-        ai = order.get("ai") or (order.get("metadata") or {}).get("ai") or data.get("ai") or {}
+        # AI Machine (private mode): the endpoint + key live in the ai object on the
+        # order metadata: order.metadata.ai = {model_id, api_key, port:8080, endpoint}.
+        # For VM providers the endpoint derives from the instance IP + port once the IP
+        # lands (http://<ip>:8080/v1); fetch GET /compute/instances/:id to read it back.
+        ai = (order.get("metadata") or {}).get("ai") or data.get("ai") or {}
         endpoint = ai.get("endpoint")
         api_key = ai.get("api_key")
         port = ai.get("port", 8080)
         ip = order.get("ip_address")
+        if not endpoint and ip and ip != "pending":
+            endpoint = f"http://{ip}:{port}/v1"
         if endpoint:
             print(f"   Endpoint: {endpoint}  (OpenAI-compatible: /v1/chat/completions, /v1/models; auth: Authorization: Bearer <API_KEY>)")
         elif api_key:
-            print(f"   Endpoint: pending  (GET /compute/instances/{order.get('id','<id>')} once provisioning finishes)")
+            print(f"   Endpoint: http://<ip>:{port}/v1  (once the instance IP lands — GET /compute/instances/{order.get('id','<id>')})")
         if api_key:
             print(f"   API Key:  {api_key}  (shown once — store it securely)")
         if data.get("tx_hash"):
@@ -220,7 +228,7 @@ if __name__ == "__main__":
     duration.add_argument("--days", type=int, default=0, help="Duration in days (minimum: 1)")
     parser.add_argument("--os-id", type=int, default=2284, help="OS image ID (default: 2284 = Ubuntu 24.04)")
     parser.add_argument("--label", default="x402-instance", help="Instance label")
-    parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
+    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood"], help="Payment network (base/solana = USDC, robinhood = USDG)")
     parser.add_argument("--ssh-public-key", help="SSH public key contents (recommended)")
     parser.add_argument("--ssh-key-file", help="Path to SSH public key file (e.g. ~/.ssh/id_ed25519.pub)")
     parser.add_argument("--model-id", help="AI Machine: LLM to deploy (e.g. llama-3.2-3b). Requires --mode.")

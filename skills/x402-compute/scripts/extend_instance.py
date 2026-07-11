@@ -35,6 +35,8 @@ def _find_accept_option(challenge: dict, requested_network: str) -> dict:
             return option
         if requested_network == "solana" and (network == "solana" or network.startswith("solana:")):
             return option
+        if requested_network == "robinhood" and (network == "robinhood" or "4663" in network):
+            return option
     raise ValueError(f"No {requested_network} payment option found in 402 challenge")
 
 
@@ -91,8 +93,9 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base", s
     print(f"\n--- Payment Confirmation ---")
     print(f"  Instance:    {instance_id}")
     print(f"  Extend by:   {hours} hours")
+    stablecoin = {"base": "USDC", "solana": "USDC", "robinhood": "USDG"}.get(network, "USDC")
     print(f"  Network:     {network}")
-    print(f"  Cost:        ${cost_usd:.2f} USDC")
+    print(f"  Cost:        ${cost_usd:.2f} {stablecoin}")
     print(f"  Pay to:      {pay_to}")
 
     if not skip_confirm:
@@ -100,12 +103,13 @@ def extend_instance(instance_id: str, hours: int = 720, network: str = "base", s
         if confirm not in ("y", "yes"):
             return {"error": "Payment cancelled by user"}
 
-    if network == "base":
+    if network in ("base", "robinhood"):
+        # Both EVM EIP-3009 transferWithAuthorization; only the EIP-712 domain differs.
         try:
             signer = load_payment_signer()
         except Exception as exc:
             return {"error": str(exc)}
-        x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount)
+        x_payment = signer.create_x402_payment_header(pay_to=pay_to, amount=amount, network=network)
     else:
         ensure_solana_destination_ready(option)
         x_payment = create_solana_xpayment_from_accept(option)
@@ -142,7 +146,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extend a compute instance")
     parser.add_argument("instance_id", help="Instance ID to extend")
     parser.add_argument("--hours", type=int, default=720, help="Hours to extend (default: 720 = ~1 month)")
-    parser.add_argument("--network", default="base", choices=["base", "solana"], help="Payment network")
+    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood"], help="Payment network (base/solana = USDC, robinhood = USDG)")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip payment confirmation prompt")
     parser.add_argument("--max-spend", type=float, help="Max USD spend limit (default: $500 or COMPUTE_MAX_SPEND_USD)")
     args = parser.parse_args()

@@ -22,11 +22,11 @@ All **instance management** endpoints require authentication. Provision/extend a
 - **Signature Auth (wallet signing)**  
   Required headers:
   - `X-Auth-Address`: wallet address
-  - `X-Auth-Chain`: `base` or `solana`
+  - `X-Auth-Chain`: `base`, `megaeth`, `robinhood`, or `solana`
   - `X-Auth-Signature`: signature over the request
   - `X-Auth-Timestamp`: epoch millis
   - `X-Auth-Nonce`: unique nonce
-  - `X-Auth-Sig-Encoding`: `hex` (Base) or `base64` (Solana)
+  - `X-Auth-Sig-Encoding`: `hex` (EVM: base/megaeth/robinhood) or `base64` (Solana)
 
 - **API Key Auth (agent access)**
   Required header:
@@ -60,7 +60,7 @@ List available compute plans with pricing.
 }
 ```
 
-Prices include the platform markup and are in USD. Plans now include `our_daily` pricing (hourly × 24). The x402 payment amount is calculated from the hourly rate times `prepaid_hours`, converted to USDC atomic units (6 decimals).
+Prices include the platform markup and are in USD. Plans now include `our_daily` pricing (hourly × 24). The x402 payment amount is calculated from the hourly rate times `prepaid_hours`, converted to stablecoin atomic units (6 decimals — USDC on Base/Solana, USDm on MegaETH, USDG on Robinhood Chain).
 
 ---
 
@@ -138,7 +138,7 @@ Top up credits via x402 payment. Returns `402 Payment Required` if no `X-Payment
 ```
 
 - `amount`: USD to deposit (minimum $1)
-- `network`: `base`, `solana`, or `megaeth`
+- `network`: `base`, `solana`, `megaeth`, or `robinhood` (base/solana = USDC, megaeth = USDm, robinhood = USDG)
 
 **Headers:**
 - Auth headers (see Authentication above)
@@ -183,8 +183,8 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
 - DigitalOcean plan IDs are prefixed, for example `do:s-1vcpu-1gb`.
 - Set `use_credits: true` to deduct from pre-loaded credit balance instead of requiring x402/MPP payment. Auth is required for the credit path. If balance is insufficient, returns `402` with the shortfall.
 - **AI Machine:** add a **nested** object to deploy a GPU that comes up running an LLM. The two are mutually exclusive:
-  - `"ai_machine": { "model_id": "<id>", "mode": "private" }` — a dedicated **OpenAI-compatible** endpoint (`mode` must be `"private"`). The success order includes `ai = { model_id, api_key, port: 8080, endpoint }`; the box exposes `/v1/chat/completions` and `/v1/models` at `<endpoint>`, authenticated with `Authorization: Bearer <api_key>`. VM providers use the branded HTTPS proxy (`https://ai.x402compute.cc/<instance-or-slug>/v1`); RunPod uses its provider TLS proxy. Supports x402, MPP, or prepaid credits.
-  - `"deploy_node": { "model_id": "<id>" }` — joins the grid to serve inference and earn USDC + SGL (requires ≥ 50,000 $SGL staked to the paying wallet; Solana x402 payment).
+  - `"ai_machine": { "model_id": "<id>", "mode": "private" }` — a dedicated **OpenAI-compatible** endpoint (`mode` must be `"private"`). The success order's `metadata.ai = { model_id, api_key, port: 8080, endpoint }`; the box exposes `/v1/chat/completions` and `/v1/models` at `<endpoint>/v1`, authenticated with `Authorization: Bearer <api_key>`. For VM providers `endpoint` derives from the instance IP + port (`http://<ip>:8080/v1`) once the IP lands (read via `GET /compute/instances/:id`). **Requires an x402 wallet payment — `use_credits: true` is rejected for `ai_machine`.**
+  - `"deploy_node": { "model_id": "<id>" }` — joins the grid to serve inference and earn USDC + SGL (requires ≥ 50,000 $SGL staked to the paying wallet; x402 Solana payment).
   - `os_id` is the provider GPU image id from the catalog (varies by provider). AI Machines are the **Standard** tier (not confidential/TEE). Full detail in `references/ai-machines.md`.
 
 **Headers:**

@@ -25,6 +25,28 @@ USDC_VERSION = "2"
 BASE_CHAIN_ID = 8453
 BASE_CAIP2 = "eip155:8453"
 
+# Robinhood Chain (Arbitrum L2) — USDG stablecoin, EIP-3009 transferWithAuthorization.
+# Same "exact" scheme as Base USDC; only the EIP-712 domain differs. The domain
+# name/version below are verified against the USDG contract's on-chain
+# DOMAIN_SEPARATOR (name="Global Dollar", version="1", chainId=4663).
+USDG_ADDRESS = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+USDG_NAME = "Global Dollar"
+USDG_VERSION = "1"
+ROBINHOOD_CHAIN_ID = 4663
+ROBINHOOD_CAIP2 = "eip155:4663"
+
+# network label -> EIP-712 domain + settlement network for the x402 payload.
+EVM_ASSETS = {
+    "base": {
+        "address": USDC_ADDRESS, "name": USDC_NAME, "version": USDC_VERSION,
+        "chain_id": BASE_CHAIN_ID, "network": "base",
+    },
+    "robinhood": {
+        "address": USDG_ADDRESS, "name": USDG_NAME, "version": USDG_VERSION,
+        "chain_id": ROBINHOOD_CHAIN_ID, "network": "robinhood",
+    },
+}
+
 
 def load_dotenv_if_available() -> None:
     try:
@@ -239,7 +261,11 @@ class PaymentSigner:
         valid_after: int = 0,
         valid_before: Optional[int] = None,
         nonce: Optional[str] = None,
+        network: str = "base",
     ) -> Dict[str, Any]:
+        asset = EVM_ASSETS.get(network.lower())
+        if asset is None:
+            raise ValueError(f"Unsupported EVM payment network '{network}' (expected: {', '.join(EVM_ASSETS)})")
         if valid_before is None:
             valid_before = int(time.time()) + 3600
         if nonce is None:
@@ -264,10 +290,10 @@ class PaymentSigner:
             },
             "primaryType": "TransferWithAuthorization",
             "domain": {
-                "name": USDC_NAME,
-                "version": USDC_VERSION,
-                "chainId": BASE_CHAIN_ID,
-                "verifyingContract": USDC_ADDRESS,
+                "name": asset["name"],
+                "version": asset["version"],
+                "chainId": asset["chain_id"],
+                "verifyingContract": asset["address"],
             },
             "message": {
                 "from": self.wallet,
@@ -284,7 +310,7 @@ class PaymentSigner:
         return {
             "x402Version": 1,
             "scheme": "exact",
-            "network": "base",
+            "network": asset["network"],
             "payload": {
                 "signature": signature,
                 "authorization": {
@@ -298,8 +324,8 @@ class PaymentSigner:
             },
         }
 
-    def create_x402_payment_header(self, pay_to: str, amount: int) -> str:
-        payload = self.create_x402_payment_payload(pay_to=pay_to, amount=amount)
+    def create_x402_payment_header(self, pay_to: str, amount: int, network: str = "base") -> str:
+        payload = self.create_x402_payment_payload(pay_to=pay_to, amount=amount, network=network)
         return base64.b64encode(json.dumps(payload).encode()).decode()
 
 

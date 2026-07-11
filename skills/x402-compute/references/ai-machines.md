@@ -10,8 +10,8 @@ just with one extra **nested** deploy object — `ai_machine` (private) or `depl
   (see the main SKILL "SGL Grid — Inference") or run a TEE node (`references/node-operator.md`).
 - **Fully managed:** the box is kept alive, auto-updates are applied (allowlist-gated), and SSH stays
   available for you.
-- **Agent-friendly:** an agent with a funded wallet or prepaid compute credits can deploy, extend,
-  and destroy a private AI Machine — no dashboard needed.
+- **Agent-friendly:** an agent with a funded wallet can deploy, extend, and destroy an AI Machine
+  entirely over x402 — no dashboard needed.
 
 ---
 
@@ -31,10 +31,10 @@ Deploys a GPU running `llama-server`, which exposes an **OpenAI-compatible** API
 - `GET /v1/models`
 
 The provision response returns an `ai` object — `{ model_id, api_key, port: 8080, endpoint }` — on the
-order. The private endpoint is OpenAI-compatible at `<endpoint>`; VM providers use the branded HTTPS
-proxy (`https://ai.x402compute.cc/<instance-or-slug>/v1`) and RunPod uses its provider TLS proxy.
-Authenticate with `Authorization: Bearer <api_key>`. Point any
-OpenAI-compatible client, agent framework, or router at it (`base_url` = `<endpoint>`,
+order metadata. The private endpoint is OpenAI-compatible at `<endpoint>/v1`; for VM providers the
+endpoint derives from the instance IP + port (`http://<ip>:8080/v1`) once the IP lands (read it back
+via `GET /compute/instances/:id`). Authenticate with `Authorization: Bearer <api_key>`. Point any
+OpenAI-compatible client, agent framework, or router at it (`base_url` = `<endpoint>/v1`,
 `api_key` = the returned key).
 
 > **OpenRouter-ready:** because it speaks the OpenAI schema, it works with any OpenAI-compatible
@@ -50,8 +50,8 @@ private endpoint" side.
 
 | Mode | Deploy object | You get | Requires |
 |------|---------------|---------|----------|
-| private | `ai_machine: { model_id, mode:"private" }` | Your own OpenAI-compatible endpoint (URL + API key) | x402, MPP, or prepaid credits |
-| grid | `deploy_node: { model_id }` | Node that serves the grid and earns USDC + SGL | Solana x402 wallet **+ 50,000 SGL staked** |
+| private | `ai_machine: { model_id, mode:"private" }` | Your own OpenAI-compatible endpoint (URL + API key) | funded wallet for the **x402 deploy** (credits not accepted) |
+| grid | `deploy_node: { model_id }` | Node that serves the grid and earns USDC + SGL | funded wallet **+ 50,000 SGL staked** |
 
 ---
 
@@ -100,13 +100,14 @@ flow:
 Grid deploy uses `"deploy_node": { "model_id": "llama-3.2-3b" }` instead (mutually exclusive with
 `ai_machine`).
 
-1. Server returns `402` with `accepts[]` (Base USDC / Solana / MegaETH USDm).
-2. Sign the payment locally (USDC `TransferWithAuthorization` on Base, SPL transfer on Solana).
+1. Server returns `402` with `accepts[]` (Base USDC / Solana / MegaETH USDm / Robinhood USDG).
+2. Sign the payment locally (USDC `TransferWithAuthorization` on Base, USDG `TransferWithAuthorization` on Robinhood Chain, SPL transfer on Solana).
 3. Resend with the `X-Payment` header.
 4. Server settles on-chain and provisions the GPU with the model running.
 
-> Private **AI Machines** support x402, MPP, and prepaid credits. Managed grid-node deploys require
-> Solana x402 because the payer is also the staked operator wallet.
+> Private **AI Machines** require an **x402 wallet payment** — `"use_credits": true` is rejected for
+> `ai_machine`. Prepaid credits work for bare and grid machines (authenticate with `X-API-Key`; see
+> the main SKILL "Credits" workflow).
 
 ---
 
@@ -116,17 +117,17 @@ Once `private` mode returns the endpoint + API key, it's a drop-in OpenAI endpoi
 
 ```bash
 # List the model(s) the box serves
-curl <ENDPOINT>/models -H "Authorization: Bearer <RETURNED_API_KEY>"
+curl <ENDPOINT>/v1/models -H "Authorization: Bearer <RETURNED_API_KEY>"
 
 # Chat completion
-curl -X POST <ENDPOINT>/chat/completions \
+curl -X POST <ENDPOINT>/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <RETURNED_API_KEY>" \
   -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 Any OpenAI SDK / agent framework / router (Cursor, opencode, LibreChat, LangChain, etc.) works by
-setting `base_url=<ENDPOINT>` and `api_key=<RETURNED_API_KEY>`.
+setting `base_url=<ENDPOINT>/v1` and `api_key=<RETURNED_API_KEY>`.
 
 > This is your **own dedicated box**, distinct from the shared, confidential SGL Grid at
 > `https://grid.x402compute.cc`. Pick AI Machines when you want a private, dedicated LLM endpoint;
@@ -172,7 +173,7 @@ payment scheme.
 
 ```bash
 # 0. One dedicated low-balance wallet for the agent
-export PRIVATE_KEY=<evm-private-key>        # Base (default). For Solana set SOLANA_SECRET_KEY + COMPUTE_AUTH_CHAIN=solana
+export PRIVATE_KEY=<evm-private-key>        # Base (default); same key works for MegaETH + Robinhood (set COMPUTE_AUTH_CHAIN). For Solana set SOLANA_SECRET_KEY + COMPUTE_AUTH_CHAIN=solana
 export WALLET_ADDRESS=<evm-wallet-address>
 
 # 1. Deploy a private LLM endpoint, non-interactive (-y skips the confirm prompt)

@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.9.0
+version: 1.10.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -17,7 +17,7 @@ description: |
   running an LLM — deploy a private OpenAI-compatible endpoint, or join the grid & earn),
   SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it), and
   Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL). Pay with
-  USDC on Base or Solana, USDm on MegaETH via x402, optional MPP/Mppx, or
+  USDC on Base or Solana, USDm on MegaETH, USDG on Robinhood Chain via x402, optional MPP/Mppx, or
   pre-loaded USD credits. Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
 metadata:
@@ -32,7 +32,7 @@ metadata:
         - python3
       env:
         - name: PRIVATE_KEY
-          description: EVM private key for Base/MegaETH payment signing (use a dedicated low-balance wallet)
+          description: EVM private key for Base/MegaETH/Robinhood payment signing (use a dedicated low-balance wallet)
           sensitive: true
           optional: true
         - name: WALLET_ADDRESS
@@ -50,7 +50,7 @@ metadata:
           sensitive: true
           optional: true
         - name: COMPUTE_AUTH_CHAIN
-          description: Auth chain override — base, megaeth, or solana
+          description: Auth chain override — base, megaeth, robinhood, or solana
           optional: true
         - name: OWS_BIN
           description: Explicit path to a locally installed OWS binary (avoids runtime npx downloads)
@@ -76,8 +76,8 @@ Products share one credit balance and one set of wallet/API-key auth:
 
 Pay with x402, MPP, or pre-loaded credits — the same `x402c_…` API key and prepaid credit balance work across Machines and Grid.
 
-**x402 Networks:** Base (EVM) • Solana • MegaETH
-**x402 Currency:** USDC (Base/Solana) • USDm (MegaETH)
+**x402 Networks:** Base (EVM) • Solana • MegaETH • Robinhood Chain (EVM)
+**x402 Currency:** USDC (Base/Solana) • USDm (MegaETH) • USDG (Robinhood Chain)
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
 **Credits:** Pre-load USD via x402 topup, then provision/extend (`use_credits: true`) or call the Grid with `X-API-Key`
 **Protocol:** HTTP 402 Payment Required (`X-Payment` for x402, `Authorization: Payment` for MPP)
@@ -99,12 +99,12 @@ pip install -r {baseDir}/requirements.txt
 
 ### 2. Choose Wallet Mode
 
-#### Option A: Direct signing keys (Base, MegaETH, or Solana)
+#### Option A: Direct signing keys (Base, MegaETH, Robinhood, or Solana)
 
 > **Use a dedicated low-balance wallet.** Never use your primary custody wallet.
 
 ```bash
-# Base (EVM) — same keys work for MegaETH
+# Base (EVM) — same keys work for MegaETH and Robinhood Chain
 export PRIVATE_KEY=<your-evm-private-key>
 export WALLET_ADDRESS=<your-evm-wallet-address>
 
@@ -112,6 +112,11 @@ export WALLET_ADDRESS=<your-evm-wallet-address>
 export PRIVATE_KEY=<your-evm-private-key>
 export WALLET_ADDRESS=<your-evm-wallet-address>
 export COMPUTE_AUTH_CHAIN="megaeth"
+
+# Robinhood Chain (uses same EVM keys as Base; pays with USDG)
+export PRIVATE_KEY=<your-evm-private-key>
+export WALLET_ADDRESS=<your-evm-wallet-address>
+export COMPUTE_AUTH_CHAIN="robinhood"
 
 # Solana
 export SOLANA_SECRET_KEY=<your-solana-secret-key>
@@ -212,6 +217,9 @@ python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-sol-
 # Provision on MegaETH (pays with USDm)
 python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-mega-vps" --network megaeth --ssh-key-file ~/.ssh/x402_compute.pub
 
+# Provision on Robinhood Chain (pays with USDG — same EVM keys as Base)
+python {baseDir}/scripts/provision.py vc2-1c-1gb ewr --months 1 --label "my-usdg-vps" --network robinhood --ssh-key-file ~/.ssh/x402_compute.pub
+
 # Provision via MPP / mppx (Tempo by default; Stripe/card if your mppx config supports it)
 npx mppx https://compute.x402layer.cc/compute/provision \
   -X POST \
@@ -251,6 +259,9 @@ python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network 
 
 # Extend on MegaETH (pays with USDm)
 python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network megaeth
+
+# Extend on Robinhood Chain (pays with USDG)
+python {baseDir}/scripts/extend_instance.py <instance_id> --hours 720 --network robinhood
 
 # Extend via MPP. MPP extension requires compute auth; use the management API key
 # returned from MPP provisioning or normal wallet signature auth.
@@ -342,11 +353,14 @@ Credits are scoped per wallet. If the cloud provider rejects the instance after 
 2. Script signs payment locally:
    - Base: USDC `TransferWithAuthorization` (EIP-712)
    - MegaETH: USDm ERC-2612 `permit` (EIP-712) — gasless for the user, facilitator settles on-chain
+   - Robinhood Chain: USDG `TransferWithAuthorization` (EIP-3009, EIP-712) — gasless for the user, facilitator settles on-chain in a single tx (domain `name="Global Dollar"`, `version="1"`, chainId `4663`)
    - Solana: signed SPL transfer transaction payload
 3. Script resends request with `X-Payment` header containing signed payload
 4. Server verifies payment, settles on-chain, provisions/extends instance
 
 MegaETH uses an embedded facilitator (no external CDP dependency). The user signs an off-chain ERC-2612 permit, and the facilitator calls `permit()` + `transferFrom()` on MegaETH (~10ms blocks, near-zero gas).
+
+Robinhood Chain also uses an embedded facilitator (no third party). The user signs an off-chain EIP-3009 `TransferWithAuthorization` for USDG (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 decimals), and the facilitator submits `transferWithAuthorization()` on Robinhood Chain (chainId 4663) in a single transaction — the contract self-verifies the signature, nonce, and balance on-chain.
 
 For Solana, transient facilitator failures can happen. Retry once or twice if you get a temporary 5xx verify error.
 
@@ -394,7 +408,7 @@ python {baseDir}/scripts/provision.py vcg-a100-1c-2g-6gb lax --months 1 --label 
     --model-id llama-3.2-3b --mode grid
 
 # Use a private endpoint (OpenAI-compatible)
-curl -X POST <ENDPOINT>/chat/completions \
+curl -X POST <ENDPOINT>/v1/chat/completions \
   -H "Content-Type: application/json" -H "Authorization: Bearer <RETURNED_API_KEY>" \
   -d '{"model":"llama-3.2-3b","messages":[{"role":"user","content":"Hello"}]}'
 
@@ -510,11 +524,11 @@ updates. Docs: `https://docs.x402layer.cc/cloud/provide/node-setup`.
 
 | Variable | Required For | Description |
 |----------|--------------|-------------|
-| `PRIVATE_KEY` | Base/MegaETH payment signing | EVM private key (0x...) |
-| `WALLET_ADDRESS` | Base/MegaETH direct-signing mode | EVM wallet address (0x...) |
+| `PRIVATE_KEY` | Base/MegaETH/Robinhood payment signing | EVM private key (0x...) |
+| `WALLET_ADDRESS` | Base/MegaETH/Robinhood direct-signing mode | EVM wallet address (0x...) |
 | `SOLANA_SECRET_KEY` | Solana direct-signing mode | Solana signer key (base58 or JSON byte array) |
 | `SOLANA_WALLET_ADDRESS` | Solana direct-signing mode | Solana wallet address (optional if derivable from secret) |
-| `COMPUTE_AUTH_CHAIN` | Chain auth override | `base`, `megaeth`, or `solana` |
+| `COMPUTE_AUTH_CHAIN` | Chain auth override | `base`, `megaeth`, `robinhood`, or `solana` |
 | `COMPUTE_API_KEY` | Optional | Reusable API key for compute management endpoints |
 | `COMPUTE_AUTH_MODE` | Optional | `auto`, `private-key`, or `ows` |
 | `OWS_WALLET` | OWS auth mode | OWS wallet name or ID |
@@ -547,5 +561,5 @@ For full endpoint details, see:
 
 OWS support is optional-first in this release:
 - use it for compute auth and management/API-key flows
-- keep direct Base, MegaETH, or Solana signing keys for the paid provision and extend flows
+- keep direct Base, MegaETH, Robinhood, or Solana signing keys for the paid provision and extend flows
 - resize, list, details, password fallback, and destroy work with normal compute auth / API keys
