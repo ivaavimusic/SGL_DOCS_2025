@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.10.0
+version: 1.11.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -12,11 +12,15 @@ description: |
   "confidential / TEE inference", "list grid models", "check grid capacity",
   "run a node", "provide compute", "become a grid node", "node operator", "join the grid",
   "stake to run a node", "serve a model on the grid", "earn from compute",
-  or manage Singularity Cloud Network compute. Four jobs: SGL Machines
+  "deploy an always-on AI agent", "deploy a hosted OpenClaw agent", "spin up a ClawPod",
+  "agent pod", "hosted agent with its own wallet", "free agent trial",
+  or manage Singularity Cloud Network compute. Five jobs: SGL Machines
   (GPU/VPS provisioning across Vultr & DigitalOcean), AI Machines (one-click GPU
   running an LLM — deploy a private OpenAI-compatible endpoint, or join the grid & earn),
-  SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it), and
-  Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL). Pay with
+  SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it),
+  Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL), and
+  Agent Pods (deploy an always-on hosted OpenClaw agent with its own crypto wallet, memory,
+  and preinstalled x402 skills — managed or BYOK, tiers, free 24h trial). Pay with
   USDC on Base or Solana, USDm on MegaETH, USDG on Robinhood Chain via x402, optional MPP/Mppx, or
   pre-loaded USD credits. Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
@@ -72,7 +76,7 @@ Products share one credit balance and one set of wallet/API-key auth:
 - **AI Machines** — one-click deploy of a **GPU already running an LLM**, mode chosen at deploy: `private` (your own **OpenAI-compatible** endpoint — returns URL + API key) or `grid` (serve as a node & earn USDC + SGL, needs 50k SGL staked). Same x402 lifecycle as Machines; add `model_id` + `mode` to provision. **Standard tier (not confidential).** See [AI Machines](#ai-machines--one-click-llm-gpu) below and `references/ai-machines.md`.
 - **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
 - **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. Operators can set a **custom per-token price** within a band (`sgl price set`, suggested × 0.5–× 5); callers compare nodes via `GET /v1/providers`. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
-- **Agent Pods** — deploy an **always-on hosted AI agent** (OpenClaw "ClawPod") on a dedicated CPU machine: it chats on Telegram/Discord/Slack, has its own crypto wallet + memory, and comes with the `x402-compute` + `x402-layer` skills preinstalled. Same x402 / API-key + credits lifecycle as Machines. **API base:** `https://compute.x402layer.cc` (see [Agent Pods](#agent-pods--always-on-hosted-agents) below).
+- **Agent Pods** — deploy an **always-on hosted AI agent** (OpenClaw "ClawPod") on a dedicated CPU machine: it chats on Telegram & Discord (more channels soon) + the dashboard, has its own crypto wallet + memory, and comes with the `x402-compute` + `x402-layer` skills preinstalled. Managed (we run the LLM, tiered) or BYOK; a **free 24h trial** is available. Same x402 / API-key + credits lifecycle as Machines. **API base:** `https://compute.x402layer.cc` (see [Agent Pods](#agent-pods--always-on-hosted-agents) below).
 - **SGL Processors** — serverless TEE functions. *Coming soon.*
 
 Pay with x402, MPP, or pre-loaded credits — the same `x402c_…` API key and prepaid credit balance work across Machines and Grid.
@@ -511,30 +515,33 @@ updates. Docs: `https://docs.x402layer.cc/cloud/provide/node-setup`.
 
 ## Agent Pods — always-on hosted agents
 
-Deploy a persistent AI agent ("ClawPod", built on OpenClaw) on a dedicated CPU machine. It stays online 24/7, chats on Telegram / Discord / Slack **and** from the dashboard, has its own **crypto wallet** (Coinbase CDP, keys in a TEE) and **memory**, and ships with the `x402-compute` + `x402-layer` skills preinstalled so it can buy compute and pay x402 endpoints itself.
+Deploy a persistent AI agent ("ClawPod", built on OpenClaw) on a dedicated CPU machine. It stays online 24/7, chats on **Telegram & Discord** (Slack / WhatsApp / Signal are coming soon) **and** from the dashboard, has its own **crypto wallet** (Coinbase CDP — EVM + Solana, keys in a TEE) and **persistent memory**, and ships with the `x402-compute` + `x402-layer` skills preinstalled — wired to your account with capped, revocable credentials — so it can buy confidential compute and pay x402 endpoints itself.
 
-**API base:** `https://compute.x402layer.cc` · **Auth:** same as Machines (x402 signing, `X-API-Key`, or a signed compute session). **Pay:** platform **credits** (`use_credits: true`) or **x402** (omit `use_credits` → the deploy answers `402 Payment Required`, settle it like any provision).
+**API base:** `https://compute.x402layer.cc`
+**Auth:** pod endpoints **always require compute auth** (`X-API-Key`, a signed compute session, or `X-Auth-*` wallet signature) — even when paying with x402, because a pod is owned by your wallet. (This differs from `POST /compute/provision`, which accepts anonymous x402.)
+**Pay:** platform **credits** (`use_credits: true`) or **x402** (omit `use_credits` → the deploy answers `402 Payment Required`; settle with the `X-Payment` header like any provision, and add `"network"` for a non-Base chain).
+**Only `openclaw` is deployable today** (`agent_id: "openclaw"`, display name "ClawPod"); HermPod (`hermes`) appears in the catalog marked "coming soon" and is rejected by deploy.
 
 ### Catalog (public, no auth)
 ```bash
-# Agents, managed tiers (models per tier), channels, pricing
+# Agents, managed tiers (models per tier), channels, memory backends, pricing
 curl -s https://compute.x402layer.cc/pods/catalog
 ```
 
-### Deploy a pod
+### Deploy a pod — `POST /pods`
 Two AI modes:
-- **`managed`** — we run the LLM (metered from credits). Pick a `tier`: `starter` (chat), `pro` / `max` (add computer-use + memory). Each tier bundles a machine + a model menu the agent can switch with `/model`.
-- **`byok`** — bring your own OpenAI-compatible key; pick any machine `plan`. You only pay CPU + a small service fee.
+- **`managed`** — we run the LLM and meter it from your credits. Pick a `tier`: `starter` (text chat), `pro` (adds vision + computer-use), `max` (top reasoning + vision). Each tier bundles a machine RAM floor + a curated model menu the agent can switch among at runtime (`/model`). Managed pods include a small prepaid inference allowance.
+- **`byok`** — bring your own OpenAI-compatible key + any machine `plan`. You pay CPU + a small service % only; your AI runs on your key.
 
 ```bash
-# Managed Pro pod, paid from credits, with Telegram
+# Managed Pro pod, paid from credits, with a Telegram bot
 curl -s -X POST https://compute.x402layer.cc/pods \
   -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" \
   -d '{
     "agent_id": "openclaw",
     "ai_mode": "managed",
     "tier": "pro",
-    "plan": "<plan_id from /pods/catalog>",
+    "plan": "<plan_id from /compute/plans>",
     "prepaid_hours": 720,
     "channels": { "telegram": "<bot_token>" },
     "use_credits": true
@@ -547,29 +554,91 @@ curl -s -X POST https://compute.x402layer.cc/pods \
     "agent_id": "openclaw", "ai_mode": "byok",
     "plan": "<plan_id>", "prepaid_hours": 720,
     "llm_base_url": "https://openrouter.ai/api/v1",
-    "llm_api_key": "<your_llm_key>", "model": "openai/gpt-4o-mini",
+    "llm_api_key": "<your_llm_key>", "llm_api": "openai-completions",
+    "model": "openai/gpt-4o-mini",
     "use_credits": true
   }'
 ```
-To pay with **x402** instead of credits, omit `use_credits` and settle the returned `402` exactly like a Machines provision (`X-Payment` header). The response includes the new `pod.id` (a compute order id) and, for managed pods, a one-time `managed_ai_key`.
+The response includes the new `pod.id` (this **is** the compute order id — use it for all pod + lifecycle calls) and, for managed pods, a one-time `managed_ai_key` (the pod's key to our managed LLM proxy — shown once).
 
-**Deploy body fields:** `agent_id` (`openclaw`), `ai_mode` (`managed`|`byok`), `tier` (managed), `plan` + `plan_ram_mb` (machine), `prepaid_hours` (e.g. 720 = 1 month), `model` (managed override or byok model), `llm_base_url`/`llm_api_key`/`llm_api` (byok), `channels` (`{telegram|discord|slack: token}`), `memory` (byok: `{backend:'raw'|'mem0', api_key?, lcm?}`), `region`/`os_id` (optional).
+**Deploy body fields:**
+- `agent_id` — `"openclaw"` (only deployable agent today).
+- `ai_mode` — `"managed"` | `"byok"`.
+- `tier` — managed only: `"starter"` | `"pro"` | `"max"`.
+- `plan` (+ optional `plan_ram_mb` for a pre-flight RAM check) — the machine; managed tiers enforce a RAM floor (pro/max run a browser on the box).
+- `prepaid_hours` — e.g. `720` = 1 month (min 24).
+- `model` — managed: an override that must be in the chosen tier's model list (else it falls back to the tier default); byok: your model id.
+- `llm_base_url`, `llm_api_key`, `llm_api` — byok only. `llm_api` ∈ `openai-completions` (default) | `openai-responses` | `anthropic-messages` | `google-generative`.
+- `channels` — `{ telegram?: token, discord?: token }` (validated against the agent's supported channels; unsupported channels are rejected).
+- `memory` — byok only: `{ backend: "raw"|"mem0", api_key?, lcm? }` (managed memory is tier-driven). Applies only when the memory feature is enabled.
+- `use_credits`, `network`, `ssh_public_key`, `region`, `os_id` — passed straight through to the audited provision path.
+
+### Free 24-hour trial — `POST /pods/trial`
+A free Starter/Pro pod with **no upfront payment** (funded by a one-time credit grant; gated behind a live campaign, so it can answer `503` when off or fully claimed). One per wallet + device. The pod is **auto-destroyed at 24h** (never renews) and its managed-AI allowance is capped.
+```bash
+curl -s -X POST https://compute.x402layer.cc/pods/trial \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "openclaw",
+    "tier": "starter",
+    "plan": "<plan_id>",
+    "device_hash": "<sha256 hex device fingerprint>",
+    "channels": { "telegram": "<bot_token>" }
+  }'
+```
+`tier` must be `starter` or `pro`; `device_hash` is a 64-char sha256 hex. `ai_mode` (managed), `prepaid_hours` (24) and `use_credits` are forced server-side — you supply the tier, plan, device_hash, and any channels.
 
 ### Manage a pod
 ```bash
-curl -s https://compute.x402layer.cc/pods           -H "X-API-Key: $COMPUTE_API_KEY"   # list yours
-curl -s https://compute.x402layer.cc/pods/<id>      -H "X-API-Key: $COMPUTE_API_KEY"   # details + heartbeat
-# Lifecycle action (restart | redeploy | stop)
+curl -s https://compute.x402layer.cc/pods       -H "X-API-Key: $COMPUTE_API_KEY"   # list yours
+curl -s https://compute.x402layer.cc/pods/<id>  -H "X-API-Key: $COMPUTE_API_KEY"   # details + live heartbeat + masked credential state
+
+# Lifecycle action: restart | redeploy | stop | update | diagnose | logs | pair-approve | cron
 curl -s -X POST https://compute.x402layer.cc/pods/<id>/actions \
   -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" -d '{"action":"restart"}'
+
+# Link a chat: the bot shows a pairing code in Telegram/Discord; approve it
+curl -s -X POST https://compute.x402layer.cc/pods/<id>/actions \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" \
+  -d '{"action":"pair-approve","channel":"telegram","code":"T64WUC8Q"}'
+
 # Add/replace channels later (queues a redeploy)
 curl -s -X PATCH https://compute.x402layer.cc/pods/<id>/channels \
   -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" \
   -d '{"channels":{"discord":"<bot_token>"}}'
-# Agent wallet (address + balances; fund it so the agent can pay for things)
-curl -s https://compute.x402layer.cc/pods/<id>/wallet -H "X-API-Key: $COMPUTE_API_KEY"
+
+# Tune the heartbeat / action-poll interval (10–3600s)
+curl -s -X PATCH https://compute.x402layer.cc/pods/<id>/settings \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" -d '{"heartbeat_interval_sec":30}'
 ```
-Pods **auto-renew** from credits at expiry (with a grace window) and can be **extended** early. Destroying a pod refunds remaining prepaid time; the agent wallet's funds are never lost (withdraw from the Wallet tab).
+Actions apply on the pod worker's next poll (≤ 60s). The `cron` action drives the agent's scheduler: `{"action":"cron","verb":"add|enable|disable|remove|run", ...}` (add takes `kind`/`schedule`/`name`/`message`).
+
+### Agent wallet & delegated skill access
+```bash
+# The pod's own wallet — addresses + balances (fund it so the agent can pay for things)
+curl -s https://compute.x402layer.cc/pods/<id>/wallet -H "X-API-Key: $COMPUTE_API_KEY"
+
+# Owner controls: per-tx spend cap + arm sending (default OFF; clamped to a platform ceiling)
+curl -s -X PATCH https://compute.x402layer.cc/pods/<id>/wallet/settings \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" \
+  -d '{"send_enabled":true,"spend_cap_usd":10}'
+
+# Send from / pay an x402 endpoint with the pod wallet (gated; owner is uncapped, the agent is cap-bound):
+#   POST /pods/<id>/wallet/send      {chain, to, token, amount, idempotency_key}
+#   POST /pods/<id>/wallet/x402/pay  {url, method?, headers?, body?, max_amount_usd?}
+```
+`GET /pods/<id>` returns a masked `credentials` block — the preinstalled skills' pod-scoped Compute key + Studio PAT (for the marketplace / MCP) and its daily cap. Manage it with `POST /pods/<id>/credentials` (`{"action":"enable"|"regenerate"|"set-cap"|"byok", ...}`) or `DELETE /pods/<id>/credentials` to revoke. Delegated creds, native Singularity MCP, wallet sending, and memory are **feature-gated** and may be dark until launch.
+
+### Extend / destroy
+A pod is a compute order, so use the **Machines endpoints with the pod id as the instance id**:
+```bash
+# Extend early (credits or x402, same as any Machine)
+curl -s -X POST https://compute.x402layer.cc/compute/instances/<pod.id>/extend \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" -d '{"extend_hours":720,"use_credits":true}'
+# Destroy (revokes the pod's delegated creds, refunds remaining prepaid time)
+curl -s -X DELETE https://compute.x402layer.cc/compute/instances/<pod.id> -H "X-API-Key: $COMPUTE_API_KEY"
+```
+Managed pods can also **auto-renew** from your credits at expiry (with a grace window) when that feature is enabled; trials never renew. The agent wallet's funds survive destruction (withdraw from the Wallet tab).
 
 ---
 
