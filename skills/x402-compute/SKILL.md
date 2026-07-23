@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.11.0
+version: 1.12.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
@@ -172,7 +172,33 @@ Resize is a management action, not a second payment flow. The API preserves rema
 | `resize_instance.py` | Resize an instance in place (compute auth only) |
 | `destroy_instance.py` | Destroy an instance |
 | `ows_cli.py` | Run OpenWallet / OWS wallet, sign-message, and key commands |
+| `agent_pod.py` | Deploy an **Agent Pod** (`POST /pods`), create an `sk-sglpod-int-*` integration key, and call the pod's **OpenAI adapter** (`catalog`/`list`/`get`/`deploy`/`create-key`/`chat`) |
 | `solana_signing.py` | Internal helper for Solana x402 payment signing |
+
+---
+
+## Intent Router
+
+Map the user's request to the script + reference to load (progressive disclosure — only open the
+reference you need).
+
+| User intent | Script | Reference |
+|-------------|--------|-----------|
+| "provision a GPU/VPS", "spin up a server", "extend/resize/destroy instance" | `provision.py` / `extend_instance.py` / `resize_instance.py` / `destroy_instance.py` | `references/api-reference.md` |
+| "deploy a private LLM endpoint", "one-click GPU running an LLM", "OpenRouter-ready endpoint" | `provision.py --model-id … --mode private` | `references/ai-machines.md` |
+| "join the grid & earn", "run a node", "provide compute" | `sgl` CLI (see below) | `references/node-operator.md` |
+| "run inference on the grid", "confidential/TEE OpenAI-compatible inference" | curl / any OpenAI SDK → `grid.x402compute.cc` | `references/api-reference.md` |
+| **"deploy an agent pod"**, "hosted OpenClaw/ClawPod", "always-on AI agent with its own wallet", "free 24h agent trial" | **`agent_pod.py deploy`** (or `catalog`/`list`/`get`) | **`references/agent-pods.md`** |
+| **"call my pod via the OpenAI API"**, "give my pod an OpenAI-compatible endpoint", "get an API key for my agent pod" | **`agent_pod.py create-key` then `agent_pod.py chat`** | **`references/agent-pods.md`** |
+
+Agent Pod quick path:
+```bash
+python {baseDir}/scripts/agent_pod.py catalog                              # pick tier/plan/model
+python {baseDir}/scripts/agent_pod.py deploy --ai-mode managed --tier pro \
+    --plan <plan_id> --prepaid-hours 720 --telegram <bot_token> --use-credits
+python {baseDir}/scripts/agent_pod.py create-key <pod_id> --name my-integration   # → sk-sglpod-int-…
+python {baseDir}/scripts/agent_pod.py chat <pod_id> "What's on my calendar?" --key sk-sglpod-int-…
+```
 
 ---
 
@@ -640,6 +666,26 @@ curl -s -X DELETE https://compute.x402layer.cc/compute/instances/<pod.id> -H "X-
 ```
 Managed pods can also **auto-renew** from your credits at expiry (with a grace window) when that feature is enabled; trials never renew. The agent wallet's funds survive destruction (withdraw from the Wallet tab).
 
+### OpenAI-compatible adapter (talk to your pod like any OpenAI endpoint)
+Point any OpenAI SDK at a pod. **v1 is Chat Completions only, non-streaming, `usage:null`**; the model
+is always `agent-pod` (the pod uses its own configured LLM). The adapter surface is **feature-flagged**
+(dark by default) — it answers `404` until enabled.
+```bash
+# 1) Mint a pod-scoped integration key (owner / compute auth). Raw key shown ONCE.
+curl -s -X POST https://compute.x402layer.cc/pods/<id>/api-keys \
+  -H "X-API-Key: $COMPUTE_API_KEY" -H "Content-Type: application/json" -d '{"name":"my-integration"}'
+# → { "key": "sk-sglpod-int-…", "base_url": "https://compute.x402layer.cc/pods/<id>/v1" }
+
+# 2) Call it with Authorization: Bearer <key> (NOT compute auth)
+curl -s -X POST https://compute.x402layer.cc/pods/<id>/v1/chat/completions \
+  -H "Authorization: Bearer sk-sglpod-int-…" -H "Content-Type: application/json" \
+  -d '{"model":"agent-pod","stream":false,"messages":[{"role":"user","content":"Hello"}]}'
+```
+Keys are bound to the pod, carry a daily request cap (default 1000/day → `429` over-cap), and are
+revocable (`DELETE /pods/<id>/api-keys/<keyId>`). Full body fields, response shapes, and error codes
+→ **`references/agent-pods.md`**. Scripted end-to-end: `scripts/agent_pod.py` (`deploy` → `create-key`
+→ `chat`).
+
 ---
 
 ## Plan Types
@@ -676,6 +722,7 @@ Managed pods can also **auto-renew** from your credits at expiry (with a grace w
 For full endpoint details, see:
 - [references/api-reference.md](references/api-reference.md)
 - [references/ai-machines.md](references/ai-machines.md) — AI Machines (one-click LLM GPU: modes, endpoint+key, control API, agent x402 deploy)
+- [references/agent-pods.md](references/agent-pods.md) — Agent Pods (deploy `POST /pods`, manage, wallet, and the OpenAI-compatible adapter: `sk-sglpod-int-*` keys + `/v1/chat/completions`)
 - [references/node-operator.md](references/node-operator.md) — run a grid node (provide compute, earn)
 - [references/openwallet-ows.md](references/openwallet-ows.md)
 
