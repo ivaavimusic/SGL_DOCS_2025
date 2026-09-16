@@ -138,7 +138,7 @@ Top up credits via x402 payment. Returns `402 Payment Required` if no `X-Payment
 ```
 
 - `amount`: USD to deposit (minimum $1 — **$5 on Arc**, because Arc gas is paid in USDC and comes off the sale)
-- `network`: `base`, `solana`, `megaeth`, `robinhood`, or `arc` (base/solana/arc = USDC, megaeth = USDm, robinhood = USDG). Arc is EIP-3009 `transferWithAuthorization` like Base/Robinhood — same signing flow, domain name `"USDC"` version `"2"` chainId `5042`; explorer: explorer.arc.io
+- `network`: `base`, `solana`, `megaeth`, `robinhood`, or `arc` (base/solana/arc = USDC, megaeth = USDm, robinhood = USDG). Arc is EIP-3009 `transferWithAuthorization` like Base/Robinhood — same signing flow, domain name `"USDC"` version `"2"` chainId `5042`; explorer: explorer.arc.io. **Machines, AI Machines and extensions also accept `network: "arc"` directly** — direct Arc payments carry the same $5 minimum; smaller prepayments go through credits.
 
 **Headers:**
 - Auth headers (see Authentication above)
@@ -182,6 +182,7 @@ Provision a new compute instance. Returns `402 Payment Required` with x402 and, 
 - For DigitalOcean plans, `ssh_public_key` or existing `ssh_key_id(s)` is required. Password fallback is Vultr-only.
 - DigitalOcean plan IDs are prefixed, for example `do:s-1vcpu-1gb`.
 - Set `use_credits: true` to deduct from pre-loaded credit balance instead of requiring x402/MPP payment. Auth is required for the credit path. If balance is insufficient, returns `402` with the shortfall.
+- `network` also accepts `"arc"` (USDC on Arc, EIP-3009 chainId 5042). **Direct Arc payments carry a $5 minimum** — Arc gas is USDC and comes off the sale — so a 24-hour micro-instance is refused with a pointer to credits; `use_credits: true` with an Arc-funded balance has no floor. Same for `/compute/instances/:id/extend`.
 - **AI Machine:** add a **nested** object to deploy a GPU that comes up running an LLM. The two are mutually exclusive:
   - `"ai_machine": { "model_id": "<id>", "mode": "private" }` — a dedicated **OpenAI-compatible** endpoint (`mode` must be `"private"`). The success order's `metadata.ai = { model_id, api_key, port: 8080, endpoint }`; the box exposes `/v1/chat/completions` and `/v1/models` at `<endpoint>/v1`, authenticated with `Authorization: Bearer <api_key>`. For VM providers `endpoint` derives from the instance IP + port (`http://<ip>:8080/v1`) once the IP lands (read via `GET /compute/instances/:id`). **Requires an x402 wallet payment — `use_credits: true` is rejected for `ai_machine`.**
   - `"deploy_node": { "model_id": "<id>" }` — joins the grid to serve inference and earn USDC + SGL (requires ≥ 50,000 $SGL staked to the paying wallet; x402 Solana payment).

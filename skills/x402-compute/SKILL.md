@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.28.0
+version: 1.29.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "integrate agent pods over an API", "create pods for my customers",
@@ -34,8 +34,9 @@ description: |
   snapshot an agent's memory and soul, store it encrypted, restore or migrate it to any
   machine or pod). Pay with
   USDC on Base, Solana or Arc, USDm on MegaETH, USDG on Robinhood Chain via x402, optional MPP/Mppx, or
-  pre-loaded USD credits. Arc note: credit top-ups on Arc have a $5 minimum (Arc gas is paid in
-  USDC). Includes optional OWS-backed auth and management flows.
+  pre-loaded USD credits. Arc: accepted for credit top-ups AND direct machine/AI-machine provision
+  and extension payments (direct Arc payments floor at $5 — Arc gas is USDC; smaller prepayments go
+  through Arc-funded credits). Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
 metadata:
   clawdbot:

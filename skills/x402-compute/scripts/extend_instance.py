@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extend a compute instance")
     parser.add_argument("instance_id", help="Instance ID to extend")
     parser.add_argument("--hours", type=int, default=720, help="Hours to extend (default: 720 = ~1 month)")
-    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood"], help="Payment network (base/solana = USDC, robinhood = USDG)")
+    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood", "arc"], help="Payment network (base/solana/arc = USDC, robinhood = USDG; direct arc payments min $5)")
     parser.add_argument("--yes", "-y", action="store_true", help="Skip payment confirmation prompt")
     parser.add_argument("--max-spend", type=float, help="Max USD spend limit (default: $500 or COMPUTE_MAX_SPEND_USD)")
     args = parser.parse_args()

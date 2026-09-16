@@ -228,7 +228,7 @@ if __name__ == "__main__":
     duration.add_argument("--days", type=int, default=0, help="Duration in days (minimum: 1)")
     parser.add_argument("--os-id", type=int, default=2284, help="OS image ID (default: 2284 = Ubuntu 24.04)")
     parser.add_argument("--label", default="x402-instance", help="Instance label")
-    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood"], help="Payment network (base/solana = USDC, robinhood = USDG)")
+    parser.add_argument("--network", default="base", choices=["base", "solana", "robinhood", "arc"], help="Payment network (base/solana/arc = USDC, robinhood = USDG; direct arc payments min $5)")
     parser.add_argument("--ssh-public-key", help="SSH public key contents (recommended)")
     parser.add_argument("--ssh-key-file", help="Path to SSH public key file (e.g. ~/.ssh/id_ed25519.pub)")
     parser.add_argument("--model-id", help="AI Machine: LLM to deploy (e.g. llama-3.2-3b). Requires --mode.")
