@@ -1,8 +1,10 @@
 ---
 name: x402-compute
-version: 1.12.0
+version: 1.28.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
+  "integrate agent pods over an API", "create pods for my customers",
+  "pod webhooks", "pod events",
   "spin up a cloud server", "list compute plans", "browse GPU pricing",
   "deploy AI machine", "one-click GPU running an LLM", "deploy a private LLM endpoint",
   "OpenRouter-ready endpoint", "agent deploy GPU", "spin up my own OpenAI-compatible endpoint",
@@ -14,15 +16,26 @@ description: |
   "stake to run a node", "serve a model on the grid", "earn from compute",
   "deploy an always-on AI agent", "deploy a hosted OpenClaw agent", "spin up a ClawPod",
   "agent pod", "hosted agent with its own wallet", "free agent trial",
-  or manage Singularity Cloud Network compute. Five jobs: SGL Machines
+  "deploy a processor", "sell my code per call", "monetize an endpoint",
+  "publish a paid API", "connect a processor as an MCP tool",
+  "back up my agent", "agent backup", "restore my agent", "migrate my agent",
+  "agent vault", "snapshot my agent's memory", "move my agent to a new machine",
+  or manage Singularity Cloud Network compute. Seven jobs: SGL Machines
   (GPU/VPS provisioning across Vultr & DigitalOcean), AI Machines (one-click GPU
   running an LLM — deploy a private OpenAI-compatible endpoint, or join the grid & earn),
   SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it),
   Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL), and
   Agent Pods (deploy an always-on hosted OpenClaw agent with its own crypto wallet, memory,
-  and preinstalled x402 skills — managed or BYOK, tiers, free 24h trial). Pay with
-  USDC on Base or Solana, USDm on MegaETH, USDG on Robinhood Chain via x402, optional MPP/Mppx, or
-  pre-loaded USD credits. Includes optional OWS-backed auth and management flows.
+  and preinstalled x402 skills — managed or BYOK, tiers, free 24h trial), and
+  Processors (publish your own code as a paid endpoint — buyers pay you directly in USDC via
+  x402, you pay only for runtime; every processor is also a connectable MCP server, so agents,
+  harnesses and LangGraph nodes can call it with just a URL), and Agent Vault
+  (zero-knowledge encrypted backup, restore & migration for OpenClaw/Hermes agents —
+  snapshot an agent's memory and soul, store it encrypted, restore or migrate it to any
+  machine or pod). Pay with
+  USDC on Base, Solana or Arc, USDm on MegaETH, USDG on Robinhood Chain via x402, optional MPP/Mppx, or
+  pre-loaded USD credits. Arc note: credit top-ups on Arc have a $5 minimum (Arc gas is paid in
+  USDC). Includes optional OWS-backed auth and management flows.
 homepage: https://docs.x402layer.cc/agentic-access/x402-compute
 metadata:
   clawdbot:
@@ -76,12 +89,14 @@ Products share one credit balance and one set of wallet/API-key auth:
 - **AI Machines** — one-click deploy of a **GPU already running an LLM**, mode chosen at deploy: `private` (your own **OpenAI-compatible** endpoint — returns URL + API key) or `grid` (serve as a node & earn USDC + SGL, needs 50k SGL staked). Same x402 lifecycle as Machines; add `model_id` + `mode` to provision. **Standard tier (not confidential).** See [AI Machines](#ai-machines--one-click-llm-gpu) below and `references/ai-machines.md`.
 - **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
 - **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. Operators can set a **custom per-token price** within a band (`sgl price set`, suggested × 0.5–× 5); callers compare nodes via `GET /v1/providers`. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
-- **Agent Pods** — deploy an **always-on hosted AI agent** (OpenClaw "ClawPod") on a dedicated CPU machine: it chats on Telegram & Discord (more channels soon) + the dashboard, has its own crypto wallet + memory, and comes with the `x402-compute` + `x402-layer` skills preinstalled. Managed (we run the LLM, tiered) or BYOK; a **free 24h trial** is available. Same x402 / API-key + credits lifecycle as Machines. **API base:** `https://compute.x402layer.cc` (see [Agent Pods](#agent-pods--always-on-hosted-agents) below).
-- **SGL Processors** — serverless TEE functions. *Coming soon.*
+- **Agent Pods** — deploy an **always-on hosted AI agent** (OpenClaw "ClawPod") on a dedicated CPU machine: it chats on Telegram & Discord (more channels soon) + the dashboard, has its own crypto wallet + memory, and comes with the `x402-compute` + `x402-layer` skills preinstalled. Managed (we run the LLM, tiered) or BYOK; a **free 24h trial** is available. **Curated templates** give a pod a job out of the box — `community-manager` (**TGPod**) runs a Telegram community; run `agent_pod.py templates` for the live list. Same x402 / API-key + credits lifecycle as Machines. **API base:** `https://compute.x402layer.cc` (see [Agent Pods](#agent-pods--always-on-hosted-agents) below).
+- **SGL Processors** — deploy ONE function, get a paid HTTP endpoint **and a live MCP server**. Buyers pay the PUBLISHER directly via x402 (no platform cut); the publisher pays only for compute (~$0.0003/run, held then rebated to actual). Runs in isolated V8 sandboxes — **NOT a TEE**. Deny-by-default egress + server-side secret injection. **LIVE via the CLI** (`npm i -g @singularity-layer/cli`); the dashboard UI is still dark. Supports TypeScript + npm via local bundling, captured `console.log` per run, persistent `SGL.kv` / `SGL.files` state with signed download links, per-secret `mode: "env"`, publisher pause/resume, pricing computed from the buyer's input, **buyer payment on Solana, Base or Robinhood Chain** via a per-chain `payout` map, and **signed webhooks** (ping-to-activate, HMAC-signed `sale.completed`/`run.failed` deliveries with retries + auto-disable). See `references/processors.md`.
+- **Datasets** — buy a validated **JSONL fine-tuning dataset** generated from one sentence plus 5-20 example conversations. Priced **per 100 examples** (fast $0.50 / balanced $0.75 / best $1.50 / decentralized grid $0.35), 50-2000 rows. Every row is **checked by a second model** against your house rules and rewritten if it breaks them (managed = frontier judge; **grid checks its own work on-network, so nothing leaves it even to be verified**). Fully agentic over x402: quote (402) → pay → **202 with a claim token in ~1s** → poll or signed webhook → presigned JSONL download. Generation takes minutes, so it NEVER blocks the request. Managed models or the confidential **encrypted grid**. Failed jobs refund. See `references/datasets.md`.
 
 Pay with x402, MPP, or pre-loaded credits — the same `x402c_…` API key and prepaid credit balance work across Machines and Grid.
 
 **x402 Networks:** Base (EVM) • Solana • MegaETH • Robinhood Chain (EVM)
+**PROCESSORS accept Solana, Base and Robinhood Chain — NOT MegaETH.** A publisher declares a `payout` address per chain (default: USDC on Solana at their deploying wallet), and the 402 carries ONE `accepts` ENTRY PER DECLARED CHAIN — read the array, do not assume one entry. `maxAmountRequired` is the same integer on every entry because all three assets are 6-decimal. **Robinhood is offered only on request** (`X-Accept-Networks: solana,base,robinhood`) because the reference x402 client rejects an entire `accepts` array containing a name it does not know. Owner/CLI auth is still a Solana signature. **A processor payment is FINAL — there are no refunds**; the recovery path for a failed paid run is re-sending the same `X-Payment` header, which returns the run already bought rather than charging again. See `references/processors.md`.
 **x402 Currency:** USDC (Base/Solana) • USDm (MegaETH) • USDG (Robinhood Chain)
 **MPP Methods:** Tempo • Stripe/card when enabled by the service
 **Credits:** Pre-load USD via x402 topup, then provision/extend (`use_credits: true`) or call the Grid with `X-API-Key`
@@ -107,6 +122,9 @@ pip install -r {baseDir}/requirements.txt
 #### Option A: Direct signing keys (Base, MegaETH, Robinhood, or Solana)
 
 > **Use a dedicated low-balance wallet.** Never use your primary custody wallet.
+
+> **Credentials must be exported.** These scripts read the process environment only — they do
+> not load `.env` files. If your keys live in a `.env`, `source` it yourself first.
 
 ```bash
 # Base (EVM) — same keys work for MegaETH and Robinhood Chain
@@ -190,10 +208,15 @@ reference you need).
 | "run inference on the grid", "confidential/TEE OpenAI-compatible inference" | curl / any OpenAI SDK → `grid.x402compute.cc` | `references/api-reference.md` |
 | **"deploy an agent pod"**, "hosted OpenClaw/ClawPod", "always-on AI agent with its own wallet", "free 24h agent trial" | **`agent_pod.py deploy`** (or `catalog`/`list`/`get`) | **`references/agent-pods.md`** |
 | **"call my pod via the OpenAI API"**, "give my pod an OpenAI-compatible endpoint", "get an API key for my agent pod" | **`agent_pod.py create-key` then `agent_pod.py chat`** | **`references/agent-pods.md`** |
+| **"telegram community manager"**, "TGPod", "moderate my telegram group", "bot that answers members and removes scams", "discord community manager" (soon) | **`agent_pod.py templates`** then **`agent_pod.py deploy --template community-manager`** | **`references/agent-pods.md`** |
+| **"integrate agent pods into my product"**, "pods over an API key", "create pods for my customers", "pod webhooks / events", "no wallet, just an API key" | `curl` / `PodsClient` (both SDKs) → `/pods/v1` | **`references/agent-pods-api.md`** |
+| **"back up my agent"**, "restore/migrate my agent", "agent vault", "snapshot my agent's memory" | **`npx @singularity-layer/agentvault`** (`login`, `backup --all`, `restore`) | **`references/agent-vault.md`** |
+| **"buy a training dataset"**, "generate fine-tuning data", "make me a JSONL dataset", "synthetic training data for my model" | `POST /datasets/x402/synth` (402 → pay → poll) or the MCP dataset tools | **`references/datasets.md`** |
 
 Agent Pod quick path:
 ```bash
 python {baseDir}/scripts/agent_pod.py catalog                              # pick tier/plan/model
+python {baseDir}/scripts/agent_pod.py templates                            # curated pods with a job (TGPod …)
 python {baseDir}/scripts/agent_pod.py deploy --ai-mode managed --tier pro \
     --plan <plan_id> --prepaid-hours 720 --telegram <bot_token> --use-credits
 python {baseDir}/scripts/agent_pod.py create-key <pod_id> --name my-integration   # → sk-sglpod-int-…
@@ -343,6 +366,7 @@ python {baseDir}/scripts/ows_cli.py key-create --name codex-compute --wallet com
 
 ```bash
 # Top up credits via x402 payment (one-time)
+# network: base | solana | megaeth | robinhood | arc  (Arc minimum $5 — gas is paid in USDC there)
 curl -X POST https://compute.x402layer.cc/compute/credits/topup \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $COMPUTE_API_KEY" \
@@ -688,6 +712,32 @@ revocable (`DELETE /pods/<id>/api-keys/<keyId>`). Full body fields, response sha
 
 ---
 
+## Agent Vault — encrypted agent backup & migration
+
+Zero-knowledge encrypted snapshots of an agent's entire state (memory, soul,
+config, skills) for OpenClaw and Hermes — restorable on any machine or pod.
+Encryption happens on the agent's own machine; the platform stores ciphertext
+it cannot read, so **a lost passphrase is unrecoverable**. Plans: FREE = one
+rolling snapshot (new replaces old), 1 GB. VAULT PRO = $3/month or $30/year —
+10 GB, the last 10 snapshots of each agent. VAULT MAX = $5/month or $50/year —
+50 GB, unlimited snapshots. Paid from credits — or directly with x402 (USDC on Base/Solana, USDG on
+Robinhood, USDm on MegaETH) — via
+`POST /backups/subscribe {"plan":"pro|max","interval":"month|year"}`, adding
+`"pay":"x402","network":"base"` for the x402 rail, or dashboard → Upgrade.
+The FREE tier needs no call at all.
+
+```bash
+npm i -g @singularity-layer/agentvault
+agentvault login          # browser wallet approval (or --api-key)
+agentvault backup --all   # encrypt + upload every detected agent
+agentvault backup --path ~/my-agent --name "My Agent"   # ANY directory (universal)
+agentvault restore        # bring an agent back, anywhere
+```
+
+Pods back up one-click from their dashboard **Backups** tab — no install.
+Cross-restoring a snapshot onto a different pod or machine IS migration.
+Full flows, HTTP API, and agent safety rules: `references/agent-vault.md`.
+
 ## Plan Types
 
 | Type | Plan Prefix | Description |
@@ -723,6 +773,7 @@ For full endpoint details, see:
 - [references/api-reference.md](references/api-reference.md)
 - [references/ai-machines.md](references/ai-machines.md) — AI Machines (one-click LLM GPU: modes, endpoint+key, control API, agent x402 deploy)
 - [references/agent-pods.md](references/agent-pods.md) — Agent Pods (deploy `POST /pods`, manage, wallet, and the OpenAI-compatible adapter: `sk-sglpod-int-*` keys + `/v1/chat/completions`)
+- [references/agent-pods-api.md](references/agent-pods-api.md) — the **`/pods/v1` API-key surface** for building ON pods rather than clicking them: idempotent create, lifecycle actions, tasks, connectors, wallet, backups, an account **event log** and **signed webhooks**. Use it when the caller holds an `x402c_…` key and no wallet; `agent-pods.md` remains the signature/OWS path.
 - [references/node-operator.md](references/node-operator.md) — run a grid node (provide compute, earn)
 - [references/openwallet-ows.md](references/openwallet-ows.md)
 

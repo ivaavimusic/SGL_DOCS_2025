@@ -62,7 +62,43 @@ answers `402 Payment Required`; settle with the `X-Payment` header like any prov
 | `llm_base_url`, `llm_api_key`, `llm_api` | byok | `llm_api` ∈ `openai-completions` (default) \| `openai-responses` \| `anthropic-messages` \| `google-generative`. |
 | `channels` | both | `{ telegram?: token, discord?: token }` — validated against the agent's supported channels; unsupported channels are rejected. |
 | `memory` | byok | `{ backend: "raw"\|"mem0", api_key?, lcm? }` (managed memory is tier-driven; feature-gated). |
+| `template`, `template_config` | both | Curated template — what the pod is FOR. See **Templates** below. |
 | `use_credits`, `network`, `ssh_public_key`, `region`, `os_id` | both | Passed straight through to the audited provision path. |
+
+### Templates — curated pods with a job
+
+A template layers a purpose on top of the engine: it supplies the persona, the channel
+policy and the briefing schedule. Everything else (tiers, BYOK, wallet, self-extend,
+skills) works exactly as on a bare pod. `GET /pods/catalog` returns `templates[]` with the
+setup keys each one needs, and `templates_enabled` saying whether deploy will accept one.
+
+| Template | Name | What it is |
+|----------|------|------------|
+| `community-manager` | **TGPod** | Runs a Telegram community: answers members, removes scam links and impersonators, and sends the owner a private briefing on a schedule. |
+| `discord-community` | **DiscordPod** | Announced, not yet buildable — deploy refuses it. |
+
+`community-manager` setup keys (`template_config`): `group_id` (required; comma-separate
+several, up to the tier's `max_groups` — 1 Starter / 3 Pro / 10 Max, BYOK gets the top of
+that ladder), `owner_id` (required — the Telegram user id the briefings go to),
+`project_summary`, `agent_name`, `house_rules`, `tone`, `digest_minutes`. The template
+requires its channel: deploy a `community-manager` **with** `channels.telegram` or it is
+rejected before anything is charged.
+
+The bot token belongs to the pod's moderation process, which must be Telegram's single
+`getUpdates` consumer for that bot. Do not point another program at the same token.
+
+```bash
+# TGPod: a Pro community manager for one Telegram group
+python scripts/agent_pod.py deploy --ai-mode managed --tier pro --plan <plan_id> \
+  --use-credits --telegram "$BOT_TOKEN" \
+  --template community-manager \
+  --template-config group_id=-1001234567890 \
+  --template-config owner_id=987654321 \
+  --template-config project_summary="Singularity Layer — decentralised confidential compute"
+```
+
+Pods report their template back on `list` / `get` / deploy as `template`, so an agent
+running a fleet can tell a community manager from a bare pod.
 
 ```bash
 # Managed Pro pod, paid from credits, with a Telegram bot

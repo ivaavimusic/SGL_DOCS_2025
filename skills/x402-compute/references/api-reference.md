@@ -137,8 +137,8 @@ Top up credits via x402 payment. Returns `402 Payment Required` if no `X-Payment
 }
 ```
 
-- `amount`: USD to deposit (minimum $1)
-- `network`: `base`, `solana`, `megaeth`, or `robinhood` (base/solana = USDC, megaeth = USDm, robinhood = USDG)
+- `amount`: USD to deposit (minimum $1 — **$5 on Arc**, because Arc gas is paid in USDC and comes off the sale)
+- `network`: `base`, `solana`, `megaeth`, `robinhood`, or `arc` (base/solana/arc = USDC, megaeth = USDm, robinhood = USDG). Arc is EIP-3009 `transferWithAuthorization` like Base/Robinhood — same signing flow, domain name `"USDC"` version `"2"` chainId `5042`; explorer: explorer.arc.io
 
 **Headers:**
 - Auth headers (see Authentication above)

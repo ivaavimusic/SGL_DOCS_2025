@@ -23,6 +23,11 @@ Usage:
       --prepaid-hours 720 --telegram <bot_token> --use-credits
   python agent_pod.py deploy --ai-mode byok --plan <plan_id> --prepaid-hours 720 \
       --llm-base-url https://openrouter.ai/api/v1 --llm-api-key <key> --model openai/gpt-4o-mini --use-credits
+  python agent_pod.py templates
+  python agent_pod.py deploy --ai-mode managed --tier pro --plan <plan_id> --use-credits \
+      --telegram <bot_token> --template community-manager \
+      --template-config group_id=-1001234567890 --template-config owner_id=987654321 \
+      --template-config project_summary="What this community is about"
   python agent_pod.py create-key <pod_id> --name my-integration
   python agent_pod.py chat <pod_id> "What's on my calendar today?" --key sk-sglpod-int-...
 """
@@ -56,6 +61,23 @@ def catalog() -> dict:
     return resp.json()
 
 
+def templates() -> dict:
+    """Public: curated templates (what a pod is FOR) + the setup keys each one requires.
+
+    Served from the same catalog the dashboard uses, so this list is never stale. Each
+    entry carries `setup`, the exact --template-config keys deploy will demand, and
+    `coming_soon`, which means announced but not yet buildable.
+    """
+    cat = catalog()
+    if "error" in cat:
+        return cat
+    return {
+        "templates_enabled": cat.get("templates_enabled", False),
+        "templates": cat.get("templates", []),
+        "group_allowance": {t.get("id"): t.get("max_groups") for t in cat.get("tiers", [])},
+    }
+
+
 def list_pods() -> dict:
     path = "/pods"
     resp = requests.get(f"{BASE_URL}/pods", headers=_owner_headers("GET", path), timeout=30)
@@ -86,6 +108,8 @@ def deploy(
     llm_api: Optional[str] = None,
     use_credits: bool = False,
     network: Optional[str] = None,
+    template: Optional[str] = None,
+    template_config: Optional[Dict[str, str]] = None,
 ) -> dict:
     """Deploy a pod via POST /pods (owner / compute auth).
 
@@ -93,6 +117,12 @@ def deploy(
     BYOK (your own OpenAI-compatible key): pass --llm-base-url/--llm-api-key/--model.
     Pay from credits with --use-credits, else omit it to settle via x402 (402 flow — use the
     dashboard or the x402 provision path to complete payment).
+
+    Curated templates (--template) say what the pod is FOR: they supply the persona, the
+    channel policy and the briefing schedule on top of the engine. `catalog` lists them
+    under "templates", each with the exact setup keys it needs. A template is validated
+    BEFORE anything is charged, so a missing key fails as a 400, not as a pod that boots
+    and quietly does nothing.
     """
     body: dict = {
         "agent_id": agent_id,
@@ -121,6 +151,9 @@ def deploy(
         channels["discord"] = discord
     if channels:
         body["channels"] = channels
+    if template:
+        body["template"] = template
+        body["template_config"] = template_config or {}
     if use_credits:
         body["use_credits"] = True
     if network:
@@ -181,6 +214,7 @@ if __name__ == "__main__":
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("catalog", help="List deployable agents, tiers, channels, pricing (public)")
+    sub.add_parser("templates", help="List curated pod templates and the setup each one needs (public)")
     sub.add_parser("list", help="List your pods")
 
     p_get = sub.add_parser("get", help="Get one pod (details + heartbeat + masked creds)")
@@ -201,6 +235,10 @@ if __name__ == "__main__":
                        help="BYOK: LLM API shape (default openai-completions)")
     p_dep.add_argument("--use-credits", action="store_true", help="Pay from platform credits (else x402)")
     p_dep.add_argument("--network", help="x402 network for non-Base payment (e.g. solana, robinhood, megaeth)")
+    p_dep.add_argument("--template", help="Curated template id, e.g. community-manager (TGPod). See `catalog` -> templates")
+    p_dep.add_argument("--template-config", action="append", metavar="KEY=VALUE", default=[],
+                       help="Template setup value, repeatable. e.g. --template-config group_id=-1001234567890 "
+                            "--template-config owner_id=987654321. Required keys are in catalog -> templates[].setup.")
 
     p_key = sub.add_parser("create-key", help="Create an sk-sglpod-int-* adapter integration key")
     p_key.add_argument("pod_id")
@@ -215,17 +253,30 @@ if __name__ == "__main__":
 
     if args.command == "catalog":
         result = catalog()
+    elif args.command == "templates":
+        result = templates()
     elif args.command == "list":
         result = list_pods()
     elif args.command == "get":
         result = get_pod(args.pod_id)
     elif args.command == "deploy":
+        tpl_cfg: Dict[str, str] = {}
+        for pair in (args.template_config or []):
+            if "=" not in pair:
+                print(json.dumps({"error": f"--template-config expects KEY=VALUE, got: {pair}"}, indent=2))
+                sys.exit(1)
+            k, v = pair.split("=", 1)
+            tpl_cfg[k.strip()] = v
+        if tpl_cfg and not args.template:
+            print(json.dumps({"error": "--template-config given without --template"}, indent=2))
+            sys.exit(1)
         result = deploy(
             ai_mode=args.ai_mode, plan=args.plan, prepaid_hours=args.prepaid_hours,
             agent_id=args.agent_id, tier=args.tier, model=args.model,
             telegram=args.telegram, discord=args.discord,
             llm_base_url=args.llm_base_url, llm_api_key=args.llm_api_key, llm_api=args.llm_api,
             use_credits=args.use_credits, network=args.network,
+            template=args.template, template_config=tpl_cfg,
         )
         if "pod" in result:
             pod = result["pod"]
@@ -234,6 +285,8 @@ if __name__ == "__main__":
             print(f"   Agent:     {pod.get('display_name')} ({pod.get('agent_id')})")
             print(f"   AI mode:   {pod.get('ai_mode')}  tier={pod.get('tier')}  model={pod.get('model')}")
             print(f"   Channels:  {', '.join(pod.get('channels') or []) or 'none'}")
+            if pod.get("template"):
+                print(f"   Template:  {pod.get('template')}")
             if pod.get("managed_ai_key"):
                 print(f"   Managed AI key (shown once): {pod['managed_ai_key']}")
             print("   Next: python agent_pod.py create-key <id>  →  chat via the OpenAI adapter.")
