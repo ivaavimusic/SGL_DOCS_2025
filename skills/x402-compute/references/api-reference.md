@@ -431,6 +431,7 @@ List models currently served by active attested nodes.
 
 ```bash
 curl https://grid.x402compute.cc/v1/models -H "X-API-Key: x402c_..."
+curl "https://grid.x402compute.cc/v1/models?type=systemone" -H "X-API-Key: x402c_..."
 ```
 
 ### POST /v1/chat/completions
@@ -445,6 +446,24 @@ curl -X POST https://grid.x402compute.cc/v1/chat/completions \
 ```
 
 Errors: `401` invalid/revoked API key · `402` payment required (resend with `X-Payment`) or insufficient credits (top up in Settings → Credits).
+
+### POST /v1/systemone
+
+Laya/System One typed decisions. Current model: `convaiinnovations/laya` (aliases: `laya`,
+`laya-system-one`, `systemone-laya`). This is not OpenAI chat; sending Laya to
+`/v1/chat/completions` returns `wrong_endpoint_for_model`.
+
+```bash
+curl -X POST https://grid.x402compute.cc/v1/systemone \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: x402c_..." \
+  -d '{"model":"convaiinnovations/laya","state":{"ticket":"refund request"},"questions":{"route":{"type":"choice","instructions":"Pick the best team.","criteria":{"billing":"Billing or refund","support":"Technical support"}}}}'
+```
+
+Question types: `choice`, `score`, `noul`. Limits: 64 KiB state, 32 questions, 64 criteria per
+question, 16,384 input tokens, 256 KiB request, 1 MiB response. Billing is input-only. For
+end-to-end private Laya, first call `POST /v1/systemone/reserve`, encrypt locally to the returned
+node key, then submit the sealed payload to `POST /v1/systemone`. See `references/systemone-laya.md`.
 
 ### GET /grid/capacity
 

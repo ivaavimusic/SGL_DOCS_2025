@@ -22,7 +22,8 @@ Node software (open source): `https://github.com/Singularity-Layer/sgl-network-n
 - **≥ 50,000 $SGL staked** to your operator wallet (the minimum to register a compute node; the live
   figure is shown in the staking app). Non-custodial, withdrawable after a cooldown.
 - **A Solana wallet** holding the stake — the node is bound to it.
-- **Local inference runtime** `llama.cpp` (`brew install llama.cpp`) and a **GGUF model file**.
+- **Local inference runtime** `llama.cpp` (`brew install llama.cpp`) and a **GGUF model file** for
+  chat models, or the Singularity Node app v1.7.4+ for Laya/System One.
 - Reliable power + network (uptime = job matching; honest downtime is never penalized).
 
 ---
@@ -115,6 +116,32 @@ curl https://grid.x402compute.cc/grid/capacity   # your node should raise active
 ```
 
 The node now registers, advertises its model(s), heartbeats, and starts receiving jobs.
+
+### Serve Laya / System One
+
+For node operators, the preferred path is the desktop app:
+
+1. Install or update to Singularity Node app v1.7.4 or newer.
+2. Open Models → System One → Laya.
+3. Connect. The app starts the local Laya sidecar on `127.0.0.1:8765`, then starts the normal SGL
+   node service with `--systemone-sidecar-url`.
+
+CLI fallback:
+
+```bash
+python3 -m venv ~/.sgl-laya
+~/.sgl-laya/bin/pip install "laya[serve]"
+LAYA_DEVICE=cpu LAYA_PRELOAD=1 ~/.sgl-laya/bin/laya-serve --host 127.0.0.1 --port 8765
+
+sgl login --models convaiinnovations/laya
+sgl attest
+sgl service install \
+  --model-name convaiinnovations/laya \
+  --systemone-sidecar-url http://127.0.0.1:8765 \
+  --max-jobs 1
+```
+
+Keep the sidecar bound to loopback. The grid node service remains the only public serving lane.
 
 ---
 

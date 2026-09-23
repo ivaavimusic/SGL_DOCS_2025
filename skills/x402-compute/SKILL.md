@@ -1,6 +1,6 @@
 ---
 name: x402-compute
-version: 1.29.0
+version: 1.30.0
 description: |
   This skill should be used when the user asks to "provision GPU instance",
   "integrate agent pods over an API", "create pods for my customers",
@@ -12,6 +12,8 @@ description: |
   "list my instances", "top up compute credits", "check credit balance",
   "run inference on the grid", "decentralized inference", "OpenAI-compatible API",
   "confidential / TEE inference", "list grid models", "check grid capacity",
+  "Laya", "System One", "Jev-compatible decisions", "typed decision model",
+  "private Laya", "serve Laya from the node app",
   "run a node", "provide compute", "become a grid node", "node operator", "join the grid",
   "stake to run a node", "serve a model on the grid", "earn from compute",
   "deploy an always-on AI agent", "deploy a hosted OpenClaw agent", "spin up a ClawPod",
@@ -23,7 +25,7 @@ description: |
   or manage Singularity Cloud Network compute. Seven jobs: SGL Machines
   (GPU/VPS provisioning across Vultr & DigitalOcean), AI Machines (one-click GPU
   running an LLM — deploy a private OpenAI-compatible endpoint, or join the grid & earn),
-  SGL Grid (decentralized, confidential, OpenAI-compatible inference — consume it),
+  SGL Grid (decentralized, confidential, OpenAI-compatible inference, plus Laya/System One typed decisions — consume it),
   Provide Compute (run a TEE node on the grid to serve inference and earn USDC + SGL), and
   Agent Pods (deploy an always-on hosted OpenClaw agent with its own crypto wallet, memory,
   and preinstalled x402 skills — managed or BYOK, tiers, free 24h trial), and
@@ -88,8 +90,8 @@ Products share one credit balance and one set of wallet/API-key auth:
 
 - **SGL Machines** — provision, manage, resize, and extend GPU/VPS instances on Vultr or DigitalOcean. **API base:** `https://compute.x402layer.cc`
 - **AI Machines** — one-click deploy of a **GPU already running an LLM**, mode chosen at deploy: `private` (your own **OpenAI-compatible** endpoint — returns URL + API key) or `grid` (serve as a node & earn USDC + SGL, needs 50k SGL staked). Same x402 lifecycle as Machines; add `model_id` + `mode` to provision. **Standard tier (not confidential).** See [AI Machines](#ai-machines--one-click-llm-gpu) below and `references/ai-machines.md`.
-- **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below)
-- **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. Operators can set a **custom per-token price** within a band (`sgl price set`, suggested × 0.5–× 5); callers compare nodes via `GET /v1/providers`. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
+- **SGL Grid** — decentralized, confidential (TEE), **OpenAI-compatible** inference across attested nodes; token streaming + end-to-end encryption. Also serves **Laya/System One** typed decisions at `POST /v1/systemone`. **API base:** `https://grid.x402compute.cc` (see [SGL Grid — Inference](#sgl-grid--inference) below and `references/systemone-laya.md`)
+- **Provide Compute (run a node)** — turn a TEE-capable machine into a grid node: stake $SGL, register, attest, serve a model, earn USDC + SGL. Agentic via the `sgl` CLI. Operators can serve GGUF chat models or Laya/System One from the desktop node app. Operators can set a **custom per-token price** within a band (`sgl price set`, suggested × 0.5–× 5); callers compare nodes via `GET /v1/providers`. See [Provide Compute](#provide-compute-run-a-node) below and `references/node-operator.md`.
 - **Agent Pods** — deploy an **always-on hosted AI agent** (OpenClaw "ClawPod") on a dedicated CPU machine: it chats on Telegram & Discord (more channels soon) + the dashboard, has its own crypto wallet + memory, and comes with the `x402-compute` + `x402-layer` skills preinstalled. Managed (we run the LLM, tiered) or BYOK; a **free 24h trial** is available. **Curated templates** give a pod a job out of the box — `community-manager` (**TGPod**) runs a Telegram community; run `agent_pod.py templates` for the live list. Same x402 / API-key + credits lifecycle as Machines. **API base:** `https://compute.x402layer.cc` (see [Agent Pods](#agent-pods--always-on-hosted-agents) below).
 - **SGL Processors** — deploy ONE function, get a paid HTTP endpoint **and a live MCP server**. Buyers pay the PUBLISHER directly via x402 (no platform cut); the publisher pays only for compute (~$0.0003/run, held then rebated to actual). Runs in isolated V8 sandboxes — **NOT a TEE**. Deny-by-default egress + server-side secret injection. **LIVE via the CLI** (`npm i -g @singularity-layer/cli`); the dashboard UI is still dark. Supports TypeScript + npm via local bundling, captured `console.log` per run, persistent `SGL.kv` / `SGL.files` state with signed download links, per-secret `mode: "env"`, publisher pause/resume, pricing computed from the buyer's input, **buyer payment on Solana, Base or Robinhood Chain** via a per-chain `payout` map, and **signed webhooks** (ping-to-activate, HMAC-signed `sale.completed`/`run.failed` deliveries with retries + auto-disable). See `references/processors.md`.
 - **Datasets** — buy a validated **JSONL fine-tuning dataset** generated from one sentence plus 5-20 example conversations. Priced **per 100 examples** (fast $0.50 / balanced $0.75 / best $1.50 / decentralized grid $0.35), 50-2000 rows. Every row is **checked by a second model** against your house rules and rewritten if it breaks them (managed = frontier judge; **grid checks its own work on-network, so nothing leaves it even to be verified**). Fully agentic over x402: quote (402) → pay → **202 with a claim token in ~1s** → poll or signed webhook → presigned JSONL download. Generation takes minutes, so it NEVER blocks the request. Managed models or the confidential **encrypted grid**. Failed jobs refund. See `references/datasets.md`.
@@ -205,8 +207,10 @@ reference you need).
 |-------------|--------|-----------|
 | "provision a GPU/VPS", "spin up a server", "extend/resize/destroy instance" | `provision.py` / `extend_instance.py` / `resize_instance.py` / `destroy_instance.py` | `references/api-reference.md` |
 | "deploy a private LLM endpoint", "one-click GPU running an LLM", "OpenRouter-ready endpoint" | `provision.py --model-id … --mode private` | `references/ai-machines.md` |
-| "join the grid & earn", "run a node", "provide compute" | `sgl` CLI (see below) | `references/node-operator.md` |
+| "join the grid & earn", "run a node", "provide compute" | `sgl` CLI or Singularity Node app (see below) | `references/node-operator.md` |
 | "run inference on the grid", "confidential/TEE OpenAI-compatible inference" | curl / any OpenAI SDK → `grid.x402compute.cc` | `references/api-reference.md` |
+| "use Laya", "System One", "Jev-compatible typed decisions", "private Laya" | curl / private sealed System One → `grid.x402compute.cc` | `references/systemone-laya.md` |
+| "serve Laya from my node", "node app Laya", "System One node operator" | Singularity Node app v1.7.4+ or `sgl` CLI with a local Laya sidecar | `references/systemone-laya.md` + `references/node-operator.md` |
 | **"deploy an agent pod"**, "hosted OpenClaw/ClawPod", "always-on AI agent with its own wallet", "free 24h agent trial" | **`agent_pod.py deploy`** (or `catalog`/`list`/`get`) | **`references/agent-pods.md`** |
 | **"call my pod via the OpenAI API"**, "give my pod an OpenAI-compatible endpoint", "get an API key for my agent pod" | **`agent_pod.py create-key` then `agent_pod.py chat`** | **`references/agent-pods.md`** |
 | **"telegram community manager"**, "TGPod", "moderate my telegram group", "bot that answers members and removes scams", "discord community manager" (soon) | **`agent_pod.py templates`** then **`agent_pod.py deploy --template community-manager`** | **`references/agent-pods.md`** |
@@ -222,6 +226,17 @@ python {baseDir}/scripts/agent_pod.py deploy --ai-mode managed --tier pro \
     --plan <plan_id> --prepaid-hours 720 --telegram <bot_token> --use-credits
 python {baseDir}/scripts/agent_pod.py create-key <pod_id> --name my-integration   # → sk-sglpod-int-…
 python {baseDir}/scripts/agent_pod.py chat <pod_id> "What's on my calendar?" --key sk-sglpod-int-…
+```
+
+System One / Laya quick path:
+```bash
+curl "https://grid.x402compute.cc/v1/models?type=systemone" \
+  -H "X-API-Key: $COMPUTE_API_KEY"
+
+curl -X POST https://grid.x402compute.cc/v1/systemone \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $COMPUTE_API_KEY" \
+  -d '{"model":"convaiinnovations/laya","state":{"text":"refund request from pro customer"},"questions":{"route":{"type":"choice","instructions":"Pick the best team.","criteria":{"billing":"Billing/refund issue","support":"Technical issue"}}}}'
 ```
 
 ---
@@ -495,6 +510,7 @@ Decentralized, confidential inference across attested TEE nodes — **OpenAI-com
 |--------|------|---------|
 | `GET`  | `/v1/models` | List models currently served by active attested nodes |
 | `POST` | `/v1/chat/completions` | OpenAI-compatible chat (set `"stream": true` to stream) |
+| `POST` | `/v1/systemone` | Laya/System One typed decisions (`convaiinnovations/laya`) |
 | `GET`  | `/grid/capacity` | Live capacity: active nodes, TEE types, served models, `at_capacity` |
 
 ```bash
@@ -519,6 +535,10 @@ curl -X POST https://grid.x402compute.cc/v1/chat/completions \
 
 Use any **OpenAI SDK** by setting `base_url=https://grid.x402compute.cc/v1` and `api_key=$COMPUTE_API_KEY`. Before a large batch, check `/grid/capacity` and back off / retry if `at_capacity` is true.
 
+**Laya/System One:** call `POST /v1/systemone`, not `/v1/chat/completions`. Use
+`GET /v1/models?type=systemone` to discover it. For end-to-end private Laya, use the reserve +
+sealed-submit flow in `references/systemone-laya.md`.
+
 ---
 
 ## Provide Compute (run a node)
@@ -529,7 +549,7 @@ and the `sgl` CLI are shell commands. Full runbook (requirements, flags, mainten
 earnings) → **`references/node-operator.md`**.
 
 **Prerequisites:** a supported TEE (e.g. Apple Secure Enclave `apple_se`, Intel TDX/SGX, AMD SEV-SNP,
-AWS Nitro), `llama.cpp` + a GGUF model, and **≥ 50,000 $SGL staked** to your operator (Solana) wallet.
+AWS Nitro), `llama.cpp` + a GGUF model for chat or a local Laya sidecar for System One, and **≥ 50,000 $SGL staked** to your operator (Solana) wallet.
 
 ```bash
 # 1. Stake ≥50,000 SGL to your operator wallet (agentic via the x402-layer skill / Staking Engine API,
@@ -557,6 +577,10 @@ sgl service install \
 sgl status
 curl https://grid.x402compute.cc/grid/capacity            # your node raises active_nodes / models
 ```
+
+For Laya, use the Singularity Node desktop app v1.7.4+ and select Models → System One → Laya. The app
+starts the loopback sidecar and the normal node service. CLI fallback:
+`sgl service install --model-name convaiinnovations/laya --systemone-sidecar-url http://127.0.0.1:8765 --max-jobs 1`.
 
 **Maintenance:** `sgl off-grid` (stop new jobs cleanly for planned downtime — no penalty) / `sgl on-grid`
 (resume). Honest downtime is never slashed; only proven tampering is. Re-run `sgl attest` after binary
@@ -772,6 +796,7 @@ Full flows, HTTP API, and agent safety rules: `references/agent-vault.md`.
 
 For full endpoint details, see:
 - [references/api-reference.md](references/api-reference.md)
+- [references/systemone-laya.md](references/systemone-laya.md) — Laya/System One typed decisions, private sealed flow, and node-app serving path
 - [references/ai-machines.md](references/ai-machines.md) — AI Machines (one-click LLM GPU: modes, endpoint+key, control API, agent x402 deploy)
 - [references/agent-pods.md](references/agent-pods.md) — Agent Pods (deploy `POST /pods`, manage, wallet, and the OpenAI-compatible adapter: `sk-sglpod-int-*` keys + `/v1/chat/completions`)
 - [references/agent-pods-api.md](references/agent-pods-api.md) — the **`/pods/v1` API-key surface** for building ON pods rather than clicking them: idempotent create, lifecycle actions, tasks, connectors, wallet, backups, an account **event log** and **signed webhooks**. Use it when the caller holds an `x402c_…` key and no wallet; `agent-pods.md` remains the signature/OWS path.
