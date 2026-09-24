@@ -2,7 +2,7 @@
 
 MCP for Singularity Layer. Discover listings, manage endpoints and products, run payment-backed endpoint flows, consume public product and credit-pack purchase flows, and use wallet-session agent registry tools through authenticated MCP actions.
 
-> ✅ **v1.6.0** Phase 4 agent registry tooling shipped on March 22, 2026. PAT-first auth remains live, and MCP now exposes wallet-session agent registration and management in addition to payment flows.
+> ✅ **v1.14.0** adds read-only Singularity Cloud tools (September 24, 2026): machines, agent pods, Cloud credits, training, the inference grid and processors. PAT-first auth, payment flows and wallet-session agent registry tools remain live.
 
 ## What is MCP?
 
@@ -17,8 +17,8 @@ The Singularity Layer MCP server exposes the broader platform through this proto
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Status | `active` |
-| Runtime Version | `1.6.0` |
-| Registry Package Version | `1.6.0` |
+| Runtime Version | `1.14.0` |
+| Registry Package Version | `1.14.0` |
 | Published | `March 22, 2026` |
 | Website | `https://studio.x402layer.cc/docs/agentic-access/mcp-server` |
 
@@ -177,6 +177,28 @@ MCP now exposes the worker wallet-session flows for ERC-8004 and Solana-8004 age
 >
 > Validation note: production validation on March 22, 2026 covered wallet challenge creation, wallet verification, owned endpoint discovery, owned agent discovery, and EVM registration prepare. Full on-chain finalize still depends on the validation wallet having gas on the target chain.
 
+## Singularity Cloud Tools (v1.14, read-only)
+
+Read your Singularity Cloud account: machines, agent pods, Cloud credits, training, the inference grid and processors. Pass a compute API key with read scopes as `computeApiKey` (cloud.x402compute.cc, Settings, API Keys). These tools never change or spend anything: deploying, extending, destroying and paying stay in the Cloud app, or in Slayer AI, where each change needs a confirm card and a fresh wallet signature.
+
+| Tool | Description | Auth |
+|------|-------------|------|
+| `cloud_list_plans` | Machine plans (VPS, GPU) with hourly and daily prices | public |
+| `cloud_list_instances` | Your machines, AI machines and pod hosts | compute key |
+| `cloud_get_instance` | One machine: status, IP, price, expiry, AI endpoint | compute key |
+| `cloud_credit_balance` | Cloud credit balance of the key's wallet | compute key |
+| `cloud_credit_activity` | Recent Cloud credit charges, top-ups and refunds | compute key |
+| `cloud_pod_catalog` | Agent Pod engines, tiers, models and the exact pricing basis | public |
+| `cloud_list_pods` | Your Agent Pods | compute key |
+| `cloud_get_pod` | One pod, with heartbeat and the last command output | compute key |
+| `cloud_pod_usage` | Managed-AI usage of one pod | compute key |
+| `cloud_list_training_runs` | Your LLM training runs | compute key |
+| `cloud_get_training_run` | One training run: status, progress, billed hours | compute key |
+| `cloud_grid_models` | Models live on the inference grid, with prices per million tokens | public |
+| `cloud_grid_usage` | Your grid inference usage | compute key |
+| `cloud_list_processors` | Your processors (needs processors:read) | compute key |
+| `cloud_processor_runs` | Recent runs of one of your processors | compute key |
+
 ## Available Resources
 
 | URI | Description |
@@ -279,7 +301,7 @@ curl -X POST https://mcp.x402layer.cc/mcp \
 | Registry Package | `io.github.ivaavimusic/singularity` |
 | Registry Title | `Singularity Layer MCP` |
 | Registry Status | `active` |
-| Version | `1.6.0` runtime / `1.6.0` registry package |
+| Version | `1.14.0` runtime / `1.14.0` registry package |
 | Protocol Version | `2024-11-05` |
 | Transport | HTTP (stateless) |
 | Deployment | Cloudflare Workers |
