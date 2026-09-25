@@ -3,7 +3,7 @@ title: Models
 description: Browse the models served on SGL Grid, see live pricing, and choose the right one for your workload.
 ---
 
-Models on SGL Grid are served by independent TEE nodes. Availability is **live** — a model is callable whenever at least one attested node is serving it.
+Models on SGL Grid are served by independent nodes. Availability is **live**: a model is callable whenever at least one eligible node is serving it.
 
 ## Browsing models
 
@@ -15,10 +15,18 @@ curl https://grid.x402compute.cc/grid/models
 
 Each entry includes the model id (use it as `model` in your request), how many nodes serve it, and its price.
 
+System One decision models are listed through the OpenAI-compatible model endpoint:
+
+```bash
+curl "https://grid.x402compute.cc/v1/models?type=systemone" \
+  -H "Authorization: Bearer <YOUR_KEY>"
+```
+
 ## Choosing a model
 
 - **Smaller models** (e.g. 3B-class) are cheapest and fastest — great for classification, extraction, drafting, and agent steps.
 - **Larger models** trade cost/latency for capability.
+- **System One models** such as `convaiinnovations/laya` and `Contrastive-LM/CLM-v0.1-8B` are for typed decisions, not chat. Use [`/v1/systemone`](/cloud/grid/system-one).
 - **Availability matters** — a model with more serving nodes is more resilient. Prefer models with redundancy for production.
 
 ## OpenAI compatibility

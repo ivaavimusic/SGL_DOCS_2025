@@ -80,3 +80,30 @@ See [Wallet & auth](/cloud/concepts/wallet-auth).
 - **Streaming** (`stream: true`) is on the roadmap; today set `stream: false`.
 
 <Note>List available models with `GET https://grid.x402compute.cc/grid/models` — see [Models](/cloud/grid/models).</Note>
+
+## System One endpoint
+
+Typed decision models use a separate endpoint:
+
+```bash
+curl -X POST https://grid.x402compute.cc/v1/systemone \
+  -H "Authorization: Bearer <YOUR_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "convaiinnovations/laya",
+    "state": {"task": "choose the safest next action"},
+    "questions": {
+      "move": {
+        "type": "choice",
+        "instructions": "Pick one action.",
+        "criteria": {
+          "up": "Move up",
+          "stay": "Stay in lane",
+          "down": "Move down"
+        }
+      }
+    }
+  }'
+```
+
+Use `GET https://grid.x402compute.cc/v1/models?type=systemone` to discover System One models. See [System One models](/cloud/grid/system-one).

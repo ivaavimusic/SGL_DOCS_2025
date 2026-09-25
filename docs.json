@@ -132,6 +132,7 @@
             "pages": [
               "cloud/grid/overview",
               "cloud/grid/models",
+              "cloud/grid/system-one",
               "cloud/grid/playground",
               "cloud/grid/api",
               "cloud/grid/confidential-inference",

@@ -5,7 +5,7 @@ description: The sgl command-line tool — every command and flag to register, r
 
 `sgl` is the open-source node operator CLI. It generates your node's keys, registers it on the grid, runs inference, manages the background service, and toggles maintenance mode. This is the complete command reference.
 
-<Note>Install `sgl` from the official open-source release (see [Node setup](/cloud/provide/node-setup)). You also need a local inference runtime (llama-server) and a GGUF model file to serve.</Note>
+<Note>Install `sgl` from the official open-source release (see [Node setup](/cloud/provide/node-setup)). Chat models use a local inference runtime such as llama-server and a GGUF model file. System One models can use a local loopback sidecar.</Note>
 
 ## Typical first run
 
@@ -57,6 +57,7 @@ Run the node in the foreground: start the local inference server, begin heartbea
 | `--max-jobs` | `1` | Max concurrent jobs to accept |
 | `--batch-size` | `512` | Prompt batch size |
 | `--heartbeat-interval` | `5` | Heartbeat seconds (lower = faster pickup, more traffic) |
+| `--systemone-sidecar-url` | — | Loopback URL for a System One sidecar such as Laya or CLM |
 
 <Note>Use `sgl start` to test in the foreground; use `sgl service install` for production so the node survives reboots, logout, crashes, and idle sleep.</Note>
 
@@ -86,6 +87,29 @@ Install and start the background service.
 | `--inference-port` | `8081` | Port for the local llama-server |
 | `--max-jobs` | `1` | Max concurrent jobs |
 | `--heartbeat-interval` | `5` | Heartbeat seconds |
+| `--systemone-sidecar-url` | — | Loopback URL for a System One sidecar such as Laya or CLM |
+
+### System One examples
+
+Laya:
+
+```bash
+sgl start \
+  --model-name convaiinnovations/laya \
+  --systemone-sidecar-url http://127.0.0.1:8765 \
+  --max-jobs 1
+```
+
+Contrastive-LM CLM:
+
+```bash
+sgl start \
+  --model-name Contrastive-LM/CLM-v0.1-8B \
+  --systemone-sidecar-url http://127.0.0.1:8700 \
+  --max-jobs 1
+```
+
+`--systemone-sidecar-url` must point to loopback (`127.0.0.1`, `localhost`, or `::1`). The sidecar is not exposed to the internet; the node receives Grid jobs and forwards them locally.
 
 ### `sgl service stop`
 Stop and remove the background service.

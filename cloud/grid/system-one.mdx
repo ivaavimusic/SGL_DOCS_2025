@@ -1,0 +1,99 @@
+---
+title: System One Models
+description: Use typed decision models like Laya and CLM on SGL Grid.
+---
+
+System One models are lightweight decision models served through SGL Grid for fast, structured choices. They are useful when an agent needs to pick, rank, route, score, or decide without generating a long chat response.
+
+Use System One models through:
+
+- `POST https://grid.x402compute.cc/v1/systemone`
+- API keys or x402 payments
+- the same Grid node routing and settlement layer as other models
+- private sealed requests when the serving node is attested and the caller uses the confidential path
+
+<Note>System One models are not chat-completion models. Call `/v1/systemone`, not `/v1/chat/completions`.</Note>
+
+## Live model discovery
+
+List System One models:
+
+```bash
+curl "https://grid.x402compute.cc/v1/models?type=systemone" \
+  -H "Authorization: Bearer <YOUR_KEY>"
+```
+
+Models appear when at least one node is online and advertising them.
+
+## Laya
+
+Laya is the first System One model supported through the Singularity node app and node CLI.
+
+- Model id: `convaiinnovations/laya`
+- Aliases: `laya`, `laya-system-one`, `systemone-laya`
+- Operator path: Singularity Node app or `sgl` CLI
+- Apple Silicon path: MLX acceleration where available, with fallback to the local sidecar runtime
+
+Node operators can use the app flow for the simplest setup, or run the CLI with a local Laya sidecar:
+
+```bash
+sgl start \
+  --model-name convaiinnovations/laya \
+  --systemone-sidecar-url http://127.0.0.1:8765 \
+  --max-jobs 1
+```
+
+The node keeps the sidecar loopback-only, advertises the model to Grid, receives jobs, and reports usage for settlement.
+
+## Contrastive-LM CLM
+
+CLM is supported as an operator-first System One model. The Grid recognizes the model and routes to nodes that advertise it, but the desktop app does not yet manage the CLM runtime.
+
+- Model id: `Contrastive-LM/CLM-v0.1-8B`
+- Aliases: `clm`, `clm-latest`, `contrastive-lm`, `systemone-clm`
+- Operator path: `sgl` CLI plus a running CLM sidecar
+- Runtime: `contrastive-lm` with a `vllm` pooling encoder
+
+Start the node after the CLM sidecar is healthy:
+
+```bash
+sgl start \
+  --model-name Contrastive-LM/CLM-v0.1-8B \
+  --systemone-sidecar-url http://127.0.0.1:8700 \
+  --max-jobs 1
+```
+
+Because CLM has a separate Python/GPU runtime, operators must start and monitor that runtime themselves for now.
+
+## Request shape
+
+```bash
+curl -X POST https://grid.x402compute.cc/v1/systemone \
+  -H "Authorization: Bearer <YOUR_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "convaiinnovations/laya",
+    "state": {
+      "ticket": "enterprise customer asks for invoice correction"
+    },
+    "questions": {
+      "route": {
+        "type": "choice",
+        "instructions": "Pick the best internal team.",
+        "criteria": {
+          "billing": "Billing, invoice, payment, refund",
+          "support": "Technical support",
+          "sales": "Buying, expansion, demo request"
+        }
+      }
+    }
+  }'
+```
+
+## Privacy
+
+Plain `/v1/systemone` requests are routed by the Grid in plaintext. Use this for low-sensitivity, low-latency decision work.
+
+Private System One uses the same confidential pattern as Grid inference: reserve an attested node, encrypt locally to the node key, submit the sealed payload, and decrypt the sealed result locally. In that mode, the orchestrator relays ciphertext and the node decrypts inside its attested environment.
+
+<Warning>Do not claim confidential execution for an operator node that is not attested. Standard System One routing is useful for speed and availability, but private sealed routing requires attestation.</Warning>

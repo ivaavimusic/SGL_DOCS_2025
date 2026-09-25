@@ -22,6 +22,8 @@ You also need a local inference runtime (llama-server) and a **GGUF model file**
 ~/models/Llama-3.2-3B-Instruct-Q4_K_M.gguf
 ```
 
+For System One models, the node can instead connect to a local sidecar with `--systemone-sidecar-url`. Laya is managed by the Singularity Node app and can use MLX acceleration on Apple Silicon where available. CLM is CLI/operator-first and requires you to run its Python/GPU sidecar yourself.
+
 ## 2. Log in & register (with your staked wallet)
 
 `sgl login` opens a browser flow to approve the node with the wallet that holds your stake. This binds the node to that wallet.
@@ -68,6 +70,28 @@ sgl service status    # background service state
 ```
 
 Your node now registers, advertises its model(s), heartbeats, and starts receiving jobs.
+
+### Serving System One models
+
+For Laya, use the Singularity Node app and select the System One Laya model, or start a local Laya sidecar and connect it with the CLI:
+
+```bash
+sgl start \
+  --model-name convaiinnovations/laya \
+  --systemone-sidecar-url http://127.0.0.1:8765 \
+  --max-jobs 1
+```
+
+For Contrastive-LM CLM, start the CLM sidecar first, then advertise the canonical model id:
+
+```bash
+sgl start \
+  --model-name Contrastive-LM/CLM-v0.1-8B \
+  --systemone-sidecar-url http://127.0.0.1:8700 \
+  --max-jobs 1
+```
+
+See [System One models](/cloud/grid/system-one) for model ids, privacy notes, and request examples.
 
 ## 5. Maintenance
 

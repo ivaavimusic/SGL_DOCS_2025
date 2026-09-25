@@ -8,6 +8,7 @@ description: Decentralized, confidential AI inference. OpenAI-compatible, pay-pe
 ## Why the Grid
 
 - **OpenAI-compatible** — `/v1/chat/completions`; existing SDKs work by changing the base URL.
+- **System One decisions** — `/v1/systemone` serves typed decision models like Laya and CLM.
 - **Confidential** — prompts are end-to-end encrypted and run inside a TEE; responses carry an attestation. See [Confidential inference](/cloud/grid/confidential-inference).
 - **Pay-per-call** — credits or x402 USDC, no subscription. See [Pricing](/cloud/grid/pricing).
 - **Decentralized** — served by staked operators, not one provider.
@@ -25,6 +26,7 @@ description: Decentralized, confidential AI inference. OpenAI-compatible, pay-pe
 
 <CardGroup cols={2}>
   <Card title="Models" icon="cubes" href="/cloud/grid/models">What's served, and how to choose.</Card>
+  <Card title="System One" icon="bolt" href="/cloud/grid/system-one">Typed decision models like Laya and CLM.</Card>
   <Card title="Playground" icon="message" href="/cloud/grid/playground">Try models in the browser.</Card>
   <Card title="API" icon="code" href="/cloud/grid/api">OpenAI-compatible quickstart.</Card>
   <Card title="Confidential inference" icon="shield-halved" href="/cloud/grid/confidential-inference">E2E encryption + attestation.</Card>
